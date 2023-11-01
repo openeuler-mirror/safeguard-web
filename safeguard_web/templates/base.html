@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+{% load static %}
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" href="{% static 'img/safeguard.ico' %}" type="image/x-icon">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+        {% block css %}
+        {% endblock %}
+        <title>safeguard-web</title>
+    </head>
+    <body>
+        <div class="pagetop">
+            <div class="pagetop-logo">
+                <img src="{% static 'img/safeguard.png' %}" alt="safeguard image">
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="#">首页</a>
+                </div>
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="hosts">主机管理</a>
+                </div>
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="#">主机规则设置</a>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#">文件操作拦截</a>
+                    <a href="#">进程拦截</a>
+                    <a href="#">网络拦截</a>
+                </div>
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="#">风险管理</a>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#">漏洞检测</a>
+                    <a href="#">安全补丁</a>
+                    <a href="#">弱密码</a>
+                    <a href="#">系统风险</a>
+                    <a href="#">账号风险</a>
+                </div>
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="#">入侵检测</a>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#">暴力破解</a>
+                    <a href="#">异常登录</a>
+                    <a href="#">反弹shell</a>
+                    <a href="#">本地提权</a>
+                    <a href="#">后门检测(web后门)</a>
+                </div>
+            </div>
+            <div class="pagetop-dropdown">
+                <div class="pagetop-item">
+                    <a href="#">安全日志</a>
+                </div>
+                <div class="dropdown-content">
+                    <a href="#">审计日志</a>
+                    <a href="#">登录日志</a>
+                    <a href="#">账户变更日志</a>
+                </div>
+            </div>
+            
+            <!-- 添加更多导航栏项和下拉列表项 -->
+        </div>
+        <div class="page">
+            <!-- 页面内容将放置在这里 -->
+            {% block page %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

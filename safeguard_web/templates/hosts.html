@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/hosts.css' %}">
+{% endblock %}
+
+{% block page %}
+<div class="host-header">
+    <div class="host-header-item">
+      <label for="hostname">主机名称</label>
+      <input type="text" id="hostname">
+    </div>
+    <div class="host-header-item">
+      <label for="hostip">主机IP</label>
+      <input type="text" id="hostip">
+    </div>
+    <div class="host-header-item">
+      <button class="query-btn">查询</button>
+      <button class="new-btn">新建</button>
+      <button class="refresh-btn">刷新</button>
+    </div>
+  </div>
+  
+  <div class="host-list">
+    <table>
+      <thead>
+        <tr>
+          <th>主机名称</th>
+          <th>主机IP</th>
+          <!-- 其他列名 -->
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 主机列表数据循环 -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- 翻页功能 -->
+  <div class="pagination">
+    <!-- 翻页按钮 -->
+  </div>
+
+{% endblock %}
