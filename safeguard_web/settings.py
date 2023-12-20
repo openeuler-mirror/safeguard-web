@@ -25,12 +25,13 @@ SECRET_KEY = 'django-insecure-yz49(#t@v!yygcm5-@3d5z7w08ma&w6fh=2u$cev$&2u4nz^9e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'backend.apps.BackendConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -75,8 +76,12 @@ WSGI_APPLICATION = 'safeguard_web.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'safeguard',
+        'USER': 'root',
+        'PASSWORD': 'safeguard',
+        'HOST': '',
+        'PORT': '',
     }
 }
 
