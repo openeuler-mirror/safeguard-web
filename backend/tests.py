@@ -241,3 +241,110 @@ class UserSerializerTest(TestCase):
         serializer2 = UserSerializer(user2)
         self.assertEqual(serializer1.data['enable'], 1)
         self.assertEqual(serializer2.data['enable'], 2)
+
+
+from backend.serializers import UserCreateSerializer, ChangePasswordSerializer
+
+
+class UserCreateSerializerTest(TestCase):
+    """UserCreateSerializer 测试"""
+
+    def test_create_user_success(self):
+        """测试成功创建用户"""
+        data = {
+            'user': 'newuser1',
+            'password': 'pass123',
+            'nickname': '新用户',
+            'phone': '13800138000',
+            'email': 'test@example.com'
+        }
+        serializer = UserCreateSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+        self.assertEqual(user.user, 'newuser1')
+        self.assertEqual(user.nickname, '新用户')
+        self.assertEqual(user.phone, '13800138000')
+        self.assertEqual(user.email, 'test@example.com')
+        self.assertTrue(check_password('pass123', user.password))
+
+    def test_create_user_without_optional_fields(self):
+        """测试仅使用必填字段创建用户"""
+        data = {
+            'user': 'minimaluser',
+            'password': 'minpass'
+        }
+        serializer = UserCreateSerializer(data=data)
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        user = serializer.save()
+        self.assertEqual(user.user, 'minimaluser')
+        self.assertEqual(user.nickname, '系统用户')
+
+    def test_create_user_password_too_short(self):
+        """测试密码过短"""
+        data = {
+            'user': 'shortpass',
+            'password': '12345'
+        }
+        serializer = UserCreateSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('password', serializer.errors)
+
+    def test_create_user_missing_password(self):
+        """测试缺少密码"""
+        data = {
+            'user': 'nopass'
+        }
+        serializer = UserCreateSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('password', serializer.errors)
+
+    def test_create_user_duplicate_username(self):
+        """测试重复用户名"""
+        Users.objects.create(user='existing', password='pass')
+        data = {
+            'user': 'existing',
+            'password': 'newpass'
+        }
+        serializer = UserCreateSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+
+
+class ChangePasswordSerializerTest(TestCase):
+    """ChangePasswordSerializer 测试"""
+
+    def test_valid_data(self):
+        """测试有效数据"""
+        data = {
+            'old_password': 'oldpass123',
+            'new_password': 'newpass456'
+        }
+        serializer = ChangePasswordSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+    def test_missing_old_password(self):
+        """测试缺少旧密码"""
+        data = {
+            'new_password': 'newpass456'
+        }
+        serializer = ChangePasswordSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('old_password', serializer.errors)
+
+    def test_missing_new_password(self):
+        """测试缺少新密码"""
+        data = {
+            'old_password': 'oldpass123'
+        }
+        serializer = ChangePasswordSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('new_password', serializer.errors)
+
+    def test_new_password_too_short(self):
+        """测试新密码过短"""
+        data = {
+            'old_password': 'oldpass123',
+            'new_password': '12345'
+        }
+        serializer = ChangePasswordSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('new_password', serializer.errors)
