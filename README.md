@@ -25,6 +25,9 @@ pip install -r requirements.txt
 python manager.py runserver
 
 # 本地使用sqlite启动
+# 1. db迁移
+USE_SQLITE=1 python manager.py migrate
+# 2. 服务启动
 USE_SQLITE=1 python manager.py runserver
 ```
 

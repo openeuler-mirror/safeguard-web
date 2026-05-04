@@ -110,7 +110,7 @@ if USE_SQLITE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': 'safeguard'
+            'NAME': '.safeguard_web.db'
         }
     }
 else:
