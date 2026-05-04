@@ -36,7 +36,6 @@ USE_SQLITE = os.getenv("USE_SQLITE", "0") == "1"
 INSTALLED_APPS = [
     'backend.apps.BackendConfig',
     'rest_framework',
-    # 'rest_framework_swagger',
     'drf_yasg',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -47,7 +46,6 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema'
 }
 

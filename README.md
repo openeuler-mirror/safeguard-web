@@ -23,6 +23,9 @@ virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python manager.py runserver
+
+# 本地使用sqlite启动
+USE_SQLITE=1 python manager.py runserver
 ```
 
 #### 参与贡献
