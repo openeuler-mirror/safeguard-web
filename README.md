@@ -29,6 +29,9 @@ python manager.py runserver
 USE_SQLITE=1 python manager.py migrate
 # 2. 服务启动
 USE_SQLITE=1 python manager.py runserver
+
+# 单测（本地SQLIE）
+USE_SQLITE=1 python manage.py test backend.tests --verbosity=2
 ```
 
 #### 参与贡献
