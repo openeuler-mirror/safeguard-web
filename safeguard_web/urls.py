@@ -9,7 +9,6 @@ schema_view = get_schema_view(title='API', renderer_classes=[OpenAPIRenderer, Sw
 
 router = routers.DefaultRouter()
 router.register(r'users',views.UserViewSet)
-router.register(r'groups',views.GroupViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
