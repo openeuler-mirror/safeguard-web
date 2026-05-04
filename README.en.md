@@ -14,9 +14,16 @@ Software architecture description
 
 #### Instructions
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+- backend startup command
+```shell
+virtualenv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manager.py runserver
+
+# use sqlite for local/test
+USE_SQLITE=1 python manager.py runserver
+```
 
 #### Contribution
 
