@@ -2,16 +2,15 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from django.contrib.auth.hashers import make_password, check_password
 from pydantic import ValidationError
 
+#  drf-spectacular 自动生成文档，无需手动写注解！
+from drf_spectacular.utils import extend_schema
+
 from backend.models import Users
-from backend.serializers import (
-    UserSerializer,
-    UserCreateSerializer,
-)
+from backend.serializers import UserSerializer, UserCreateSerializer
+# 你的 Pydantic Schema（全部保留）
 from backend.schemas import (
     UserResponse,
     UserUpdateRequest,
@@ -24,13 +23,7 @@ from backend.schemas import (
 
 class UsersViewSet(viewsets.ModelViewSet):
     """用户管理视图集
-
-    提供用户的增删改查功能，包括：
-    - list: 获取用户列表
-    - retrieve: 获取单个用户详情
-    - create: 创建新用户
-    - update: 更新用户信息
-    - destroy: 删除用户
+    提供用户的增删改查功能
     """
     queryset = Users.objects.all().order_by('-created_at')
     serializer_class = UserSerializer
@@ -41,48 +34,49 @@ class UsersViewSet(viewsets.ModelViewSet):
             return UserCreateSerializer
         return UserSerializer
 
-    @swagger_auto_schema(
+    # ==============================================
+    # 个人信息接口（GET查询 / PUT更新）
+    # Pydantic 校验 + Swagger 自动生成文档
+    # ==============================================
+    @extend_schema(
         methods=['get'],
-        operation_description="获取当前登录用户的信息",
-        responses={200: UserSerializer},
+        responses={200: UserResponse},
+        description="获取当前登录用户信息"
     )
-    @swagger_auto_schema(
-        methods=['put'],
-        operation_description="更新当前登录用户的信息",
-        request_body=UserUpdateRequest,
-        responses={200: UserSerializer}, 
+    @extend_schema(
+        methods=['post'],
+        request=UserUpdateRequest,
+        responses={200: UserResponse, 400: MessageResponse},
+        description="更新当前登录用户信息"
     )
     @action(detail=False, methods=['get', 'put'])
     def me(self, request):
-        """GET/PUT /api/system/users/me/ - Current user info"""
         user = request.user
         if request.method == 'GET':
             return Response(UserSerializer(user).data)
-        elif request.method == 'PUT':
-            # Pydantic validation
-            try:
-                UserUpdateRequest.model_validate(request.data)
-            except ValidationError as e:
-                return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = UserSerializer(user, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # PUT：Pydantic 严格参数校验
+        try:
+            UserUpdateRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        operation_description="管理员重置用户密码",
-        request_body=ResetPasswordRequest.model_json_schema(),
-        responses={
-            200: openapi.Response(description='密码重置成功', schema=MessageResponse.model_json_schema()),
-            400: openapi.Response(description='请求参数错误'),
-            404: openapi.Response(description='用户不存在')
-        }
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # ==============================================
+    # 管理员重置密码
+    # ==============================================
+    @extend_schema(
+        request=ResetPasswordRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="管理员重置用户密码"
     )
     @action(detail=True, methods=['put'], url_path='password')
     def set_password(self, request, pk=None):
-        """PUT /api/system/users/<id>/password/ - Admin reset password"""
         user = self.get_object()
         try:
             data = ResetPasswordRequest.model_validate(request.data)
@@ -93,44 +87,36 @@ class UsersViewSet(viewsets.ModelViewSet):
         user.save()
         return Response({"message": "密码重置成功"})
 
-    @swagger_auto_schema(
-        operation_description="用户修改自己的密码",
-        request_body=ChangePasswordRequest.model_json_schema(),
-        responses={
-            200: openapi.Response(description='密码修改成功', schema=MessageResponse.model_json_schema()),
-            400: openapi.Response(description='旧密码不正确或请求参数错误')
-        }
+    # ==============================================
+    # 用户修改自身密码
+    # ==============================================
+    @extend_schema(
+        request=ChangePasswordRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="用户修改自己的密码"
     )
     @action(detail=False, methods=['put'], url_path='me/password')
     def change_my_password(self, request):
-        """PUT /api/system/users/me/password/ - User change own password"""
         try:
             data = ChangePasswordRequest.model_validate(request.data)
         except ValidationError as e:
             return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
 
         if not check_password(data.old_password, request.user.password):
-            return Response(
-                {"error": "旧密码不正确"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "旧密码不正确"}, status=status.HTTP_400_BAD_REQUEST)
+
         request.user.set_password(data.new_password)
         request.user.save()
         return Response({"message": "密码修改成功"})
 
-    @swagger_auto_schema(
-        operation_description="管理员设置用户角色",
-        request_body=SetRoleRequest.model_json_schema(),
-        responses={
-            200: openapi.Response(description='角色设置成功', schema=UserResponse.model_json_schema()),
-            400: openapi.Response(description='role_id is required'),
-            404: openapi.Response(description='角色不存在')
-        }
+    # ==============================================
+    # 管理员设置用户角色
+    # ==============================================
+    @extend_schema(
+        request=SetRoleRequest,
+        responses={200: UserResponse, 400: MessageResponse},
+        description="管理员设置用户角色"
     )
     @action(detail=True, methods=['put'], url_path='role')
     def set_role(self, request, pk=None):
-        """PUT /api/system/users/<id>/role/ - Set user role"""
-        return Response(
-            {"error": "功能暂未实现"},
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
+        return Response({"error": "功能暂未实现"}, status=status.HTTP_501_NOT_IMPLEMENTED)

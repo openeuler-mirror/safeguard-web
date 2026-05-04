@@ -36,7 +36,7 @@ USE_SQLITE = os.getenv("USE_SQLITE", "0") == "1"
 INSTALLED_APPS = [
     'backend.apps.BackendConfig',
     'rest_framework',
-    'drf_yasg',
+    'drf_spectacular',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,7 +46,14 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema'
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Safeguard API 文档',
+    'DESCRIPTION': '用户管理、权限系统接口文档',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 SWAGGER_SETTINGS = {
