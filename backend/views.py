@@ -14,7 +14,6 @@ from backend.serializers import (
 )
 from backend.schemas import (
     UserResponse,
-    UserCreateRequest,
     UserUpdateRequest,
     ChangePasswordRequest,
     ResetPasswordRequest,
@@ -45,13 +44,13 @@ class UsersViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         methods=['get'],
         operation_description="获取当前登录用户的信息",
-        responses={200: openapi.Response(description='用户信息', schema=UserResponse.model_json_schema())},
+        responses={200: UserSerializer},
     )
     @swagger_auto_schema(
         methods=['put'],
         operation_description="更新当前登录用户的信息",
-        request_body=UserUpdateRequest.model_json_schema(),
-        responses={200: openapi.Response(description='更新后的用户信息', schema=UserResponse.model_json_schema())},
+        request_body=UserUpdateRequest,
+        responses={200: UserSerializer}, 
     )
     @action(detail=False, methods=['get', 'put'])
     def me(self, request):
