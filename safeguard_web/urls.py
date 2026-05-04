@@ -3,7 +3,8 @@ from django.urls import path,include
 from rest_framework import routers
 from backend import views
 from rest_framework.schemas import get_schema_view
-from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+# from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+from drf_yasg.renderers import SwaggerUIRenderer, OpenAPIRenderer
 
 schema_view = get_schema_view(title='API', renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer])
 

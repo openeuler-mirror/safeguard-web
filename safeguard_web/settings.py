@@ -33,7 +33,8 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     'backend.apps.BackendConfig',
     'rest_framework',
-    'rest_framework_swagger',
+    # 'rest_framework_swagger',
+    'drf_yasg',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +44,8 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+    # 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema'
 }
 
 SWAGGER_SETTINGS = {
