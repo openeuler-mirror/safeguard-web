@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +27,8 @@ SECRET_KEY = 'django-insecure-yz49(#t@v!yygcm5-@3d5z7w08ma&w6fh=2u$cev$&2u4nz^9e
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+
+USE_SQLITE = os.getenv("USE_SQLITE", "0") == "1"
 
 
 # Application definition
@@ -105,16 +108,24 @@ WSGI_APPLICATION = 'safeguard_web.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'safeguard',
-        'USER': 'root',
-        'PASSWORD': 'safeguard',
-        'HOST': '',
-        'PORT': '',
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'safeguard'
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'safeguard',
+            'USER': 'root',
+            'PASSWORD': 'safeguard',
+            'HOST': '',
+            'PORT': '',
+        }
+    }
 
 
 # Password validation
