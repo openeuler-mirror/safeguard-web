@@ -196,7 +196,7 @@ class UserSerializerTest(TestCase):
         }
         serializer = UserSerializer(user, data=data, partial=True)
         self.assertTrue(serializer.is_valid())
-        updated_user = serializer.save()
+        updated_user = serializer.update(user, data)
         self.assertEqual(updated_user.nickname, '新昵称')
         self.assertEqual(updated_user.phone, '13812345678')
 
@@ -212,7 +212,7 @@ class UserSerializerTest(TestCase):
         }
         serializer = UserSerializer(user, data=data, partial=True)
         self.assertTrue(serializer.is_valid())
-        updated_user = serializer.save()
+        updated_user = serializer.update(user, data)
         self.assertTrue(check_password('newpass456', updated_user.password))
 
     def test_read_only_fields(self):
