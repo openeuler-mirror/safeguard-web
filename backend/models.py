@@ -48,3 +48,20 @@ class Cluster(models.Model):
     def __str__(self):
         return self.name
 
+
+class EmailVerification(models.Model):
+    """邮箱验证码"""
+    email = models.EmailField(verbose_name="邮箱", db_index=True)
+    code = models.CharField(max_length=6, verbose_name="验证码")
+    expires_at = models.DateTimeField(verbose_name="过期时间")
+    used = models.BooleanField(default=False, verbose_name="是否已使用")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "email_verification"
+        verbose_name = "邮箱验证"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"{self.email} - {self.code}"
+
