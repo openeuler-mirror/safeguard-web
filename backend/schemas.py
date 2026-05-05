@@ -33,7 +33,7 @@ class UserUpdateRequest(BaseModel):
     """更新用户请求 (PUT me)"""
     nickname: Optional[str] = Field(None, max_length=50, description="昵称")
     phone: Optional[str] = Field(None, max_length=20, description="手机号")
-    email: Optional[EmailStr] = Field(None, description="邮箱")
+    email: Optional[str] = Field(None, description="邮箱")
 
 
 class ChangePasswordRequest(BaseModel):
