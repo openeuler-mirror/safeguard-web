@@ -3,7 +3,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.hashers import make_password, check_password
-from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from pydantic import ValidationError
@@ -21,6 +20,8 @@ from backend.schemas import (
     ResetPasswordRequest,
     SetRoleRequest,
     MessageResponse,
+    LoginRequest,
+    TokenResponse,
 )
 
 
@@ -131,31 +132,23 @@ class LoginView(APIView):
     authentication_classes = []
 
     @extend_schema(
-        request={
-            "type": "object",
-            "properties": {
-                "username": {"type": "string", "description": "用户名"},
-                "password": {"type": "string", "description": "密码"}
-            },
-            "required": ["username", "password"]
-        },
-        responses={200: {"type": "object", "properties": {"access": {"type": "string"}, "refresh": {"type": "string"}}}, 401: {"type": "object"}},
+        request=LoginRequest,
+        responses={200: TokenResponse, 400: MessageResponse, 401: MessageResponse},
         description="用户登录，返回JWT token"
     )
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-
-        if not username or not password:
-            return Response({"error": "用户名和密码不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            data = LoginRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
 
         # 手动查找用户并验证（不使用django默认authenticate）
         try:
-            user = Users.objects.get(user=username)
+            user = Users.objects.get(user=data.username)
         except Users.DoesNotExist:
             return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if not check_password(password, user.password):
+        if not check_password(data.password, user.password):
             return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.is_active:
@@ -164,10 +157,10 @@ class LoginView(APIView):
         # 生成JWT token
         refresh = RefreshToken.for_user(user)
 
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        })
+        return Response(TokenResponse(
+            access=str(refresh.access_token),
+            refresh=str(refresh)
+        ).model_dump())
 
 
 class RegisterView(APIView):
