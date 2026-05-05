@@ -30,6 +30,8 @@ from backend.schemas import (
     SendVerificationCodeRequest,
     VerifyCodeRequest,
     RegisterWithCodeRequest,
+    ForgotPasswordRequest,
+    ResetPasswordWithCodeRequest,
 )
 
 
@@ -298,3 +300,103 @@ class VerifyCodeView(APIView):
         verification.save()
 
         return Response({"message": "验证成功"})
+
+
+class ForgotPasswordView(APIView):
+    """忘记密码 - 发送验证码"""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=ForgotPasswordRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="忘记密码，发送验证码到邮箱"
+    )
+    def post(self, request):
+        try:
+            data = ForgotPasswordRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
+
+        email = data.email
+
+        # 检查该邮箱是否有注册用户
+        user = Users.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "该邮箱未注册"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 生成6位验证码
+        code = ''.join(random.choices(string.digits, k=6))
+
+        from django.conf import settings
+        ttl_minutes = getattr(settings, 'EMAIL_VERIFICATION_CODE_TTL', 10)
+        expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
+
+        # 保存验证码记录，关联到用户
+        EmailVerification.objects.create(
+            email=email,
+            user=user,
+            code=code,
+            expires_at=expires_at
+        )
+
+        # 发送邮件
+        try:
+            send_mail(
+                subject='Safeguard 密码重置验证码',
+                message=f'您的验证码是：{code}，{ttl_minutes}分钟内有效。',
+                from_email=getattr(settings, 'EMAIL_FROM', None),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return Response({"error": f"邮件发送失败: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"message": "验证码已发送"})
+
+
+class ResetPasswordView(APIView):
+    """通过验证码重置密码"""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=ResetPasswordWithCodeRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="通过验证码重置密码"
+    )
+    def post(self, request):
+        try:
+            data = ResetPasswordWithCodeRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
+
+        email = data.email
+        code = data.code
+        new_password = data.new_password
+
+        # 查找最新未使用的验证码
+        verification = EmailVerification.objects.filter(
+            email=email,
+            code=code,
+            used=False,
+            expires_at__gt=timezone.now()
+        ).order_by('-created_at').first()
+
+        if not verification:
+            return Response({"error": "验证码无效或已过期"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取关联用户
+        user = verification.user
+        if not user:
+            return Response({"error": "用户不存在"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 重置密码
+        user.set_password(new_password)
+        user.save()
+
+        # 标记验证码已使用
+        verification.used = True
+        verification.save()
+
+        return Response({"message": "密码重置成功"})
