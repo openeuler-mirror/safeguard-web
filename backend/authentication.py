@@ -6,45 +6,41 @@ from rest_framework import authentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import Token
+from safeguard_web.settings import IS_LOCAL, REDIS_HOST, REDIS_DB, REDIS_PASSWORD, REDIS_PORT
 
 
-def get_redis_client():
-    """获取Redis客户端，测试模式下使用Mock"""
-    use_mock = getattr(settings, 'USE_MOCK_REDIS', False)
+if IS_LOCAL:
+    class MockRedis:
+        _data = {}
 
-    if use_mock:
-        # 使用内存Mock替代Redis
-        class MockRedis:
-            _data = {}
+        def get(self, key):
+            return self._data.get(key)
 
-            def get(self, key):
-                return self._data.get(key)
+        def set(self, key, value, ex=None):
+            self._data[key] = value
+            return True
 
-            def set(self, key, value, ex=None):
-                self._data[key] = value
-                return True
+        def delete(self, key):
+            if key in self._data:
+                del self._data[key]
+            return True
 
-            def delete(self, key):
-                if key in self._data:
-                    del self._data[key]
-                return True
+        def exists(self, key):
+            return key in self._data
 
-            def exists(self, key):
-                return key in self._data
-
-            def expire(self, key, timeout):
-                return True
-
-        return MockRedis()
-    else:
-        import redis
-        return redis.Redis(
-            host=getattr(settings, 'REDIS_HOST', 'localhost'),
-            port=getattr(settings, 'REDIS_PORT', 6379),
-            db=getattr(settings, 'REDIS_DB', 0),
-            password=getattr(settings, 'REDIS_PASSWORD', '') or None,
-            decode_responses=True,
-        )
+        def expire(self, key, timeout):
+            return True
+        
+    redis_client = MockRedis()
+else:
+    import redis
+    redis_client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD,
+        decode_responses=True,
+    )
 
 
 class RedisJWTAuthentication(JWTAuthentication):
@@ -58,11 +54,10 @@ class RedisJWTAuthentication(JWTAuthentication):
         if not user_id:
             raise AuthenticationFailed('Token无效，缺少user_id')
 
-        r = get_redis_client()
         user_key = f"user:{user_id}"
 
         # 从Redis获取用户数据
-        user_data = r.get(user_key)
+        user_data = redis_client.get(user_key)
 
         if user_data:
             import json
@@ -105,7 +100,6 @@ class RedisUser:
         self.enable = user_info.get('enable', 1)
         self.password = user_info.get('password', '')
         self._is_active = self.enable == 1
-        self._redis_client = redis_client
 
     @property
     def is_active(self) -> bool:
@@ -126,8 +120,6 @@ class RedisUser:
 
     def save(self):
         """持久化用户信息到Redis"""
-        if self._redis_client is None:
-            self._redis_client = get_redis_client()
         user_key = f"user:{self.id}"
         import json
         user_info = {
@@ -138,4 +130,4 @@ class RedisUser:
             'enable': self.enable,
             'password': self.password,
         }
-        self._redis_client.set(user_key, json.dumps(user_info))
+        redis_client.set(user_key, json.dumps(user_info))

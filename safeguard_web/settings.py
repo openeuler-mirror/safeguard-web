@@ -29,7 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-USE_SQLITE = os.getenv("USE_SQLITE", "0") == "1"
+IS_LOCAL = os.getenv("IS_LOCAL", "0") == "1"
 
 
 # Application definition
@@ -116,7 +116,7 @@ WSGI_APPLICATION = 'safeguard_web.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if USE_SQLITE:
+if IS_LOCAL:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

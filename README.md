@@ -24,14 +24,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 python manager.py runserver
 
-# 本地使用sqlite启动
+# 本地启动（使用sqlite+MockRedis）
 # 1. db迁移
-USE_SQLITE=1 python manager.py migrate
+IS_LOCAL=1 python manager.py migrate
 # 2. 服务启动
-USE_SQLITE=1 python manager.py runserver
+IS_LOCAL=1 python manager.py runserver
 
-# 单测（本地SQLIE）
-USE_SQLITE=1 python manage.py test backend.tests --verbosity=2
+# 单测（本地）
+IS_LOCAL=1 python manage.py test backend.tests --verbosity=2
 ```
 
 #### 参与贡献
