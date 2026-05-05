@@ -1,8 +1,11 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.views import APIView
 from pydantic import ValidationError
 
 #  drf-spectacular 自动生成文档，无需手动写注解！
@@ -120,3 +123,43 @@ class UsersViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['put'], url_path='role')
     def set_role(self, request, pk=None):
         return Response({"error": "功能暂未实现"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class LoginView(APIView):
+    """用户登录接口"""
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request={
+            "type": "object",
+            "properties": {
+                "username": {"type": "string", "description": "用户名"},
+                "password": {"type": "string", "description": "密码"}
+            },
+            "required": ["username", "password"]
+        },
+        responses={200: {"type": "object", "properties": {"access": {"type": "string"}, "refresh": {"type": "string"}}}, 401: {"type": "object"}},
+        description="用户登录，返回JWT token"
+    )
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if not username or not password:
+            return Response({"error": "用户名和密码不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({"error": "用户已被禁用"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # 生成JWT token
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
