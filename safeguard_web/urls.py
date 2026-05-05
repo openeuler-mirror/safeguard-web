@@ -4,7 +4,7 @@ from rest_framework import routers, permissions
 from backend import views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from backend.views import UsersViewSet, LoginView
+from backend.views import UsersViewSet, LoginView, RegisterView
 
 router = routers.DefaultRouter()
 router.register(r'api/users', UsersViewSet, basename="users")
@@ -12,6 +12,7 @@ router.register(r'api/users', UsersViewSet, basename="users")
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/register/', RegisterView.as_view(), name='register'),
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls',namespace='rest_framework')),
 

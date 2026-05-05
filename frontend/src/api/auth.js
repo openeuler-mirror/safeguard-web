@@ -72,7 +72,7 @@ export function getUsers() {
 
 // 创建用户
 export function createUser(data) {
-  return api.post('/users/', data)
+  return api.put('/auth/register/', data)
 }
 
 // 更新用户

@@ -25,6 +25,16 @@
           />
         </div>
         <div class="form-group">
+          <label for="confirmPassword">确认密码</label>
+          <input
+            id="confirmPassword"
+            v-model="confirmPassword"
+            type="password"
+            placeholder="请再次输入密码"
+            required
+          />
+        </div>
+        <div class="form-group">
           <label for="nickname">昵称</label>
           <input
             id="nickname"
@@ -78,6 +88,7 @@ export default {
         phone: '',
         email: ''
       },
+      confirmPassword: '',
       loading: false,
       error: '',
       success: false
@@ -85,6 +96,10 @@ export default {
   },
   methods: {
     async handleRegister() {
+      if (this.form.password !== this.confirmPassword) {
+        this.error = '两次输入的密码不一致'
+        return
+      }
       this.loading = true
       this.error = ''
       this.success = false

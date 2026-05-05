@@ -47,7 +47,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         description="获取当前登录用户信息"
     )
     @extend_schema(
-        methods=['post'],
+        methods=['put'],
         request=UserUpdateRequest,
         responses={200: UserResponse, 400: MessageResponse},
         description="更新当前登录用户信息"
@@ -163,3 +163,46 @@ class LoginView(APIView):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         })
+
+
+class RegisterView(APIView):
+    """用户注册接口"""
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request={
+            "type": "object",
+            "properties": {
+                "user": {"type": "string", "description": "用户名"},
+                "password": {"type": "string", "description": "密码"},
+                "nickname": {"type": "string", "description": "昵称（可选）"},
+                "phone": {"type": "string", "description": "手机号（可选）"},
+                "email": {"type": "string", "description": "邮箱（可选）"}
+            },
+            "required": ["user", "password"]
+        },
+        responses={201: UserResponse, 400: MessageResponse},
+        description="用户注册"
+    )
+    def put(self, request):
+        user = request.data.get('user')
+        password = request.data.get('password')
+
+        if not user or not password:
+            return Response({"error": "用户名和密码不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(password) < 6:
+            return Response({"error": "密码长度至少6位"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Users.objects.filter(user=user).exists():
+            return Response({"error": "用户名已存在"}, status=status.HTTP_400_BAD_REQUEST)
+
+        nickname = request.data.get('nickname', '系统用户')
+        phone = request.data.get('phone', '')
+        email = request.data.get('email', '')
+
+        new_user = Users(user=user, nickname=nickname, phone=phone, email=email)
+        new_user.set_password(password)
+        new_user.save()
+
+        return Response(UserSerializer(new_user).data, status=status.HTTP_201_CREATED)
