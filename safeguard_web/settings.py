@@ -178,11 +178,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Redis配置
-USE_MOCK_REDIS = os.getenv("USE_MOCK_REDIS", "0") == "1"
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
+# Redis用户缓存过期时间（秒），默认24小时
+REDIS_USER_TTL = int(os.getenv("REDIS_USER_TTL", "86400"))
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),
