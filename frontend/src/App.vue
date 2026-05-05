@@ -1,62 +1,53 @@
 <template>
-  <div class="app-container">
-    <header class="app-header" v-if="isAuthenticated">
+  <div id="app">
+    <header class="app-header" v-if="$store.state.auth.isAuthenticated">
       <div class="header-left">
         <h1>Safeguard</h1>
       </div>
       <div class="header-right">
-        <div class="user-info" @click="toggleDropdown">
-          <span class="username">{{ user?.nickname || user?.user }}</span>
-          <span class="arrow" :class="{ open: showDropdown }">▼</span>
+        <div class="user-info" @click="toggleMenu">
+          <span>{{ $store.state.auth.user?.nickname || $store.state.auth.user?.user }}</span>
+          <span class="arrow">▾</span>
         </div>
-        <div class="dropdown-menu" v-if="showDropdown" @click.stop>
-          <div class="dropdown-item" @click="goToProfile">个人信息</div>
-          <div class="dropdown-item logout" @click="handleLogout">注销</div>
+        <div class="dropdown" v-if="menuVisible">
+          <div class="dropdown-item" @click="toProfile">个人信息</div>
+          <div class="dropdown-item" @click="logout">注销</div>
         </div>
       </div>
     </header>
-    <main class="app-main">
-      <router-view />
-    </main>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex'
-
 export default {
-  name: 'App',
   data() {
     return {
-      showDropdown: false
+      menuVisible: false
     }
   },
-  computed: {
-    ...mapState('auth', ['user', 'isAuthenticated'])
-  },
   mounted() {
-    this.fetchUser()
-    document.addEventListener('click', this.closeDropdown)
+    this.$store.dispatch('auth/fetchUser')
+    document.addEventListener('click', this.closeMenu)
   },
   beforeUnmount() {
-    document.removeEventListener('click', this.closeDropdown)
+    document.removeEventListener('click', this.closeMenu)
   },
   methods: {
-    ...mapActions('auth', ['fetchUser', 'logout']),
-    toggleDropdown(e) {
+    toggleMenu(e) {
       e.stopPropagation()
-      this.showDropdown = !this.showDropdown
+      this.menuVisible = !this.menuVisible
     },
-    closeDropdown() {
-      this.showDropdown = false
+    closeMenu() {
+      this.menuVisible = false
     },
-    goToProfile() {
-      this.showDropdown = false
+    toProfile() {
+      this.menuVisible = false
       this.$router.push('/profile')
     },
-    handleLogout() {
-      this.showDropdown = false
-      this.logout()
+    logout() {
+      this.menuVisible = false
+      this.$store.dispatch('auth/logout')
       this.$router.push('/login')
     }
   }
@@ -73,29 +64,27 @@ export default {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
+
+#app {
+  min-height: 100vh;
+}
 </style>
 
 <style scoped>
-.app-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
 .app-header {
   height: 60px;
-  background-color: #409eff;
-  color: white;
+  background: #409eff;
+  color: #fff;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 999;
 }
 
 .header-left h1 {
   font-size: 20px;
-  font-weight: 600;
 }
 
 .header-right {
@@ -105,66 +94,43 @@ body {
 .user-info {
   display: flex;
   align-items: center;
-  cursor: pointer;
+  gap: 6px;
   padding: 8px 12px;
+  cursor: pointer;
   border-radius: 4px;
-  transition: background-color 0.2s;
 }
 
 .user-info:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.username {
-  margin-right: 8px;
+  background: rgba(255,255,255,0.2);
 }
 
 .arrow {
   font-size: 10px;
-  transition: transform 0.2s;
 }
 
-.arrow.open {
-  transform: rotate(180deg);
-}
-
-.dropdown-menu {
+.dropdown {
   position: absolute;
-  top: 100%;
   right: 0;
-  margin-top: 8px;
-  background: white;
+  top: 48px;
+  background: #fff;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   min-width: 120px;
-  z-index: 1000;
+  overflow: hidden;
 }
 
 .dropdown-item {
   padding: 12px 16px;
   color: #333;
   cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.dropdown-item:first-child {
-  border-radius: 4px 4px 0 0;
-}
-
-.dropdown-item:last-child {
-  border-radius: 0 0 4px 4px;
 }
 
 .dropdown-item:hover {
-  background-color: #f5f5f5;
+  background: #f5f5f5;
 }
 
-.dropdown-item.logout {
+.dropdown-item:last-child {
   color: #f56c6c;
   border-top: 1px solid #eee;
-}
-
-.app-main {
-  flex: 1;
 }
 </style>
