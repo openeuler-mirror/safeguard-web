@@ -128,6 +128,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 class LoginView(APIView):
     """用户登录接口"""
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     @extend_schema(
         request={
@@ -148,9 +149,13 @@ class LoginView(APIView):
         if not username or not password:
             return Response({"error": "用户名和密码不能为空"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = authenticate(request, username=username, password=password)
+        # 手动查找用户并验证（不使用django默认authenticate）
+        try:
+            user = Users.objects.get(user=username)
+        except Users.DoesNotExist:
+            return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        if user is None:
+        if not check_password(password, user.password):
             return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.is_active:
@@ -168,6 +173,7 @@ class LoginView(APIView):
 class RegisterView(APIView):
     """用户注册接口"""
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     @extend_schema(
         request={
