@@ -57,7 +57,7 @@ export default {
       this.error = ''
       const result = await this.login(this.form)
       if (result.success) {
-        this.$router.push('/profile')
+        this.$router.push('/dashboard')
       } else {
         this.error = result.error
       }
