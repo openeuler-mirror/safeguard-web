@@ -13,7 +13,7 @@ class Hosts(models.Model):
 
     def __str__(self):
         return self.ipaddress
-    
+
 
 class Users(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, verbose_name="用户UUID")
@@ -36,7 +36,7 @@ class Users(models.Model):
 
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
-    
+
     @property
     def is_active(self):
         return self.enable == 1
