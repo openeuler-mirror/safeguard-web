@@ -6,31 +6,74 @@ from rest_framework import authentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import Token
-from safeguard_web.settings import IS_LOCAL, REDIS_HOST, REDIS_DB, REDIS_PASSWORD, REDIS_PORT
+from safeguard_web.settings import IS_LOCAL, REDIS_HOST, REDIS_DB, REDIS_PASSWORD, REDIS_PORT, REDIS_USER_TTL
 
 
 if IS_LOCAL:
+    import time
+
     class MockRedis:
-        _data = {}
+        """支持过期时间的内存Redis Mock"""
+
+        class _KeyEntry:
+            """统一保存键值和过期时间"""
+            def __init__(self, value, expire_time=None):
+                self.value = value
+                self.expire_time = expire_time  # None表示永久
+
+            def is_expired(self):
+                return self.expire_time is not None and time.time() > self.expire_time
+
+        _store = {}
 
         def get(self, key):
-            return self._data.get(key)
+            entry = self._store.get(key)
+            if entry is None:
+                return None
+            if entry.is_expired():
+                del self._store[key]
+                return None
+            return entry.value
 
         def set(self, key, value, ex=None):
-            self._data[key] = value
+            expire_time = time.time() + ex if ex is not None else None
+            self._store[key] = self._KeyEntry(value, expire_time)
             return True
 
         def delete(self, key):
-            if key in self._data:
-                del self._data[key]
+            if key in self._store:
+                del self._store[key]
             return True
 
         def exists(self, key):
-            return key in self._data
+            entry = self._store.get(key)
+            if entry is None:
+                return False
+            if entry.is_expired():
+                del self._store[key]
+                return False
+            return True
 
         def expire(self, key, timeout):
+            entry = self._store.get(key)
+            if entry is None:
+                return False
+            entry.expire_time = time.time() + timeout
             return True
-        
+
+        def ttl(self, key):
+            """返回键的剩余生存时间（秒），-1表示永久，-2表示不存在或已过期"""
+            entry = self._store.get(key)
+            if entry is None:
+                return -2
+            if entry.expire_time is None:
+                return -1
+            remaining = entry.expire_time - time.time()
+            if remaining <= 0:
+                del self._store[key]
+                return -2
+            return int(remaining)
+
     redis_client = MockRedis()
 else:
     import redis
@@ -118,8 +161,10 @@ class RedisUser:
         from django.contrib.auth.hashers import make_password
         self.password = make_password(raw_password)
 
-    def save(self):
-        """持久化用户信息到Redis"""
+    def save(self, ex=None):
+        """持久化用户信息到Redis（默认使用配置的过期时间）"""
+        if ex is None:
+            ex = REDIS_USER_TTL
         user_key = f"user:{self.id}"
         import json
         user_info = {
@@ -130,4 +175,4 @@ class RedisUser:
             'enable': self.enable,
             'password': self.password,
         }
-        redis_client.set(user_key, json.dumps(user_info))
+        redis_client.set(user_key, json.dumps(user_info), ex=ex)
