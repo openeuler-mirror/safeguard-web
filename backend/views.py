@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.hashers import make_password, check_password
 from pydantic import ValidationError
 
@@ -28,6 +29,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     queryset = Users.objects.all().order_by('-created_at')
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
 
     def get_serializer_class(self):
         if self.action == 'create':
