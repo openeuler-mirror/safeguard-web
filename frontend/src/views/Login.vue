@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import { mapActions, mapState } from 'vuex'
+import { mapActions } from 'vuex'
 
 export default {
   name: 'Login',
@@ -45,17 +45,18 @@ export default {
       form: {
         username: '',
         password: ''
-      }
+      },
+      error: '',
+      loading: false
     }
-  },
-  computed: {
-    ...mapState('auth', ['loading'])
   },
   methods: {
     ...mapActions('auth', ['login']),
     async handleLogin() {
+      this.loading = true
       this.error = ''
       const result = await this.login(this.form)
+      this.loading = false
       if (result.success) {
         this.$router.push('/dashboard')
       } else {

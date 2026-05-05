@@ -28,79 +28,26 @@
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <h3>修改密码</h3>
-      <form @submit.prevent="handleChangePassword">
-        <div class="form-group">
-          <label for="oldPassword">旧密码</label>
-          <input
-            id="oldPassword"
-            v-model="passwordForm.old_password"
-            type="password"
-            placeholder="请输入旧密码"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label for="newPassword">新密码</label>
-          <input
-            id="newPassword"
-            v-model="passwordForm.new_password"
-            type="password"
-            placeholder="请输入新密码（至少6位）"
-            required
-            minlength="6"
-          />
-        </div>
-        <div v-if="error" class="error-message">{{ error }}</div>
-        <div v-if="success" class="success-message">{{ success }}</div>
-        <button type="submit" :disabled="loading">
-          {{ loading ? '修改中...' : '修改密码' }}
-        </button>
-      </form>
-
-      <button class="logout-btn" @click="handleLogout">退出登录</button>
+      <div class="actions">
+        <button @click="goToChangePassword">修改密码</button>
+        <button class="logout-btn" @click="handleLogout">退出登录</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex'
-import { changePassword } from '@/api/auth'
 
 export default {
   name: 'Profile',
-  data() {
-    return {
-      passwordForm: {
-        old_password: '',
-        new_password: ''
-      },
-      loading: false,
-      error: '',
-      success: ''
-    }
-  },
   computed: {
     ...mapState('auth', ['user'])
   },
   methods: {
     ...mapActions('auth', ['logout']),
-    async handleChangePassword() {
-      this.loading = true
-      this.error = ''
-      this.success = ''
-      try {
-        await changePassword(this.passwordForm.old_password, this.passwordForm.new_password)
-        this.success = '密码修改成功'
-        this.passwordForm.old_password = ''
-        this.passwordForm.new_password = ''
-      } catch (e) {
-        this.error = e.response?.data?.error || '修改失败'
-      } finally {
-        this.loading = false
-      }
+    goToChangePassword() {
+      this.$router.push('/change-password')
     },
     handleLogout() {
       this.logout()
@@ -133,11 +80,6 @@ h2 {
   color: #333;
 }
 
-h3 {
-  margin: 16px 0;
-  color: #333;
-}
-
 .user-info {
   background: #f9f9f9;
   padding: 16px;
@@ -166,49 +108,14 @@ h3 {
   color: #f56c6c;
 }
 
-.divider {
-  height: 1px;
-  background: #eee;
-  margin: 20px 0;
+.actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
 }
 
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  color: #666;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #409eff;
-}
-
-.error-message {
-  color: #f56c6c;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-
-.success-message {
-  color: #67c23a;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-
-button {
-  width: 100%;
+.actions button {
+  flex: 1;
   padding: 12px;
   background-color: #409eff;
   color: white;
@@ -218,21 +125,15 @@ button {
   font-size: 16px;
 }
 
-button:hover {
+.actions button:hover {
   background-color: #66b1ff;
 }
 
-button:disabled {
-  background-color: #a0cfff;
-  cursor: not-allowed;
-}
-
 .logout-btn {
-  margin-top: 16px;
-  background-color: #f56c6c;
+  background-color: #f56c6c !important;
 }
 
 .logout-btn:hover {
-  background-color: #f78989;
+  background-color: #f78989 !important;
 }
 </style>
