@@ -15,6 +15,12 @@ const routes = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('@/views/Dashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
@@ -22,7 +28,7 @@ const routes = [
   },
   {
     path: '/',
-    redirect: '/profile'
+    redirect: '/dashboard'
   }
 ]
 
@@ -50,9 +56,9 @@ router.beforeEach(async (to, from, next) => {
     } else {
       next('/login')
     }
-  } else if (!requiresAuth && isAuthenticated && to.path === '/login') {
+  } else if (!requiresAuth && isAuthenticated && (to.path === '/login' || to.path === '/register')) {
     // 已登录且访问公开页面，跳转
-    next('/profile')
+    next('/dashboard')
   } else {
     next()
   }
