@@ -55,3 +55,15 @@ class SetRoleRequest(BaseModel):
 class MessageResponse(BaseModel):
     """通用消息响应"""
     message: str
+
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str = Field(..., min_length=1, max_length=50, description="用户名")
+    password: str = Field(..., description="密码")
+
+
+class TokenResponse(BaseModel):
+    """登录响应"""
+    access: str = Field(..., description="JWT访问令牌")
+    refresh: str = Field(..., description="JWT刷新令牌")
