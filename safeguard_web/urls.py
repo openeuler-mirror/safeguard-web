@@ -4,7 +4,7 @@ from rest_framework import routers, permissions
 from backend import views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from backend.views import UsersViewSet, LoginView, RegisterView, SendVerificationCodeView, VerifyCodeView, ForgotPasswordView, ResetPasswordView
+from backend.views import UsersViewSet, LoginView, RegisterView, SendVerificationCodeView, VerifyCodeView, ForgotPasswordView, ResetPasswordView, LocalVerifyView
 
 router = routers.DefaultRouter()
 router.register(r'api/users', UsersViewSet, basename="users")
@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/auth/verify-code/', VerifyCodeView.as_view(), name='verify-code'),
     path('api/auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('api/auth/reset-password/', ResetPasswordView.as_view(), name='reset-password'),
+    path('api/auth/local-verify/<str:email>/<str:code>/', LocalVerifyView.as_view(), name='local-verify'),
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls',namespace='rest_framework')),
 

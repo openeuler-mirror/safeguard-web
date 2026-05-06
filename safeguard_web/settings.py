@@ -31,6 +31,9 @@ ALLOWED_HOSTS = ["*"]
 
 IS_LOCAL = os.getenv("IS_LOCAL", "0") == "1"
 
+# 后端端口（用于本地验证链接生成）
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
+
 
 # Application definition
 
@@ -198,6 +201,12 @@ SIMPLE_JWT = {
 }
 
 # 邮件配置
+if IS_LOCAL:
+    # 本地开发使用控制台邮件后端，邮件内容打印到终端
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.example.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
