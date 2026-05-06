@@ -10,6 +10,7 @@ import random
 import string
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
+from django.http import HttpResponse
 from pydantic import ValidationError
 
 #  drf-spectacular 自动生成文档，无需手动写注解！
@@ -250,6 +251,21 @@ class SendVerificationCodeView(APIView):
             expires_at=expires_at
         )
 
+        # 检查是否为本地开发模式
+        from django.conf import settings
+        is_local = getattr(settings, 'IS_LOCAL', False)
+
+        if is_local:
+            # 本地模式：生成本地验证链接
+            from django.conf import settings as django_settings
+            backend_port = getattr(django_settings, 'BACKEND_PORT', 8000)
+            local_url = f"http://localhost:{backend_port}/api/auth/local-verify/{email}/{code}/"
+            return Response({
+                "message": "本地验证模式",
+                "local_verify_url": local_url,
+                "code": code
+            })
+
         # 发送邮件
         try:
             send_mail(
@@ -263,6 +279,110 @@ class SendVerificationCodeView(APIView):
             return Response({"error": f"邮件发送失败: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({"message": "验证码已发送"})
+
+
+class LocalVerifyView(APIView):
+    """本地验证页面 - IS_LOCAL模式下显示验证码"""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, email, code):
+        # 查找对应的验证码记录
+        verification = EmailVerification.objects.filter(
+            email=email,
+            code=code,
+            used=False,
+            expires_at__gt=timezone.now()
+        ).order_by('-created_at').first()
+
+        if not verification:
+            html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>验证码已失效</title>
+                <style>
+                    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+                    .container { text-align: center; padding: 40px; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+                    h2 { color: #f56c6c; }
+                    p { color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>验证码已失效或不存在</h2>
+                    <p>请返回重新发送验证码</p>
+                </div>
+            </body>
+            </html>
+            """
+            return HttpResponse(html)
+
+        # 渲染验证页面
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>邮箱验证 - Safeguard</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }}
+                .container {{ text-align: center; padding: 40px; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 400px; }}
+                h2 {{ color: #333; margin-bottom: 20px; }}
+                .code-box {{ background: #e8f0fe; padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                .code {{ font-size: 32px; font-weight: bold; color: #409eff; letter-spacing: 8px; }}
+                .info {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
+                .btn {{ background: #409eff; color: white; border: none; padding: 12px 40px; border-radius: 4px; cursor: pointer; font-size: 16px; }}
+                .btn:hover {{ background: #66b1ff; }}
+                .btn:disabled {{ background: #a0cfff; cursor: not-allowed; }}
+                .message {{ margin-top: 20px; padding: 10px; border-radius: 4px; }}
+                .success {{ background: #f0f9eb; color: #67c23a; }}
+                .error {{ background: #fef0f0; color: #f56c6c; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>邮箱验证</h2>
+                <p class="info">验证码已发送至: {email}</p>
+                <div class="code-box">
+                    <div class="code">{code}</div>
+                </div>
+                <button class="btn" id="verifyBtn" onclick="verifyCode()">验证邮箱</button>
+                <div id="message"></div>
+            </div>
+            <script>
+                async function verifyCode() {{
+                    const btn = document.getElementById('verifyBtn');
+                    const msg = document.getElementById('message');
+                    btn.disabled = true;
+                    btn.textContent = '验证中...';
+                    try {{
+                        const resp = await fetch('/api/auth/verify-code/', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{ email: '{email}', code: '{code}' }})
+                        }});
+                        const data = await resp.json();
+                        if (resp.ok) {{
+                            msg.innerHTML = '<div class="message success">验证成功！请返回登录页面进行登录。</div>';
+                            btn.style.display = 'none';
+                        }} else {{
+                            msg.innerHTML = '<div class="message error">' + (data.error || '验证失败') + '</div>';
+                            btn.disabled = false;
+                            btn.textContent = '重新验证';
+                        }}
+                    }} catch (e) {{
+                        msg.innerHTML = '<div class="message error">网络错误，请重试</div>';
+                        btn.disabled = false;
+                        btn.textContent = '重新验证';
+                    }}
+                }}
+            </script>
+        </body>
+        </html>
+        """
+        return HttpResponse(html)
 
 
 class VerifyCodeView(APIView):

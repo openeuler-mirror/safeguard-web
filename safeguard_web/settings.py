@@ -31,6 +31,9 @@ ALLOWED_HOSTS = ["*"]
 
 IS_LOCAL = os.getenv("IS_LOCAL", "0") == "1"
 
+# 后端端口（用于本地验证链接生成）
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
+
 
 # Application definition
 
