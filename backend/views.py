@@ -247,11 +247,27 @@ class SendVerificationCodeView(APIView):
 
         if recent_code:
             # 计算距离过期还有多少秒
-            remaining = (recent_code.expires_at - timezone.now()).total_seconds()
+            remaining = int((recent_code.expires_at - timezone.now()).total_seconds())
             if remaining > 0:
                 return Response(
-                    {"error": f"请稍后再发送验证码"},
+                    {"error": "请稍后再发送验证码", "retry_after": remaining},
                     status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+
+        # 根据用途检查邮箱状态
+        if data.purpose == 'register':
+            # 注册场景：检查邮箱是否已被使用
+            if Users.objects.filter(email=email).exists():
+                return Response(
+                    {"error": "该邮箱已被注册"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        elif data.purpose == 'forgot':
+            # 忘记密码场景：检查邮箱是否已注册
+            if not Users.objects.filter(email=email).exists():
+                return Response(
+                    {"error": "该邮箱未注册"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
         # 生成6位验证码
