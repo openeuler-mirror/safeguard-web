@@ -19,12 +19,15 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 响应拦截器：处理token过期
+// 响应拦截器：处理token过期和权限拒绝
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const status = error.response?.status
+
+    // 处理 401 Token过期
+    if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
@@ -45,6 +48,13 @@ api.interceptors.response.use(
         }
       }
     }
+
+    // 处理 403 权限拒绝，跳转首页
+    if (status === 403) {
+      window.location.href = '/dashboard'
+      return Promise.reject(error)
+    }
+
     return Promise.reject(error)
   }
 )

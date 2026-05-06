@@ -20,6 +20,7 @@ from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICA
 from backend.models import Users, EmailVerification, Authority, UserAuthority
 from backend.serializers import UserSerializer, UserCreateSerializer
 from backend.authority_serializers import MenuSerializer, UserAuthoritySerializer
+from backend.permissions import IsSuperAdmin
 # 你的 Pydantic Schema（全部保留）
 from backend.schemas import (
     UserResponse,
@@ -44,7 +45,14 @@ class UsersViewSet(viewsets.ModelViewSet):
     """
     queryset = Users.objects.all().order_by('-created_at')
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """根据操作类型返回不同的权限"""
+        if self.action in ['list', 'create', 'destroy', 'authorities', 'set_authorities', 'add_authority', 'remove_authority', 'set_password']:
+            # 管理员操作，需要超级管理员权限
+            return [IsSuperAdmin()]
+        # 个人操作（me, menus, change_my_password）只需登录
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'create':

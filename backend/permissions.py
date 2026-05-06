@@ -6,6 +6,42 @@
 from rest_framework import permissions
 
 
+class IsSuperAdmin(permissions.BasePermission):
+    """
+    超级管理员权限校验
+
+    检查用户是否拥有超级管理员角色（authority_id=888）
+    """
+
+    def has_permission(self, request, view):
+        if not request.user or not getattr(request.user, 'is_authenticated', False):
+            return False
+        # 检查用户是否有超级管理员角色
+        from backend.models import UserAuthority
+        return UserAuthority.objects.filter(
+            user_id=request.user.id,
+            authority__authority_id=888
+        ).exists()
+
+
+class IsAdmin(permissions.BasePermission):
+    """
+    管理员权限校验
+
+    检查用户是否拥有管理员角色（authority_id=888 或 889）
+    """
+
+    def has_permission(self, request, view):
+        if not request.user or not getattr(request.user, 'is_authenticated', False):
+            return False
+        # 检查用户是否有管理员角色
+        from backend.models import UserAuthority
+        return UserAuthority.objects.filter(
+            user_id=request.user.id,
+            authority__authority_id__in=[888, 889]
+        ).exists()
+
+
 class DataScopePermission(permissions.BasePermission):
     """
     数据级权限基类
