@@ -237,22 +237,6 @@ class SendVerificationCodeView(APIView):
 
         email = data.email
 
-        # 检查是否有最近发送且未使用的验证码
-        recent_code = EmailVerification.objects.filter(
-            email=email,
-            used=False,
-            expires_at__gt=timezone.now()
-        ).order_by('-created_at').first()
-
-        if recent_code:
-            # 计算距离过期还有多少秒
-            remaining = int((recent_code.expires_at - timezone.now()).total_seconds())
-            if remaining > 0:
-                return Response(
-                    {"error": "请稍后再发送验证码", "retry_after": remaining},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
         # 根据用途检查邮箱状态
         if data.purpose == 'register':
             # 注册场景：检查邮箱是否已被使用

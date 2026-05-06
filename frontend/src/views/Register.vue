@@ -138,32 +138,15 @@ export default {
           // 本地模式：打开验证页面
           this.localVerifyUrl = res.data.local_verify_url
           window.open(res.data.local_verify_url, '_blank')
-          this.countdown = 60
-          const timer = setInterval(() => {
-            this.countdown--
-            if (this.countdown <= 0) clearInterval(timer)
-          }, 1000)
-        } else {
-          // 生产模式
-          this.countdown = 60
-          const timer = setInterval(() => {
-            this.countdown--
-            if (this.countdown <= 0) clearInterval(timer)
-          }, 1000)
         }
+        // 启动60秒本地倒计时（刷新页面后重置）
+        this.countdown = 60
+        const timer = setInterval(() => {
+          this.countdown--
+          if (this.countdown <= 0) clearInterval(timer)
+        }, 1000)
       } catch (e) {
-        if (e.response?.status === 429) {
-          // 冷却中，使用后端返回的等待时间
-          const retryAfter = e.response?.data?.retry_after || 60
-          this.error = e.response?.data?.error || '请稍后再发送'
-          this.countdown = retryAfter
-          const timer = setInterval(() => {
-            this.countdown--
-            if (this.countdown <= 0) clearInterval(timer)
-          }, 1000)
-        } else {
-          this.error = e.response?.data?.error || '发送验证码失败'
-        }
+        this.error = e.response?.data?.error || '发送验证码失败'
       } finally {
         this.codeSending = false
       }
