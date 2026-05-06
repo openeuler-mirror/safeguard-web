@@ -142,6 +142,7 @@ cython_debug/
 
 # claude
 CLAUDE.md
+.claude/
 
 # docs
 docs/
