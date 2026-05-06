@@ -16,6 +16,7 @@ from pydantic import ValidationError
 #  drf-spectacular 自动生成文档，无需手动写注解！
 from drf_spectacular.utils import extend_schema
 
+from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL, BACKEND_PORT, EMAIL_FROM
 from backend.models import Users, EmailVerification
 from backend.serializers import UserSerializer, UserCreateSerializer
 # 你的 Pydantic Schema（全部保留）
@@ -237,8 +238,6 @@ class SendVerificationCodeView(APIView):
         email = data.email
 
         # 检查是否有最近发送且未使用的验证码
-        from django.conf import settings
-        cooldown_seconds = getattr(settings, 'EMAIL_CODE_COOLDOWN', 60)  # 默认60秒冷却
         recent_code = EmailVerification.objects.filter(
             email=email,
             used=False,
@@ -274,9 +273,7 @@ class SendVerificationCodeView(APIView):
         code = ''.join(random.choices(string.digits, k=6))
 
         # 验证码过期时间（10分钟）
-        from django.conf import settings
-        ttl_minutes = getattr(settings, 'EMAIL_VERIFICATION_CODE_TTL', 10)
-        expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
+        expires_at = timezone.now() + timedelta(minutes=EMAIL_VERIFICATION_CODE_TTL)
 
         # 保存验证码记录
         EmailVerification.objects.create(
@@ -286,14 +283,9 @@ class SendVerificationCodeView(APIView):
         )
 
         # 检查是否为本地开发模式
-        from django.conf import settings
-        is_local = getattr(settings, 'IS_LOCAL', False)
-
-        if is_local:
+        if IS_LOCAL:
             # 本地模式：生成本地验证链接
-            from django.conf import settings as django_settings
-            backend_port = getattr(django_settings, 'BACKEND_PORT', 8000)
-            local_url = f"http://localhost:{backend_port}/api/auth/local-verify/{email}/{code}/"
+            local_url = f"http://localhost:{BACKEND_PORT}/api/auth/local-verify/{email}/{code}/"
             return Response({
                 "message": "本地验证模式",
                 "local_verify_url": local_url,
@@ -304,8 +296,8 @@ class SendVerificationCodeView(APIView):
         try:
             send_mail(
                 subject='Safeguard 邮箱验证码',
-                message=f'您的验证码是：{code}，{ttl_minutes}分钟内有效。',
-                from_email=getattr(settings, 'EMAIL_FROM', None),
+                message=f'您的验证码是：{code}，{EMAIL_VERIFICATION_CODE_TTL}分钟内有效。',
+                from_email=EMAIL_FROM,
                 recipient_list=[email],
                 fail_silently=False,
             )

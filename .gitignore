@@ -139,3 +139,6 @@ cython_debug/
 
 # sqlite db
 .safeguard_web.db
+
+# claude
+CLAUDE.md
