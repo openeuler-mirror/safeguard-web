@@ -236,6 +236,24 @@ class SendVerificationCodeView(APIView):
 
         email = data.email
 
+        # 检查是否有最近发送且未使用的验证码
+        from django.conf import settings
+        cooldown_seconds = getattr(settings, 'EMAIL_CODE_COOLDOWN', 60)  # 默认60秒冷却
+        recent_code = EmailVerification.objects.filter(
+            email=email,
+            used=False,
+            expires_at__gt=timezone.now()
+        ).order_by('-created_at').first()
+
+        if recent_code:
+            # 计算距离过期还有多少秒
+            remaining = (recent_code.expires_at - timezone.now()).total_seconds()
+            if remaining > 0:
+                return Response(
+                    {"error": f"请稍后再发送验证码"},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+
         # 生成6位验证码
         code = ''.join(random.choices(string.digits, k=6))
 

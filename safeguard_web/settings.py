@@ -216,3 +216,6 @@ EMAIL_FROM = os.getenv("EMAIL_FROM", "noreply@example.com")
 
 # 验证码有效期（分钟）
 EMAIL_VERIFICATION_CODE_TTL = int(os.getenv("EMAIL_VERIFICATION_CODE_TTL", "10"))
+
+# 验证码发送冷却时间（秒），防止频繁发送
+EMAIL_CODE_COOLDOWN = int(os.getenv("EMAIL_CODE_COOLDOWN", "60"))

@@ -152,7 +152,17 @@ export default {
           }, 1000)
         }
       } catch (e) {
-        this.error = e.response?.data?.error || '发送验证码失败'
+        if (e.response?.status === 429) {
+          // 冷却中，也显示倒计时
+          this.error = e.response?.data?.error || '请稍后再发送'
+          this.countdown = 60
+          const timer = setInterval(() => {
+            this.countdown--
+            if (this.countdown <= 0) clearInterval(timer)
+          }, 1000)
+        } else {
+          this.error = e.response?.data?.error || '发送验证码失败'
+        }
       } finally {
         this.codeSending = false
       }
