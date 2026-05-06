@@ -20,6 +20,16 @@ class MenuSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class MenuUpdateSerializer(serializers.ModelSerializer):
+    """菜单更新序列化器（部分字段可更新）"""
+    path = serializers.CharField(required=False)
+    name = serializers.CharField(required=False)
+
+    class Meta:
+        model = Menu
+        fields = ['parent', 'path', 'name', 'component', 'sort', 'meta']
+
+
 class MenuTreeSerializer(serializers.ModelSerializer):
     """菜单树序列化器（嵌套子菜单）"""
     children = serializers.SerializerMethodField()
@@ -53,6 +63,13 @@ class AuthorityCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Authority
         fields = ['authority_id', 'authority_name', 'parent', 'default_router', 'data_authority']
+
+
+class AuthorityUpdateSerializer(serializers.ModelSerializer):
+    """角色更新序列化器"""
+    class Meta:
+        model = Authority
+        fields = ['authority_name', 'parent', 'default_router', 'data_authority']
 
 
 class AuthorityMenuSerializer(serializers.ModelSerializer):

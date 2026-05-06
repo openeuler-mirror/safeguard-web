@@ -6,8 +6,8 @@ from django.db.models import Prefetch
 
 from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton, UserAuthority
 from backend.authority_serializers import (
-    AuthoritySerializer, AuthorityCreateSerializer,
-    MenuSerializer, MenuTreeSerializer, MenuButtonSerializer,
+    AuthoritySerializer, AuthorityCreateSerializer, AuthorityUpdateSerializer,
+    MenuSerializer, MenuUpdateSerializer, MenuTreeSerializer, MenuButtonSerializer,
     UserAuthoritySerializer, SetUserRoleSerializer
 )
 
@@ -21,6 +21,8 @@ class AuthorityViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return AuthorityCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return AuthorityUpdateSerializer
         return AuthoritySerializer
 
     @action(detail=True, methods=['get', 'put'], url_path='menus')
@@ -50,7 +52,8 @@ class AuthorityViewSet(viewsets.ModelViewSet):
 
         if request.method == 'GET':
             # 获取角色关联的按钮
-            buttons = MenuButton.objects.filter(authority_button__authority=authority)
+            button_relations = AuthorityButton.objects.filter(authority=authority).select_related('menu', 'button')
+            buttons = [rel.button for rel in button_relations]
             serializer = MenuButtonSerializer(buttons, many=True)
             return Response(serializer.data)
 
@@ -113,6 +116,11 @@ class MenuViewSet(viewsets.ModelViewSet):
     queryset = Menu.objects.all().order_by('sort')
     serializer_class = MenuSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ('update', 'partial_update'):
+            return MenuUpdateSerializer
+        return MenuSerializer
 
     @action(detail=False, methods=['get'], url_path='tree')
     def tree(self, request):
