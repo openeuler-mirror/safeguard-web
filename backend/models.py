@@ -101,7 +101,8 @@ class Authority(models.Model):
 class Menu(models.Model):
     """动态菜单表"""
     parent = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.CASCADE, verbose_name="父菜单"
+        "self", null=True, blank=True, on_delete=models.CASCADE,
+        verbose_name="父菜单", related_name="children"
     )
     path = models.CharField(max_length=255, verbose_name="路由路径")
     name = models.CharField(max_length=100, verbose_name="路由名称")
