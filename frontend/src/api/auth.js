@@ -96,8 +96,8 @@ export function resetPassword(userId, newPassword) {
 }
 
 // 发送邮箱验证码（本地模式返回验证链接）
-export function sendVerificationCode(email) {
-  return api.post('/auth/send-code/', { email })
+export function sendVerificationCode(email, purpose = 'register') {
+  return api.post('/auth/send-code/', { email, purpose })
 }
 
 // 验证邮箱验证码

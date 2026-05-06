@@ -133,7 +133,7 @@ export default {
       this.codeSending = true
       this.error = ''
       try {
-        const res = await sendVerificationCode(this.form.email)
+        const res = await sendVerificationCode(this.form.email, 'register')
         if (res.data.local_verify_url) {
           // 本地模式：打开验证页面
           this.localVerifyUrl = res.data.local_verify_url
@@ -153,9 +153,10 @@ export default {
         }
       } catch (e) {
         if (e.response?.status === 429) {
-          // 冷却中，也显示倒计时
+          // 冷却中，使用后端返回的等待时间
+          const retryAfter = e.response?.data?.retry_after || 60
           this.error = e.response?.data?.error || '请稍后再发送'
-          this.countdown = 60
+          this.countdown = retryAfter
           const timer = setInterval(() => {
             this.countdown--
             if (this.countdown <= 0) clearInterval(timer)

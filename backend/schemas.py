@@ -72,6 +72,7 @@ class TokenResponse(BaseModel):
 class SendVerificationCodeRequest(BaseModel):
     """发送验证码请求"""
     email: str = Field(..., description="邮箱地址")
+    purpose: str = Field(default="register", description="用途: register=注册, forgot=忘记密码")
 
 
 class VerifyCodeRequest(BaseModel):
