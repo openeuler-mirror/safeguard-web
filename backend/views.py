@@ -19,7 +19,7 @@ from drf_spectacular.utils import extend_schema
 from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL, BACKEND_PORT, EMAIL_FROM, DEFAULT_USER_AUTHORITY_ID
 from backend.models import Users, EmailVerification, Authority, UserAuthority
 from backend.serializers import UserSerializer, UserCreateSerializer
-from backend.authority_serializers import MenuSerializer
+from backend.authority_serializers import MenuSerializer, UserAuthoritySerializer
 # 你的 Pydantic Schema（全部保留）
 from backend.schemas import (
     UserResponse,
@@ -155,16 +155,99 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response({"message": "密码修改成功"})
 
     # ==============================================
-    # 管理员设置用户角色
+    # 获取用户角色列表
     # ==============================================
     @extend_schema(
-        request=SetRoleRequest,
-        responses={200: UserResponse, 400: MessageResponse},
-        description="管理员设置用户角色"
+        responses={200: UserAuthoritySerializer},
+        description="获取用户角色列表"
     )
-    @action(detail=True, methods=['put'], url_path='role')
-    def set_role(self, request, pk=None):
-        return Response({"error": "功能暂未实现"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+    @action(detail=True, methods=['get'], url_path='authorities')
+    def authorities(self, request, pk=None):
+        """获取指定用户的角色列表"""
+        user = self.get_object()
+        user_authorities = UserAuthority.objects.filter(user=user)
+        serializer = UserAuthoritySerializer(user_authorities, many=True)
+        return Response(serializer.data)
+
+    # ==============================================
+    # 设置用户角色（覆盖式）
+    # ==============================================
+    @extend_schema(
+        request={"type": "object", "properties": {"role_ids": {"type": "array", "items": {"type": "integer"}}}},
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="设置用户角色（覆盖式）"
+    )
+    @action(detail=True, methods=['put'], url_path='authorities')
+    def set_authorities(self, request, pk=None):
+        """设置用户角色（覆盖已有角色）"""
+        user = self.get_object()
+        role_ids = request.data.get('role_ids', [])
+
+        # 删除现有角色关联
+        UserAuthority.objects.filter(user=user).delete()
+
+        # 创建新角色关联
+        for role_id in role_ids:
+            try:
+                authority = Authority.objects.get(pk=role_id)
+                UserAuthority.objects.create(user=user, authority=authority)
+            except Authority.DoesNotExist:
+                pass
+
+        return Response({"message": "角色设置成功"})
+
+    # ==============================================
+    # 添加用户角色
+    # ==============================================
+    @extend_schema(
+        request={"type": "object", "properties": {"authority_id": {"type": "integer"}}},
+        responses={201: UserAuthoritySerializer, 400: MessageResponse},
+        description="添加用户角色"
+    )
+    @action(detail=True, methods=['post'], url_path='authorities/add')
+    def add_authority(self, request, pk=None):
+        """为用户添加角色"""
+        user = self.get_object()
+        authority_id = request.data.get('authority_id')
+
+        if not authority_id:
+            return Response({"error": "authority_id 不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            authority = Authority.objects.get(pk=authority_id)
+        except Authority.DoesNotExist:
+            return Response({"error": "角色不存在"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_authority, created = UserAuthority.objects.get_or_create(user=user, authority=authority)
+        if not created:
+            return Response({"error": "用户已有该角色"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = UserAuthoritySerializer(user_authority)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # ==============================================
+    # 移除用户角色
+    # ==============================================
+    @extend_schema(
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="移除用户角色"
+    )
+    @action(detail=True, methods=['delete'], url_path='authorities')
+    def remove_authority(self, request, pk=None):
+        """移除用户角色"""
+        user = self.get_object()
+        authority_id = request.data.get('authority_id')
+
+        if not authority_id:
+            return Response({"error": "authority_id 不能为空"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_authority = UserAuthority.objects.get(user=user, authority_id=authority_id)
+            user_authority.delete()
+        except UserAuthority.DoesNotExist:
+            return Response({"error": "用户没有该角色"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "角色移除成功"})
 
 
 class LoginView(APIView):
