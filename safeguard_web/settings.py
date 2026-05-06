@@ -196,3 +196,14 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
 }
+
+# 邮件配置
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.example.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_FROM = os.getenv("EMAIL_FROM", "noreply@example.com")
+
+# 验证码有效期（分钟）
+EMAIL_VERIFICATION_CODE_TTL = int(os.getenv("EMAIL_VERIFICATION_CODE_TTL", "10"))

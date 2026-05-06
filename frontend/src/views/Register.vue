@@ -110,7 +110,7 @@ export default {
           this.$router.push('/login')
         }, 1500)
       } catch (e) {
-        this.error = e.response?.data?.user?.[0] || e.response?.data?.password?.[0] || '注册失败'
+        this.error = e.response?.data?.error || e.response?.data?.user?.[0] || e.response?.data?.password?.[0] || '注册失败'
       } finally {
         this.loading = false
       }

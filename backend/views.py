@@ -3,6 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.hashers import make_password, check_password
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+import random
+import string
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from pydantic import ValidationError
@@ -10,7 +15,7 @@ from pydantic import ValidationError
 #  drf-spectacular 自动生成文档，无需手动写注解！
 from drf_spectacular.utils import extend_schema
 
-from backend.models import Users
+from backend.models import Users, EmailVerification
 from backend.serializers import UserSerializer, UserCreateSerializer
 # 你的 Pydantic Schema（全部保留）
 from backend.schemas import (
@@ -22,6 +27,9 @@ from backend.schemas import (
     MessageResponse,
     LoginRequest,
     TokenResponse,
+    SendVerificationCodeRequest,
+    VerifyCodeRequest,
+    RegisterWithCodeRequest,
 )
 
 
@@ -205,3 +213,88 @@ class RegisterView(APIView):
         new_user.save()
 
         return Response(UserSerializer(new_user).data, status=status.HTTP_201_CREATED)
+
+
+class SendVerificationCodeView(APIView):
+    """发送邮箱验证码"""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=SendVerificationCodeRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="发送邮箱验证码"
+    )
+    def post(self, request):
+        try:
+            data = SendVerificationCodeRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
+
+        email = data.email
+
+        # 生成6位验证码
+        code = ''.join(random.choices(string.digits, k=6))
+
+        # 验证码过期时间（10分钟）
+        from django.conf import settings
+        ttl_minutes = getattr(settings, 'EMAIL_VERIFICATION_CODE_TTL', 10)
+        expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
+
+        # 保存验证码记录
+        EmailVerification.objects.create(
+            email=email,
+            code=code,
+            expires_at=expires_at
+        )
+
+        # 发送邮件
+        try:
+            send_mail(
+                subject='Safeguard 邮箱验证码',
+                message=f'您的验证码是：{code}，{ttl_minutes}分钟内有效。',
+                from_email=getattr(settings, 'EMAIL_FROM', None),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return Response({"error": f"邮件发送失败: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"message": "验证码已发送"})
+
+
+class VerifyCodeView(APIView):
+    """验证邮箱验证码"""
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=VerifyCodeRequest,
+        responses={200: MessageResponse, 400: MessageResponse},
+        description="验证邮箱验证码"
+    )
+    def post(self, request):
+        try:
+            data = VerifyCodeRequest.model_validate(request.data)
+        except ValidationError as e:
+            return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
+
+        email = data.email
+        code = data.code
+
+        # 查找最新未使用的验证码
+        verification = EmailVerification.objects.filter(
+            email=email,
+            code=code,
+            used=False,
+            expires_at__gt=timezone.now()
+        ).order_by('-created_at').first()
+
+        if not verification:
+            return Response({"error": "验证码无效或已过期"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 标记为已使用
+        verification.used = True
+        verification.save()
+
+        return Response({"message": "验证成功"})
