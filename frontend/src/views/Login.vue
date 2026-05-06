@@ -29,6 +29,8 @@
         </button>
       </form>
       <div class="link-group">
+        <router-link to="/forgot-password">忘记密码？</router-link>
+        <span class="separator">|</span>
         <router-link to="/register">没有账号？去注册</router-link>
       </div>
     </div>
@@ -151,5 +153,10 @@ button:disabled {
 
 .link-group a:hover {
   text-decoration: underline;
+}
+
+.separator {
+  color: #ddd;
+  margin: 0 8px;
 }
 </style>
