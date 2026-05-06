@@ -1,7 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from django.db.models import Prefetch
 
 from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton, UserAuthority
@@ -10,13 +9,14 @@ from backend.authority_serializers import (
     MenuSerializer, MenuUpdateSerializer, MenuTreeSerializer, MenuButtonSerializer,
     UserAuthoritySerializer, SetUserRoleSerializer
 )
+from backend.permissions import AuthorityPermission
 
 
 class AuthorityViewSet(viewsets.ModelViewSet):
     """角色管理视图集"""
     queryset = Authority.objects.all().order_by('authority_id')
     serializer_class = AuthoritySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AuthorityPermission]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -115,7 +115,7 @@ class MenuViewSet(viewsets.ModelViewSet):
     """菜单管理视图集"""
     queryset = Menu.objects.all().order_by('sort')
     serializer_class = MenuSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AuthorityPermission]
 
     def get_serializer_class(self):
         if self.action in ('update', 'partial_update'):
