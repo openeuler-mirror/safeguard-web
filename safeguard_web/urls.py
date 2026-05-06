@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('api/auth/reset-password/', ResetPasswordView.as_view(), name='reset-password'),
     path('api/auth/local-verify/<str:email>/<str:code>/', LocalVerifyView.as_view(), name='local-verify'),
+    path('api/authority/', include('backend.authority_urls')),
     path('', include(router.urls)),
     path('api-auth/', include('rest_framework.urls',namespace='rest_framework')),
 
