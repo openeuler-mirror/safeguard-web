@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from drf_spectacular.utils import extend_schema
 
 from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL, BACKEND_PORT, EMAIL_FROM, DEFAULT_USER_AUTHORITY_ID
-from backend.models import Users, EmailVerification, Authority, UserAuthority
+from backend.models import Users, EmailVerification, Authority, Menu, UserAuthority
 from backend.serializers import UserSerializer, UserCreateSerializer
 from backend.authority_serializers import MenuSerializer, UserAuthoritySerializer
 from backend.permissions import IsSuperAdmin
@@ -107,7 +107,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         from django.db.models import Prefetch
 
         # 获取用户关联的所有角色
-        user_authorities = UserAuthority.objects.filter(user=request.user).values_list('authority_id', flat=True)
+        user_authorities = UserAuthority.objects.filter(user_id=request.user.id).values_list('authority_id', flat=True)
 
         # 获取这些角色关联的所有菜单
         menu_ids = AuthorityMenu.objects.filter(authority_id__in=user_authorities).values_list('menu_id', flat=True)
