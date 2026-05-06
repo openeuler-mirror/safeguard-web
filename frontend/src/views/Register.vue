@@ -54,12 +54,38 @@
         </div>
         <div class="form-group">
           <label for="email">邮箱</label>
-          <input
-            id="email"
-            v-model="form.email"
-            type="email"
-            placeholder="请输入邮箱（可选）"
-          />
+          <div class="email-input-group">
+            <input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="请输入邮箱"
+              required
+            />
+            <button
+              type="button"
+              class="send-code-btn"
+              :disabled="codeSending || countdown > 0"
+              @click="handleSendCode"
+            >
+              {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+            </button>
+          </div>
+        </div>
+        <div class="form-group" v-if="localVerifyUrl">
+          <label for="code">验证码</label>
+          <div class="code-input-group">
+            <input
+              id="code"
+              v-model="verificationCode"
+              type="text"
+              placeholder="请输入验证码"
+              required
+            />
+            <span class="local-hint">
+              <span class="check-icon">✓</span> 本地验证模式
+            </span>
+          </div>
         </div>
         <div v-if="error" class="error-message">{{ error }}</div>
         <div v-if="success" class="success-message">注册成功！正在跳转...</div>
@@ -75,7 +101,7 @@
 </template>
 
 <script>
-import { createUser } from '@/api/auth'
+import { createUser, sendVerificationCode, verifyCode } from '@/api/auth'
 
 export default {
   name: 'Register',
@@ -91,14 +117,59 @@ export default {
       confirmPassword: '',
       loading: false,
       error: '',
-      success: false
+      success: false,
+      codeSending: false,
+      countdown: 0,
+      localVerifyUrl: '',
+      verificationCode: ''
     }
   },
   methods: {
+    async handleSendCode() {
+      if (!this.form.email) {
+        this.error = '请先输入邮箱'
+        return
+      }
+      this.codeSending = true
+      this.error = ''
+      try {
+        const res = await sendVerificationCode(this.form.email)
+        if (res.data.local_verify_url) {
+          // 本地模式：打开验证页面
+          this.localVerifyUrl = res.data.local_verify_url
+          window.open(res.data.local_verify_url, '_blank')
+          this.countdown = 60
+          const timer = setInterval(() => {
+            this.countdown--
+            if (this.countdown <= 0) clearInterval(timer)
+          }, 1000)
+        } else {
+          // 生产模式
+          this.countdown = 60
+          const timer = setInterval(() => {
+            this.countdown--
+            if (this.countdown <= 0) clearInterval(timer)
+          }, 1000)
+        }
+      } catch (e) {
+        this.error = e.response?.data?.error || '发送验证码失败'
+      } finally {
+        this.codeSending = false
+      }
+    },
     async handleRegister() {
       if (this.form.password !== this.confirmPassword) {
         this.error = '两次输入的密码不一致'
         return
+      }
+      if (this.localVerifyUrl && this.verificationCode) {
+        // 本地模式：先验证邮箱
+        try {
+          await verifyCode(this.form.email, this.verificationCode)
+        } catch (e) {
+          this.error = '邮箱验证失败，请先完成验证'
+          return
+        }
       }
       this.loading = true
       this.error = ''
@@ -165,6 +236,51 @@ h2 {
   border-color: #409eff;
 }
 
+.email-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.email-input-group input {
+  flex: 1;
+}
+
+.send-code-btn {
+  padding: 10px 12px;
+  background: #67c23a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.send-code-btn:disabled {
+  background: #a0cfff;
+  cursor: not-allowed;
+}
+
+.code-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-input-group input {
+  flex: 1;
+}
+
+.local-hint {
+  display: flex;
+  align-items: center;
+  color: #67c23a;
+  font-size: 12px;
+}
+
+.check-icon {
+  margin-right: 2px;
+}
+
 .error-message {
   color: #f56c6c;
   margin-bottom: 16px;
@@ -177,7 +293,7 @@ h2 {
   font-size: 14px;
 }
 
-button {
+button[type="submit"] {
   width: 100%;
   padding: 12px;
   background-color: #409eff;
@@ -188,11 +304,11 @@ button {
   font-size: 16px;
 }
 
-button:hover {
+button[type="submit"]:hover {
   background-color: #66b1ff;
 }
 
-button:disabled {
+button[type="submit"]:disabled {
   background-color: #a0cfff;
   cursor: not-allowed;
 }
