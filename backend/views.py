@@ -154,10 +154,16 @@ class LoginView(APIView):
         except ValidationError as e:
             return Response(e.errors(), status=status.HTTP_400_BAD_REQUEST)
 
-        # 手动查找用户并验证（不使用django默认authenticate）
-        try:
+        # 手动查找用户并验证（支持用户名或邮箱登录）
+        user = None
+        # 先尝试用用户名查找
+        if Users.objects.filter(user=data.username).exists():
             user = Users.objects.get(user=data.username)
-        except Users.DoesNotExist:
+        # 再尝试用邮箱查找
+        elif Users.objects.filter(email=data.username).exists():
+            user = Users.objects.get(email=data.username)
+
+        if not user:
             return Response({"error": "用户名或密码错误"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not check_password(data.password, user.password):

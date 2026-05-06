@@ -4,12 +4,12 @@
       <h2>用户登录</h2>
       <form @submit.prevent="handleLogin">
         <div class="form-group">
-          <label for="username">用户名</label>
+          <label for="username">用户名/邮箱</label>
           <input
             id="username"
             v-model="form.username"
             type="text"
-            placeholder="请输入用户名"
+            placeholder="请输入用户名或邮箱"
             required
           />
         </div>
