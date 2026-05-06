@@ -76,7 +76,7 @@ export default {
 
     async fetchMenus({ commit }) {
       try {
-        const res = await api.get('/users/me/menus/')
+        const res = await api.get('/users/menus/')
         commit('SET_MENUS', res.data)
       } catch (error) {
         console.error('获取菜单失败', error)
