@@ -130,25 +130,44 @@ class Command(BaseCommand):
         self.stdout.write(f'菜单创建完成: {created_count} 个新菜单\n')
 
     def bind_admin_menus(self):
-        """绑定超级管理员菜单"""
+        """绑定管理员菜单"""
+        # 获取超级管理员和普通管理员
         try:
-            admin_authority = Authority.objects.get(authority_id=888)
+            super_admin = Authority.objects.get(authority_id=888)
         except Authority.DoesNotExist:
             self.stdout.write(self.style.ERROR('  超级管理员角色不存在，跳过菜单绑定\n'))
             return
 
+        try:
+            normal_admin = Authority.objects.get(authority_id=889)
+        except Authority.DoesNotExist:
+            self.stdout.write(self.style.ERROR('  普通管理员角色不存在，跳过菜单绑定\n'))
+            normal_admin = None
+
         # 获取所有菜单
         all_menus = Menu.objects.all()
 
-        # 获取已绑定的菜单
-        bound_menu_ids = AuthorityMenu.objects.filter(authority=admin_authority).values_list('menu_id', flat=True)
-
-        # 绑定未绑定的菜单
+        # 1. 绑定超级管理员菜单（所有菜单）
+        bound_menu_ids = AuthorityMenu.objects.filter(authority=super_admin).values_list('menu_id', flat=True)
         created_count = 0
         for menu in all_menus:
             if menu.id not in bound_menu_ids:
-                AuthorityMenu.objects.create(authority=admin_authority, menu=menu)
+                AuthorityMenu.objects.create(authority=super_admin, menu=menu)
                 created_count += 1
                 self.stdout.write(f'  绑定菜单到超级管理员: {menu.name}')
+        self.stdout.write(f'超级管理员菜单绑定完成: {created_count} 个菜单\n')
 
-        self.stdout.write(f'菜单绑定完成: {created_count} 个菜单已绑定到超级管理员\n')
+        # 2. 绑定普通管理员菜单（仅用户管理和仪表盘）
+        if normal_admin:
+            user_mgmt_menu = Menu.objects.filter(path='/users').first()
+            dashboard_menu = Menu.objects.filter(path='/dashboard').first()
+            admin_menus = [m for m in [dashboard_menu, user_mgmt_menu] if m is not None]
+
+            bound_menu_ids = AuthorityMenu.objects.filter(authority=normal_admin).values_list('menu_id', flat=True)
+            created_count = 0
+            for menu in admin_menus:
+                if menu.id not in bound_menu_ids:
+                    AuthorityMenu.objects.create(authority=normal_admin, menu=menu)
+                    created_count += 1
+                    self.stdout.write(f'  绑定菜单到普通管理员: {menu.name}')
+            self.stdout.write(f'普通管理员菜单绑定完成: {created_count} 个菜单\n')

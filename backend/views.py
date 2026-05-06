@@ -49,8 +49,9 @@ class UsersViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """根据操作类型返回不同的权限"""
         if self.action in ['list', 'create', 'destroy', 'authorities', 'set_authorities', 'add_authority', 'remove_authority', 'set_password']:
-            # 管理员操作，需要超级管理员权限
-            return [IsSuperAdmin()]
+            # 管理员操作，需要管理员权限（超级管理员或普通管理员）
+            from backend.permissions import IsAdmin
+            return [IsAdmin()]
         # 个人操作（me, menus, change_my_password）只需登录
         return [IsAuthenticated()]
 
