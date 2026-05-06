@@ -219,3 +219,6 @@ EMAIL_VERIFICATION_CODE_TTL = int(os.getenv("EMAIL_VERIFICATION_CODE_TTL", "10")
 
 # 验证码发送冷却时间（秒），防止频繁发送
 EMAIL_CODE_COOLDOWN = int(os.getenv("EMAIL_CODE_COOLDOWN", "60"))
+
+# 默认用户角色 ID（新用户注册时自动分配）
+DEFAULT_USER_AUTHORITY_ID = int(os.getenv("DEFAULT_USER_AUTHORITY_ID", "890"))

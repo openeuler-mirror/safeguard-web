@@ -16,9 +16,10 @@ from pydantic import ValidationError
 #  drf-spectacular 自动生成文档，无需手动写注解！
 from drf_spectacular.utils import extend_schema
 
-from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL, BACKEND_PORT, EMAIL_FROM
-from backend.models import Users, EmailVerification
+from safeguard_web.settings import IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL, BACKEND_PORT, EMAIL_FROM, DEFAULT_USER_AUTHORITY_ID
+from backend.models import Users, EmailVerification, Authority, UserAuthority
 from backend.serializers import UserSerializer, UserCreateSerializer
+from backend.authority_serializers import MenuSerializer
 # 你的 Pydantic Schema（全部保留）
 from backend.schemas import (
     UserResponse,
@@ -82,6 +83,34 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # ==============================================
+    # 获取当前用户菜单
+    # ==============================================
+    @extend_schema(
+        methods=['get'],
+        responses={200: MenuSerializer},
+        description="获取当前用户可访问的菜单"
+    )
+    @action(detail=False, methods=['get'], url_path='menus')
+    def menus(self, request):
+        """获取当前用户可访问的菜单树"""
+        from backend.models import UserAuthority, AuthorityMenu
+        from django.db.models import Prefetch
+
+        # 获取用户关联的所有角色
+        user_authorities = UserAuthority.objects.filter(user=request.user).values_list('authority_id', flat=True)
+
+        # 获取这些角色关联的所有菜单
+        menu_ids = AuthorityMenu.objects.filter(authority_id__in=user_authorities).values_list('menu_id', flat=True)
+
+        # 获取菜单树（只获取一级菜单及其子菜单）
+        root_menus = Menu.objects.filter(id__in=menu_ids, parent__isnull=True).prefetch_related(
+            Prefetch('children', queryset=Menu.objects.filter(id__in=menu_ids).prefetch_related('children'))
+        )
+
+        serializer = MenuSerializer(root_menus, many=True)
+        return Response(serializer.data)
 
     # ==============================================
     # 管理员重置密码
@@ -221,6 +250,13 @@ class RegisterView(APIView):
         new_user = Users(user=user, nickname=nickname, phone=phone, email=email)
         new_user.set_password(password)
         new_user.save()
+
+        # 自动分配默认角色
+        try:
+            default_authority = Authority.objects.get(authority_id=DEFAULT_USER_AUTHORITY_ID)
+            UserAuthority.objects.create(user=new_user, authority=default_authority)
+        except Authority.DoesNotExist:
+            pass  # 如果默认角色不存在，跳过分配
 
         return Response(UserSerializer(new_user).data, status=status.HTTP_201_CREATED)
 
