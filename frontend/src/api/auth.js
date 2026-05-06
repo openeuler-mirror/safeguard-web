@@ -105,6 +105,16 @@ export function verifyCode(email, code) {
   return api.post('/auth/verify-code/', { email, code })
 }
 
+// 忘记密码 - 发送验证码
+export function forgotPassword(email) {
+  return api.post('/auth/forgot-password/', { email })
+}
+
+// 重置密码（通过验证码）
+export function resetPasswordWithCode(email, code, newPassword) {
+  return api.post('/auth/reset-password/', { email, code, new_password: newPassword })
+}
+
 // 更新个人信息
 export function updateMe(data) {
   return api.put('/users/me/', data)
