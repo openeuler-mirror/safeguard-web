@@ -238,6 +238,7 @@ class SendVerificationCodeView(APIView):
         email = data.email
 
         # 根据用途检查邮箱状态
+        user = None  # 用于关联验证码
         if data.purpose == 'register':
             # 注册场景：检查邮箱是否已被使用
             if Users.objects.filter(email=email).exists():
@@ -247,7 +248,8 @@ class SendVerificationCodeView(APIView):
                 )
         elif data.purpose == 'forgot':
             # 忘记密码场景：检查邮箱是否已注册
-            if not Users.objects.filter(email=email).exists():
+            user = Users.objects.filter(email=email).first()
+            if not user:
                 return Response(
                     {"error": "该邮箱未注册"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -262,6 +264,7 @@ class SendVerificationCodeView(APIView):
         # 保存验证码记录
         EmailVerification.objects.create(
             email=email,
+            user=user,  # forgot场景关联用户，register场景为None
             code=code,
             expires_at=expires_at
         )
@@ -436,10 +439,7 @@ class ForgotPasswordView(APIView):
 
         # 生成6位验证码
         code = ''.join(random.choices(string.digits, k=6))
-
-        from django.conf import settings
-        ttl_minutes = getattr(settings, 'EMAIL_VERIFICATION_CODE_TTL', 10)
-        expires_at = timezone.now() + timedelta(minutes=ttl_minutes)
+        expires_at = timezone.now() + timedelta(minutes=EMAIL_VERIFICATION_CODE_TTL)
 
         # 保存验证码记录，关联到用户
         EmailVerification.objects.create(
@@ -449,12 +449,22 @@ class ForgotPasswordView(APIView):
             expires_at=expires_at
         )
 
+        # 检查是否为本地开发模式
+        if IS_LOCAL:
+            # 本地模式：生成本地验证链接
+            local_url = f"http://localhost:{BACKEND_PORT}/api/auth/local-verify/{email}/{code}/"
+            return Response({
+                "message": "本地验证模式",
+                "local_verify_url": local_url,
+                "code": code
+            })
+
         # 发送邮件
         try:
             send_mail(
                 subject='Safeguard 密码重置验证码',
-                message=f'您的验证码是：{code}，{ttl_minutes}分钟内有效。',
-                from_email=getattr(settings, 'EMAIL_FROM', None),
+                message=f'您的验证码是：{code}，{EMAIL_VERIFICATION_CODE_TTL}分钟内有效。',
+                from_email=EMAIL_FROM,
                 recipient_list=[email],
                 fail_silently=False,
             )
