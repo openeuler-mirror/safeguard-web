@@ -325,7 +325,7 @@ class LocalVerifyView(APIView):
         <html>
         <head>
             <meta charset="utf-8">
-            <title>邮箱验证 - Safeguard</title>
+            <title>验证码 - Safeguard</title>
             <style>
                 body {{ font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }}
                 .container {{ text-align: center; padding: 40px; background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 400px; }}
@@ -333,50 +333,29 @@ class LocalVerifyView(APIView):
                 .code-box {{ background: #e8f0fe; padding: 20px; border-radius: 8px; margin: 20px 0; }}
                 .code {{ font-size: 32px; font-weight: bold; color: #409eff; letter-spacing: 8px; }}
                 .info {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
-                .btn {{ background: #409eff; color: white; border: none; padding: 12px 40px; border-radius: 4px; cursor: pointer; font-size: 16px; }}
-                .btn:hover {{ background: #66b1ff; }}
-                .btn:disabled {{ background: #a0cfff; cursor: not-allowed; }}
-                .message {{ margin-top: 20px; padding: 10px; border-radius: 4px; }}
-                .success {{ background: #f0f9eb; color: #67c23a; }}
-                .error {{ background: #fef0f0; color: #f56c6c; }}
+                .copy-btn {{ background: #67c23a; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-top: 10px; }}
+                .copy-btn:hover {{ background: #85ce61; }}
+                .hint {{ color: #909399; font-size: 12px; margin-top: 16px; }}
             </style>
         </head>
         <body>
             <div class="container">
-                <h2>邮箱验证</h2>
-                <p class="info">验证码已发送至: {email}</p>
+                <h2>本地验证码</h2>
+                <p class="info">开发模式下的验证码显示</p>
                 <div class="code-box">
-                    <div class="code">{code}</div>
+                    <div class="code" id="code">{code}</div>
                 </div>
-                <button class="btn" id="verifyBtn" onclick="verifyCode()">验证邮箱</button>
-                <div id="message"></div>
+                <button class="copy-btn" onclick="copyCode()">复制验证码</button>
+                <p class="hint">请返回注册页面输入验证码完成注册</p>
             </div>
             <script>
-                async function verifyCode() {{
-                    const btn = document.getElementById('verifyBtn');
-                    const msg = document.getElementById('message');
-                    btn.disabled = true;
-                    btn.textContent = '验证中...';
-                    try {{
-                        const resp = await fetch('/api/auth/verify-code/', {{
-                            method: 'POST',
-                            headers: {{ 'Content-Type': 'application/json' }},
-                            body: JSON.stringify({{ email: '{email}', code: '{code}' }})
-                        }});
-                        const data = await resp.json();
-                        if (resp.ok) {{
-                            msg.innerHTML = '<div class="message success">验证成功！请返回登录页面进行登录。</div>';
-                            btn.style.display = 'none';
-                        }} else {{
-                            msg.innerHTML = '<div class="message error">' + (data.error || '验证失败') + '</div>';
-                            btn.disabled = false;
-                            btn.textContent = '重新验证';
-                        }}
-                    }} catch (e) {{
-                        msg.innerHTML = '<div class="message error">网络错误，请重试</div>';
-                        btn.disabled = false;
-                        btn.textContent = '重新验证';
-                    }}
+                function copyCode() {{
+                    const code = document.getElementById('code').textContent;
+                    navigator.clipboard.writeText(code).then(() => {{
+                        const btn = document.querySelector('.copy-btn');
+                        btn.textContent = '已复制!';
+                        setTimeout(() => {{ btn.textContent = '复制验证码'; }}, 2000);
+                    }});
                 }}
             </script>
         </body>
