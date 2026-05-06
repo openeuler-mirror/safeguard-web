@@ -22,16 +22,18 @@ Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN�
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
+# 本地启动（使用sqlite+MockRedis）
+export IS_LOCAL=1
+
+# 1. db迁移
+python manager.py migrate
+# 2. 初始化管理员
+python manage.py init_authority
+# 3. 服务启动
 python manager.py runserver
 
-# 本地启动（使用sqlite+MockRedis）
-# 1. db迁移
-IS_LOCAL=1 python manager.py migrate
-# 2. 服务启动
-IS_LOCAL=1 python manager.py runserver
-
-# 单测（本地）
-IS_LOCAL=1 python manage.py test backend.tests --verbosity=2
+# 单测
+python manage.py test backend.tests --verbosity=2
 ```
 
 #### 参与贡献
