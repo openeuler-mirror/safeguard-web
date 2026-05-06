@@ -95,6 +95,16 @@ export function resetPassword(userId, newPassword) {
   return api.put(`/users/${userId}/password/`, { new_password: newPassword })
 }
 
+// 发送邮箱验证码（本地模式返回验证链接）
+export function sendVerificationCode(email) {
+  return api.post('/auth/send-code/', { email })
+}
+
+// 验证邮箱验证码
+export function verifyCode(email, code) {
+  return api.post('/auth/verify-code/', { email, code })
+}
+
 // 更新个人信息
 export function updateMe(data) {
   return api.put('/users/me/', data)
