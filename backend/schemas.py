@@ -88,3 +88,15 @@ class RegisterWithCodeRequest(BaseModel):
     phone: Optional[str] = Field(None, max_length=20, description="手机号")
     email: str = Field(..., description="邮箱")
     code: str = Field(..., min_length=6, max_length=6, description="验证码")
+
+
+class ForgotPasswordRequest(BaseModel):
+    """忘记密码请求"""
+    email: str = Field(..., description="邮箱")
+
+
+class ResetPasswordWithCodeRequest(BaseModel):
+    """通过验证码重置密码请求"""
+    email: str = Field(..., description="邮箱")
+    code: str = Field(..., min_length=6, max_length=6, description="验证码")
+    new_password: str = Field(..., min_length=6, description="新密码")

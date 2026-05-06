@@ -52,6 +52,7 @@ class Cluster(models.Model):
 class EmailVerification(models.Model):
     """邮箱验证码"""
     email = models.EmailField(verbose_name="邮箱", db_index=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True, verbose_name="关联用户")
     code = models.CharField(max_length=6, verbose_name="验证码")
     expires_at = models.DateTimeField(verbose_name="过期时间")
     used = models.BooleanField(default=False, verbose_name="是否已使用")
@@ -61,6 +62,9 @@ class EmailVerification(models.Model):
         db_table = "email_verification"
         verbose_name = "邮箱验证"
         verbose_name_plural = verbose_name
+        indexes = [
+            models.Index(fields=['email', 'code', 'used'], name='idx_email_code_used'),
+        ]
 
     def __str__(self):
         return f"{self.email} - {self.code}"
