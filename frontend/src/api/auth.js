@@ -95,4 +95,9 @@ export function resetPassword(userId, newPassword) {
   return api.put(`/users/${userId}/password/`, { new_password: newPassword })
 }
 
+// 更新个人信息
+export function updateMe(data) {
+  return api.put('/users/me/', data)
+}
+
 export default api

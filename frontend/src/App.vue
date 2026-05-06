@@ -2,7 +2,7 @@
   <div id="app">
     <header class="app-header" v-if="$store.state.auth.isAuthenticated">
       <div class="header-left">
-        <h1>Safeguard</h1>
+        <h1 class="logo" @click="goHome">Safeguard</h1>
       </div>
       <div class="header-right">
         <div class="user-info" @click="toggleMenu">
@@ -10,8 +10,9 @@
           <span class="arrow">▾</span>
         </div>
         <div class="dropdown" v-if="menuVisible">
+          <div class="dropdown-item" @click="goHome">回到主页</div>
           <div class="dropdown-item" @click="toProfile">个人信息</div>
-          <div class="dropdown-item" @click="logout">注销</div>
+          <div class="dropdown-item logout" @click="logout">注销</div>
         </div>
       </div>
     </header>
@@ -40,6 +41,10 @@ export default {
     },
     closeMenu() {
       this.menuVisible = false
+    },
+    goHome() {
+      this.menuVisible = false
+      this.$router.push('/dashboard')
     },
     toProfile() {
       this.menuVisible = false
@@ -83,8 +88,9 @@ body {
   z-index: 999;
 }
 
-.header-left h1 {
+.header-left .logo {
   font-size: 20px;
+  cursor: pointer;
 }
 
 .header-right {
