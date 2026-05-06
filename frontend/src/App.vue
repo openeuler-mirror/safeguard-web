@@ -4,8 +4,9 @@
       <div class="header-left">
         <h1 class="logo" @click="goHome">Safeguard</h1>
         <nav class="main-nav">
-          <router-link to="/dashboard">控制台</router-link>
-          <router-link to="/users">用户管理</router-link>
+          <router-link v-for="menu in menus" :key="menu.path" :to="menu.path">
+            {{ menu.meta?.title || menu.name }}
+          </router-link>
         </nav>
       </div>
       <div class="header-right">
@@ -31,8 +32,15 @@ export default {
       menuVisible: false
     }
   },
+  computed: {
+    menus() {
+      return this.$store.state.auth.menus
+    }
+  },
   mounted() {
-    this.$store.dispatch('auth/fetchUser')
+    this.$store.dispatch('auth/fetchUser').then(() => {
+      this.$store.dispatch('auth/fetchMenus')
+    })
     document.addEventListener('click', this.closeMenu)
   },
   beforeUnmount() {
