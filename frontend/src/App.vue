@@ -3,6 +3,10 @@
     <header class="app-header" v-if="$store.state.auth.isAuthenticated">
       <div class="header-left">
         <h1 class="logo" @click="goHome">Safeguard</h1>
+        <nav class="main-nav">
+          <router-link to="/dashboard">控制台</router-link>
+          <router-link to="/users">用户管理</router-link>
+        </nav>
       </div>
       <div class="header-right">
         <div class="user-info" @click="toggleMenu">
@@ -91,6 +95,27 @@ body {
 .header-left .logo {
   font-size: 20px;
   cursor: pointer;
+}
+
+.main-nav {
+  display: flex;
+  gap: 24px;
+  margin-left: 32px;
+}
+
+.main-nav a {
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.main-nav a:hover,
+.main-nav a.router-link-active {
+  color: #fff;
+  border-bottom-color: #fff;
 }
 
 .header-right {
