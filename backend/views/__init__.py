@@ -1,5 +1,4 @@
-# 保持向后兼容的导入
-# 所有 views 已移动到 backend/views/ 目录
+# Views module
 from backend.views.user import UsersViewSet
 from backend.views.auth import (
     LoginView,
@@ -10,9 +9,12 @@ from backend.views.auth import (
     ForgotPasswordView,
     ResetPasswordView,
 )
+from backend.views.authority import AuthorityViewSet, MenuViewSet
 
 __all__ = [
+    # User views
     'UsersViewSet',
+    # Auth views
     'LoginView',
     'RegisterView',
     'SendVerificationCodeView',
@@ -20,4 +22,7 @@ __all__ = [
     'LocalVerifyView',
     'ForgotPasswordView',
     'ResetPasswordView',
+    # Authority views
+    'AuthorityViewSet',
+    'MenuViewSet',
 ]
