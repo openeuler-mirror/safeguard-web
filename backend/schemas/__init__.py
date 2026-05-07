@@ -23,6 +23,10 @@ from backend.schemas.host import (
     ClusterCreateRequest,
     ClusterUpdateRequest,
     ClusterResponse,
+    HostBase,
+    HostCreateRequest,
+    HostUpdateRequest,
+    HostResponse,
 )
 
 __all__ = [
@@ -48,4 +52,8 @@ __all__ = [
     'ClusterCreateRequest',
     'ClusterUpdateRequest',
     'ClusterResponse',
+    'HostBase',
+    'HostCreateRequest',
+    'HostUpdateRequest',
+    'HostResponse',
 ]
