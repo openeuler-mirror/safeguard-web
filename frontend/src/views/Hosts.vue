@@ -1,49 +1,68 @@
 <template>
-  <div class="clusters-container">
-    <div class="clusters-header">
-      <h2>集群管理</h2>
+  <div class="hosts-container">
+    <div class="hosts-header">
+      <h2>主机管理</h2>
       <div class="header-actions">
+        <select v-model="filterCluster" class="filter-select" @change="handleFilter">
+          <option value="">全部集群</option>
+          <option v-for="c in clusterTree" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+        <select v-model="filterStatus" class="filter-select" @change="handleFilter">
+          <option value="">全部状态</option>
+          <option value="online">在线</option>
+          <option value="offline">离线</option>
+        </select>
         <input
           v-model="searchName"
           type="text"
-          placeholder="搜索集群名称"
+          placeholder="搜索主机名/IP"
           class="search-input"
           @keyup.enter="handleSearch"
         />
-        <button class="btn-primary" @click="openCreateDialog">创建集群</button>
+        <button class="btn-primary" @click="openCreateDialog">创建主机</button>
       </div>
     </div>
 
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else class="clusters-table">
+    <div v-else class="hosts-table">
       <table>
         <thead>
           <tr>
             <th>ID</th>
-            <th>集群名称</th>
-            <th>描述</th>
-            <th>vCenter ID</th>
-            <th>主机数量</th>
+            <th>主机名</th>
+            <th>IP地址</th>
+            <th>端口</th>
+            <th>用户名</th>
+            <th>集群</th>
+            <th>状态</th>
+            <th>操作系统</th>
             <th>创建时间</th>
             <th>操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="cluster in clusters" :key="cluster.id">
-            <td>{{ cluster.id }}</td>
-            <td>{{ cluster.name }}</td>
-            <td>{{ cluster.description || '-' }}</td>
-            <td>{{ cluster.vcenter_id || '-' }}</td>
-            <td>{{ cluster.host_count || 0 }}</td>
-            <td>{{ formatDate(cluster.created_at) }}</td>
+          <tr v-for="host in hosts" :key="host.id">
+            <td>{{ host.id }}</td>
+            <td>{{ host.hostname }}</td>
+            <td>{{ host.ip_address }}</td>
+            <td>{{ host.port }}</td>
+            <td>{{ host.username }}</td>
+            <td>{{ host.cluster_name || '-' }}</td>
             <td>
-              <button class="btn-edit" @click="openEditDialog(cluster)">编辑</button>
-              <button class="btn-delete" @click="confirmDelete(cluster)">删除</button>
+              <span :class="host.status === 'online' ? 'status-online' : 'status-offline'">
+                {{ host.status === 'online' ? '在线' : '离线' }}
+              </span>
+            </td>
+            <td>{{ host.os_type || '-' }}</td>
+            <td>{{ formatDate(host.created_at) }}</td>
+            <td>
+              <button class="btn-edit" @click="openEditDialog(host)">编辑</button>
+              <button class="btn-danger" @click="confirmDelete(host)">删除</button>
             </td>
           </tr>
-          <tr v-if="clusters.length === 0">
-            <td colspan="7" class="empty-text">暂无数据</td>
+          <tr v-if="hosts.length === 0">
+            <td colspan="10" class="empty-text">暂无数据</td>
           </tr>
         </tbody>
       </table>
@@ -53,42 +72,56 @@
     <div v-if="dialogVisible" class="dialog-overlay" @click.self="closeDialog">
       <div class="dialog">
         <div class="dialog-header">
-          <h3>{{ isEdit ? '编辑集群' : '创建集群' }}</h3>
+          <h3>{{ isEdit ? '编辑主机' : '创建主机' }}</h3>
           <button class="dialog-close" @click="closeDialog">&times;</button>
         </div>
         <div class="dialog-body">
           <div v-if="formError" class="form-error-summary">{{ formError }}</div>
           <div class="form-item">
-            <label>集群名称 <span class="required">*</span></label>
-            <input
-              v-model="form.name"
-              type="text"
-              placeholder="请输入集群名称"
-              maxlength="100"
-              :class="{ 'input-error': errors.name }"
-            />
-            <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+            <label>主机名 <span class="required">*</span></label>
+            <input v-model="form.hostname" type="text" placeholder="请输入主机名" :class="{ 'input-error': errors.hostname }" />
+            <span v-if="errors.hostname" class="field-error">{{ errors.hostname }}</span>
           </div>
           <div class="form-item">
-            <label>描述</label>
-            <textarea
-              v-model="form.description"
-              placeholder="请输入描述"
-              rows="3"
-              :class="{ 'input-error': errors.description }"
-            ></textarea>
-            <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
+            <label>IP地址 <span class="required">*</span></label>
+            <input v-model="form.ip_address" type="text" placeholder="请输入IP地址" :class="{ 'input-error': errors.ip_address }" />
+            <span v-if="errors.ip_address" class="field-error">{{ errors.ip_address }}</span>
           </div>
           <div class="form-item">
-            <label>vCenter ID</label>
-            <input
-              v-model="form.vcenter_id"
-              type="text"
-              placeholder="请输入vCenter ID"
-              maxlength="100"
-              :class="{ 'input-error': errors.vcenter_id }"
-            />
-            <span v-if="errors.vcenter_id" class="field-error">{{ errors.vcenter_id }}</span>
+            <label>端口</label>
+            <input v-model.number="form.port" type="number" placeholder="22" :class="{ 'input-error': errors.port }" />
+            <span v-if="errors.port" class="field-error">{{ errors.port }}</span>
+          </div>
+          <div class="form-item">
+            <label>用户名 <span class="required">*</span></label>
+            <input v-model="form.username" type="text" placeholder="请输入用户名" :class="{ 'input-error': errors.username }" />
+            <span v-if="errors.username" class="field-error">{{ errors.username }}</span>
+          </div>
+          <div class="form-item">
+            <label>密码</label>
+            <input v-model="form.password" type="password" placeholder="请输入密码" :class="{ 'input-error': errors.password }" />
+            <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
+          </div>
+          <div class="form-item">
+            <label>集群</label>
+            <select v-model="form.cluster" :class="{ 'input-error': errors.cluster }">
+              <option :value="null">无</option>
+              <option v-for="c in clusterTree" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+            <span v-if="errors.cluster" class="field-error">{{ errors.cluster }}</span>
+          </div>
+          <div class="form-item">
+            <label>状态</label>
+            <select v-model="form.status" :class="{ 'input-error': errors.status }">
+              <option value="offline">离线</option>
+              <option value="online">在线</option>
+            </select>
+            <span v-if="errors.status" class="field-error">{{ errors.status }}</span>
+          </div>
+          <div class="form-item">
+            <label>操作系统</label>
+            <input v-model="form.os_type" type="text" placeholder="如: CentOS 7.9" :class="{ 'input-error': errors.os_type }" />
+            <span v-if="errors.os_type" class="field-error">{{ errors.os_type }}</span>
           </div>
         </div>
         <div class="dialog-footer">
@@ -106,7 +139,7 @@
           <button class="dialog-close" @click="closeDeleteDialog">&times;</button>
         </div>
         <div class="dialog-body">
-          <p>确定删除集群 <strong>{{ selectedCluster?.name }}</strong> 吗？</p>
+          <p>确定删除主机 <strong>{{ selectedHost?.hostname }}</strong> 吗？</p>
           <p class="warning-text">删除后无法恢复</p>
         </div>
         <div class="dialog-footer">
@@ -119,64 +152,102 @@
 </template>
 
 <script>
-import { getClusters, createCluster, updateCluster, deleteCluster } from '@/api/host'
+import { getHosts, createHost, updateHost, deleteHost, getClusterTree } from '@/api/host'
 
 export default {
-  name: 'Clusters',
+  name: 'Hosts',
   data() {
     return {
-      clusters: [],
+      hosts: [],
+      clusterTree: [],
       loading: false,
       error: '',
       searchName: '',
+      filterCluster: '',
+      filterStatus: '',
       dialogVisible: false,
       deleteDialogVisible: false,
       isEdit: false,
-      selectedCluster: null,
+      selectedHost: null,
       formError: '',
       errors: {},
       form: {
-        name: '',
-        description: '',
-        vcenter_id: ''
+        hostname: '',
+        ip_address: '',
+        port: 22,
+        username: '',
+        password: '',
+        cluster: null,
+        status: 'offline',
+        os_type: ''
       }
     }
   },
   mounted() {
-    this.loadClusters()
+    this.loadHosts()
+    this.loadClusterTree()
   },
   methods: {
-    async loadClusters() {
+    async loadHosts() {
       this.loading = true
       this.error = ''
       try {
-        const res = await getClusters()
-        this.clusters = res.data.results || res.data
+        const params = {}
+        if (this.searchName) params.search = this.searchName
+        if (this.filterCluster) params.cluster = this.filterCluster
+        if (this.filterStatus) params.status = this.filterStatus
+        const res = await getHosts(params)
+        this.hosts = res.data.results || res.data
       } catch (e) {
-        this.error = e.response?.data?.error || '加载集群列表失败'
+        this.error = e.response?.data?.error || '加载主机列表失败'
       } finally {
         this.loading = false
       }
     },
+    async loadClusterTree() {
+      try {
+        const res = await getClusterTree()
+        this.clusterTree = res.data || []
+      } catch (e) {
+        console.error('加载集群树下拉失败', e)
+      }
+    },
     handleSearch() {
-      this.loadClusters()
+      this.loadHosts()
+    },
+    handleFilter() {
+      this.loadHosts()
     },
     openCreateDialog() {
       this.isEdit = false
       this.formError = ''
       this.errors = {}
-      this.form = { name: '', description: '', vcenter_id: '' }
+      this.form = {
+        hostname: '',
+        ip_address: '',
+        port: 22,
+        username: '',
+        password: '',
+        cluster: null,
+        status: 'offline',
+        os_type: ''
+      }
       this.dialogVisible = true
     },
-    openEditDialog(cluster) {
+    openEditDialog(host) {
       this.isEdit = true
-      this.selectedCluster = cluster
+      this.selectedHost = host
       this.formError = ''
       this.errors = {}
       this.form = {
-        name: cluster.name,
-        description: cluster.description || '',
-        vcenter_id: cluster.vcenter_id || ''
+        hostname: host.hostname,
+        ip_address: host.ip_address,
+        port: host.port,
+        username: host.username,
+        password: '',
+        cluster: host.cluster,
+        status: host.status,
+        os_type: host.os_type || ''
       }
       this.dialogVisible = true
     },
@@ -186,24 +257,39 @@ export default {
       this.errors = {}
     },
     async submitForm() {
+      // 清除之前的错误
       this.formError = ''
       this.errors = {}
 
-      if (!this.form.name.trim()) {
-        this.errors.name = '请输入集群名称'
+      // 前端验证
+      if (!this.form.hostname.trim()) {
+        this.errors.hostname = '请输入主机名'
         return
       }
+      if (!this.form.ip_address.trim()) {
+        this.errors.ip_address = '请输入IP地址'
+        return
+      }
+      if (!this.form.username.trim()) {
+        this.errors.username = '请输入用户名'
+        return
+      }
+
       try {
+        const data = { ...this.form }
+        if (!data.password) delete data.password
+        if (!data.cluster) data.cluster = null
         if (this.isEdit) {
-          await updateCluster(this.selectedCluster.id, this.form)
+          await updateHost(this.selectedHost.id, data)
         } else {
-          await createCluster(this.form)
+          await createHost(data)
         }
         this.closeDialog()
-        this.loadClusters()
+        this.loadHosts()
       } catch (e) {
         const errorData = e.response?.data
         if (errorData) {
+          // 解析字段错误
           const fieldErrors = {}
           let generalError = ''
 
@@ -232,8 +318,8 @@ export default {
         }
       }
     },
-    confirmDelete(cluster) {
-      this.selectedCluster = cluster
+    confirmDelete(host) {
+      this.selectedHost = host
       this.deleteDialogVisible = true
     },
     closeDeleteDialog() {
@@ -241,9 +327,9 @@ export default {
     },
     async handleDelete() {
       try {
-        await deleteCluster(this.selectedCluster.id)
+        await deleteHost(this.selectedHost.id)
         this.closeDeleteDialog()
-        this.loadClusters()
+        this.loadHosts()
       } catch (e) {
         alert(e.response?.data?.error || '删除失败')
       }
@@ -258,20 +344,22 @@ export default {
 </script>
 
 <style scoped>
-.clusters-container {
+.hosts-container {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.clusters-header {
+.hosts-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.clusters-header h2 {
+.hosts-header h2 {
   margin: 0;
   color: #333;
 }
@@ -279,13 +367,18 @@ export default {
 .header-actions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
-.search-input {
+.filter-select, .search-input {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  width: 200px;
+  width: 140px;
+}
+
+.search-input {
+  width: 180px;
 }
 
 .btn-primary {
@@ -311,22 +404,24 @@ export default {
   color: #f56c6c;
 }
 
-.clusters-table {
+.hosts-table {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1000px;
 }
 
 th, td {
   padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
 }
 
 th {
@@ -348,13 +443,21 @@ tr:hover td {
   color: #999;
 }
 
-.btn-edit, .btn-delete {
+.status-online {
+  color: #67c23a;
+}
+
+.status-offline {
+  color: #909399;
+}
+
+.btn-edit, .btn-danger {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  margin-right: 8px;
+  margin-right: 6px;
 }
 
 .btn-edit {
@@ -366,12 +469,12 @@ tr:hover td {
   background: #85ce61;
 }
 
-.btn-delete {
+.btn-danger {
   background: #f56c6c;
   color: white;
 }
 
-.btn-delete:hover {
+.btn-danger:hover {
   background: #f78989;
 }
 
@@ -392,7 +495,7 @@ tr:hover td {
 .dialog {
   background: white;
   border-radius: 8px;
-  width: 480px;
+  width: 500px;
   max-width: 90%;
 }
 
@@ -423,6 +526,8 @@ tr:hover td {
 
 .dialog-body {
   padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .dialog-footer {
@@ -453,7 +558,7 @@ tr:hover td {
 }
 
 .form-item input,
-.form-item textarea {
+.form-item select {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -461,8 +566,8 @@ tr:hover td {
   box-sizing: border-box;
 }
 
-.form-item textarea {
-  resize: vertical;
+.form-item select {
+  background: white;
 }
 
 .form-error-summary {

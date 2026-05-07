@@ -36,3 +36,35 @@ export function getClusterTree() {
 export function getClusterTopology(id) {
   return api.get(`/clusters/${id}/topology/`)
 }
+
+// ========== Host ==========
+
+// 获取主机列表
+export function getHosts(params) {
+  return api.get('/hosts/', { params })
+}
+
+// 获取主机详情
+export function getHost(id) {
+  return api.get(`/hosts/${id}/`)
+}
+
+// 创建主机
+export function createHost(data) {
+  return api.post('/hosts/', data)
+}
+
+// 更新主机
+export function updateHost(id, data) {
+  return api.put(`/hosts/${id}/`, data)
+}
+
+// 删除主机
+export function deleteHost(id) {
+  return api.delete(`/hosts/${id}/`)
+}
+
+// 采集主机硬件信息
+export function collectHardware(id) {
+  return api.post(`/hosts/${id}/collect_hardware/`)
+}
