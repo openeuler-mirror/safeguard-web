@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.hashers import check_password
 
 from backend.models import Users
-from backend.serializers import UserSerializer
+from backend.serializers.user import UserSerializer
 
 
 class UserSerializerTest(TestCase):

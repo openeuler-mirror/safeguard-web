@@ -1,10 +1,18 @@
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework import routers, permissions
-from backend import views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-from backend.views import UsersViewSet, LoginView, RegisterView, SendVerificationCodeView, VerifyCodeView, ForgotPasswordView, ResetPasswordView, LocalVerifyView
+from backend.views.user import UsersViewSet
+from backend.views.auth import (
+    LoginView,
+    RegisterView,
+    SendVerificationCodeView,
+    VerifyCodeView,
+    ForgotPasswordView,
+    ResetPasswordView,
+    LocalVerifyView,
+)
 
 router = routers.DefaultRouter()
 router.register(r'api/users', UsersViewSet, basename="users")
