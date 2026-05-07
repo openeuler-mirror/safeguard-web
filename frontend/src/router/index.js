@@ -33,6 +33,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/authorities',
+    name: 'Authorities',
+    component: () => import('@/views/Authorities.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/change-password',
     name: 'ChangePassword',
     component: () => import('@/views/ChangePassword.vue'),
