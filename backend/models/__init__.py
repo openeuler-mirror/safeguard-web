@@ -1,5 +1,4 @@
-# 保持向后兼容的导入
-# 所有模型已移动到 backend/models/ 目录
+# Models module
 from backend.models.user import Users, EmailVerification
 from backend.models.host import Hosts, Cluster
 from backend.models.authority import (
@@ -8,7 +7,7 @@ from backend.models.authority import (
     MenuButton,
     AuthorityMenu,
     AuthorityButton,
-    UserAuthority,
+    UserAuthority
 )
 
 __all__ = [
