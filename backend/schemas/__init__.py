@@ -18,6 +18,12 @@ from backend.schemas.auth import (
     ForgotPasswordRequest,
     ResetPasswordWithCodeRequest,
 )
+from backend.schemas.host import (
+    ClusterBase,
+    ClusterCreateRequest,
+    ClusterUpdateRequest,
+    ClusterResponse,
+)
 
 __all__ = [
     # User schemas
@@ -37,4 +43,9 @@ __all__ = [
     'RegisterWithCodeRequest',
     'ForgotPasswordRequest',
     'ResetPasswordWithCodeRequest',
+    # Host schemas
+    'ClusterBase',
+    'ClusterCreateRequest',
+    'ClusterUpdateRequest',
+    'ClusterResponse',
 ]
