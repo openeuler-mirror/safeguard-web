@@ -2,7 +2,7 @@ import api from './auth'
 
 // 获取所有角色列表
 export function getAuthorities() {
-  return api.get('/authorities/')
+  return api.get('/authority/authorities/')
 }
 
 // 获取用户列表
