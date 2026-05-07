@@ -21,6 +21,10 @@ from backend.serializers.host import (
     ClusterSerializer,
     ClusterCreateSerializer,
     ClusterUpdateSerializer,
+    HostSerializer,
+    HostCreateSerializer,
+    HostUpdateSerializer,
+    HostListSerializer,
 )
 
 __all__ = [
@@ -44,4 +48,8 @@ __all__ = [
     'ClusterSerializer',
     'ClusterCreateSerializer',
     'ClusterUpdateSerializer',
+    'HostSerializer',
+    'HostCreateSerializer',
+    'HostUpdateSerializer',
+    'HostListSerializer',
 ]
