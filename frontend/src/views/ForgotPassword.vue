@@ -3,8 +3,7 @@
     <div class="forgot-box">
       <h2>找回密码</h2>
 
-      <!-- Step 1: 输入邮箱 -->
-      <div v-if="step === 1" class="step-form">
+      <div class="step-form">
         <div class="form-group">
           <label for="email">已注册的邮箱</label>
           <div class="email-input-group">
@@ -25,26 +24,20 @@
             </button>
           </div>
         </div>
-        <div v-if="error" class="error-message">{{ error }}</div>
-        <button type="button" class="next-btn" @click="step = 2">下一步</button>
-        <div class="link-group">
-          <a href="#" @click.prevent="$router.push('/login')">返回登录</a>
-        </div>
-      </div>
 
-      <!-- Step 2: 输入验证码和新密码 -->
-      <div v-if="step === 2" class="step-form">
         <div class="form-group">
-          <label for="code">验证码</label>
+          <label for="code">验证码 <span class="label-hint">(6位数字)</span></label>
           <input
             id="code"
             v-model="code"
             type="text"
             placeholder="请输入6位验证码"
             maxlength="6"
+            class="code-input"
             required
           />
         </div>
+
         <div class="form-group">
           <label for="newPassword">新密码</label>
           <input
@@ -56,6 +49,7 @@
             required
           />
         </div>
+
         <div class="form-group">
           <label for="confirmPassword">确认新密码</label>
           <input
@@ -66,13 +60,16 @@
             required
           />
         </div>
+
         <div v-if="error" class="error-message">{{ error }}</div>
         <div v-if="success" class="success-message">{{ success }}</div>
-        <button type="button" class="next-btn" :disabled="loading" @click="handleReset">
+
+        <button type="button" class="submit-btn" :disabled="loading" @click="handleReset">
           {{ loading ? '重置中...' : '重置密码' }}
         </button>
+
         <div class="link-group">
-          <a href="#" @click.prevent="step = 1">上一步</a>
+          <a href="#" @click.prevent="$router.push('/login')">返回登录</a>
         </div>
       </div>
     </div>
@@ -86,7 +83,6 @@ export default {
   name: 'ForgotPassword',
   data() {
     return {
-      step: 1,
       email: '',
       code: '',
       newPassword: '',
@@ -109,10 +105,8 @@ export default {
       try {
         const res = await sendVerificationCode(this.email, 'forgot')
         if (res.data.local_verify_url) {
-          // 本地模式：打开验证页面
           window.open(res.data.local_verify_url, '_blank')
         }
-        // 启动60秒本地倒计时
         this.countdown = 60
         const timer = setInterval(() => {
           this.countdown--
@@ -125,16 +119,20 @@ export default {
       }
     },
     async handleReset() {
-      if (this.newPassword !== this.confirmPassword) {
-        this.error = '两次输入的密码不一致'
+      if (!this.email) {
+        this.error = '请输入邮箱'
+        return
+      }
+      if (!this.code || this.code.length !== 6) {
+        this.error = '请输入6位验证码'
         return
       }
       if (this.newPassword.length < 6) {
         this.error = '密码长度至少6位'
         return
       }
-      if (!this.code || this.code.length !== 6) {
-        this.error = '请输入6位验证码'
+      if (this.newPassword !== this.confirmPassword) {
+        this.error = '两次输入的密码不一致'
         return
       }
       this.loading = true
@@ -202,6 +200,25 @@ h2 {
   border-color: #409eff;
 }
 
+.code-input {
+  letter-spacing: 4px;
+  font-size: 16px;
+  font-family: monospace;
+  background-color: #f8f8f8;
+  border-color: #67c23a;
+}
+
+.code-input:focus {
+  border-color: #67c23a;
+  background-color: #f0f9eb;
+}
+
+.label-hint {
+  font-size: 12px;
+  color: #909399;
+  font-weight: normal;
+}
+
 .email-input-group {
   display: flex;
   gap: 8px;
@@ -226,7 +243,7 @@ h2 {
   cursor: not-allowed;
 }
 
-.next-btn {
+.submit-btn {
   width: 100%;
   padding: 12px;
   background-color: #409eff;
@@ -238,11 +255,11 @@ h2 {
   margin-top: 8px;
 }
 
-.next-btn:hover {
+.submit-btn:hover {
   background-color: #66b1ff;
 }
 
-.next-btn:disabled {
+.submit-btn:disabled {
   background-color: #a0cfff;
   cursor: not-allowed;
 }
