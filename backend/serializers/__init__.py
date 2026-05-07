@@ -1,5 +1,9 @@
-# 保持向后兼容的导入
-# 所有 authority serializers 已移动到 backend/serializers/authority.py
+# Serializers module
+from backend.serializers.user import (
+    UserSerializer,
+    UserCreateSerializer,
+    ChangePasswordSerializer,
+)
 from backend.serializers.authority import (
     MenuButtonSerializer,
     MenuSerializer,
@@ -15,6 +19,11 @@ from backend.serializers.authority import (
 )
 
 __all__ = [
+    # User serializers
+    'UserSerializer',
+    'UserCreateSerializer',
+    'ChangePasswordSerializer',
+    # Authority serializers
     'MenuButtonSerializer',
     'MenuSerializer',
     'MenuUpdateSerializer',
