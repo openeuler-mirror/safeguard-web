@@ -39,6 +39,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/menus',
+    name: 'Menus',
+    component: () => import('@/views/Menus.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/change-password',
     name: 'ChangePassword',
     component: () => import('@/views/ChangePassword.vue'),
