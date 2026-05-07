@@ -1,3 +1,4 @@
+"""权限相关 URL 配置"""
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from backend.views.authority import AuthorityViewSet, MenuViewSet
