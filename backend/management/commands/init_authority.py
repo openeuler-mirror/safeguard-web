@@ -102,6 +102,13 @@ class Command(BaseCommand):
                 'meta': {'title': '菜单管理', 'icon': 'menu'},
             },
             {
+                'name': 'ClusterManagement',
+                'path': '/clusters',
+                'component': '/clusters/index.vue',
+                'sort': 25,
+                'meta': {'title': '集群管理', 'icon': 'cluster'},
+            },
+            {
                 'name': 'HostManagement',
                 'path': '/hosts',
                 'component': '/hosts/index.vue',
