@@ -11,7 +11,7 @@ import random
 import string
 
 from backend.models import Users, EmailVerification, Authority, UserAuthority
-from backend.serializers import UserSerializer
+from backend.serializers.user import UserSerializer
 from backend.schemas import (
     LoginRequest, TokenResponse, MessageResponse,
     SendVerificationCodeRequest, VerifyCodeRequest,

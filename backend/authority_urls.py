@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from backend.views import AuthorityViewSet, MenuViewSet
+from backend.views.authority import AuthorityViewSet, MenuViewSet
 
 router = DefaultRouter()
 router.register(r'authorities', AuthorityViewSet, basename='authority')

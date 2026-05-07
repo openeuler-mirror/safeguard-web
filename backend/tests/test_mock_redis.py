@@ -91,7 +91,7 @@ class MockRedisTest(TestCase):
 # ============ Authority 模块模型和序列化器测试 ============
 
 from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton, UserAuthority
-from backend.authority_serializers import (
+from backend.serializers.authority import (
     AuthoritySerializer, AuthorityCreateSerializer,
     MenuSerializer, MenuTreeSerializer, MenuButtonSerializer,
     UserAuthoritySerializer, SetUserRoleSerializer

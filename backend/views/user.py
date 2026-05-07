@@ -6,7 +6,7 @@ from django.contrib.auth.hashers import make_password
 from pydantic import ValidationError
 
 from backend.models import Users, UserAuthority, Authority
-from backend.serializers import UserSerializer, UserCreateSerializer
+from backend.serializers.user import UserSerializer, UserCreateSerializer
 from backend.serializers.authority import MenuSerializer, UserAuthoritySerializer
 from backend.schemas import UserUpdateRequest, ResetPasswordRequest, MessageResponse, UserResponse
 

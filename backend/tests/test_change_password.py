@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from backend.serializers import ChangePasswordSerializer
+from backend.serializers.user import ChangePasswordSerializer
 
 
 class ChangePasswordSerializerTest(TestCase):
