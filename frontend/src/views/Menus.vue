@@ -76,7 +76,7 @@
         <div class="dialog-body">
           <div class="form-group">
             <label for="parentMenu">父菜单</label>
-            <select id="parentMenu" v-model="formData.parent" :disabled="isEdit">
+            <select id="parentMenu" v-model="formData.parent">
               <option :value="null">无（顶级菜单）</option>
               <option v-for="m in parentMenuOptions" :key="m.id" :value="m.id">
                 {{ m.meta?.title || m.name }}
@@ -188,8 +188,17 @@ export default {
   },
   computed: {
     parentMenuOptions() {
-      // 只显示顶级菜单作为父菜单选项，排除自身
-      return this.allMenus.filter(m => !m.parent && (!this.isEdit || m.id !== this.selectedMenu?.id))
+      // 显示所有可作为父菜单的选项，排除自身
+      // 循环引用问题由后端验证
+      if (!this.isEdit) {
+        return this.allMenus.filter(m => !m.parent)
+      }
+      return this.allMenus.filter(m => {
+        if (m.id === this.selectedMenu?.id) return false
+        // 排除直接子菜单（防止循环引用）
+        if (m.parent === this.selectedMenu?.id) return false
+        return true
+      })
     }
   },
   mounted() {
@@ -269,6 +278,7 @@ export default {
       this.formSuccess = ''
       try {
         const data = {
+          parent: this.formData.parent,
           path: this.formData.path,
           name: this.formData.name,
           component: this.formData.component,
@@ -279,7 +289,6 @@ export default {
           await updateMenu(this.selectedMenu.id, data)
           this.formSuccess = '更新成功'
         } else {
-          data.parent = this.formData.parent
           await createMenu(data)
           this.formSuccess = '创建成功'
         }

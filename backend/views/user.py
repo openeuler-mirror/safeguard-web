@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from backend.models import Users, UserAuthority, Authority
 from backend.serializers.user import UserSerializer, UserCreateSerializer
-from backend.serializers.authority import MenuSerializer, UserAuthoritySerializer
+from backend.serializers.authority import MenuSerializer, MenuTreeSerializer, UserAuthoritySerializer
 from backend.schemas import UserUpdateRequest, ResetPasswordRequest, MessageResponse, UserResponse
 
 
@@ -67,7 +67,7 @@ class UsersViewSet(viewsets.ModelViewSet):
             Prefetch('children', queryset=Menu.objects.filter(id__in=menu_ids).prefetch_related('children'))
         )
 
-        serializer = MenuSerializer(root_menus, many=True)
+        serializer = MenuTreeSerializer(root_menus, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['put'], url_path='password')
