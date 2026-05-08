@@ -14,7 +14,7 @@
       <div v-for="menu in menuTree" :key="menu.id" class="menu-item-wrapper">
         <div class="menu-row">
           <div class="menu-info">
-            <span class="menu-icon">{{ menu.meta?.icon || '📁' }}</span>
+            <span class="menu-icon">{{ isEmoji(menu.meta?.icon) ? menu.meta.icon : '📁' }}</span>
             <span class="menu-title">{{ menu.meta?.title || menu.name }}</span>
             <span class="menu-path">{{ menu.path }}</span>
             <span class="menu-component">{{ menu.component || '-' }}</span>
@@ -29,7 +29,7 @@
         <div v-if="menu.children && menu.children.length" class="children-menus">
           <div v-for="child in menu.children" :key="child.id" class="menu-row child">
             <div class="menu-info">
-              <span class="menu-icon">{{ child.meta?.icon || '📄' }}</span>
+              <span class="menu-icon">{{ isEmoji(child.meta?.icon) ? child.meta.icon : '📄' }}</span>
               <span class="menu-title">{{ child.meta?.title || child.name }}</span>
               <span class="menu-path">{{ child.path }}</span>
               <span class="menu-component">{{ child.component || '-' }}</span>
@@ -265,6 +265,12 @@ export default {
         this.saving = false
       }
     },
+    isEmoji(str) {
+      if (!str) return false
+      // 检查是否是emoji（Unicode范围）或单个字符
+      const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/u
+      return emojiRegex.test(str) || (str.length <= 2 && !/^[a-zA-Z]/.test(str))
+    },
     async handleDelete(menu) {
       const childCount = menu.children?.length || 0
       const message = childCount > 0
@@ -383,14 +389,15 @@ export default {
   align-items: center;
   gap: 12px;
   flex: 1;
-  flex-wrap: wrap;
   min-width: 0;
+  overflow: hidden;
 }
 
 .menu-title {
   font-weight: 500;
   color: #333;
   min-width: 80px;
+  flex-shrink: 0;
 }
 
 .menu-path {
@@ -401,6 +408,7 @@ export default {
   padding: 2px 8px;
   border-radius: 3px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .menu-component {
@@ -410,13 +418,16 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 200px;
+  flex-shrink: 0;
 }
 
 .menu-icon {
-  font-size: 16px;
-  width: 24px;
+  font-size: 18px;
+  width: 32px;
+  min-width: 32px;
   text-align: center;
   flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .menu-actions {
