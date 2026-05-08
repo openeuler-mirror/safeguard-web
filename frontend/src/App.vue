@@ -36,7 +36,9 @@
         <router-view></router-view>
       </main>
     </div>
-    <router-view v-else></router-view>
+    <main class="main-content full-width" v-if="!$store.state.auth.isAuthenticated">
+      <router-view></router-view>
+    </main>
   </div>
 </template>
 
@@ -281,5 +283,11 @@ body {
   flex: 1;
   overflow-y: auto;
   background: #f5f7fa;
+  min-height: calc(100vh - 60px);
+}
+
+.main-content.full-width {
+  width: 100%;
+  min-height: calc(100vh - 60px);
 }
 </style>

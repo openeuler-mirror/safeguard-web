@@ -348,6 +348,7 @@ export default {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 100px);
 }
 
 .hosts-header {
