@@ -1,0 +1,321 @@
+"""主机相关视图集测试"""
+from rest_framework.test import APITestCase
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from backend.models import Cluster, Host, VM, Users
+
+
+class ClusterViewSetTest(APITestCase):
+    """ClusterViewSet 测试"""
+
+    def setUp(self):
+        """创建测试用户并获取JWT token"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_list_clusters(self):
+        """测试列出集群"""
+        Cluster.objects.create(name='Cluster1')
+        Cluster.objects.create(name='Cluster2')
+        response = self.client.get('/api/clusters/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # 非分页响应
+        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        self.assertEqual(len(results), 2)
+
+    def test_create_cluster(self):
+        """测试创建集群"""
+        data = {'name': 'NewCluster', 'description': '新集群'}
+        response = self.client.post('/api/clusters/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'NewCluster')
+
+    def test_retrieve_cluster(self):
+        """测试获取单个集群"""
+        cluster = Cluster.objects.create(name='TestCluster')
+        response = self.client.get(f'/api/clusters/{cluster.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'TestCluster')
+
+    def test_update_cluster(self):
+        """测试更新集群"""
+        cluster = Cluster.objects.create(name='OriginalCluster')
+        data = {'name': 'UpdatedCluster', 'description': '更新描述'}
+        response = self.client.put(f'/api/clusters/{cluster.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'UpdatedCluster')
+
+    def test_partial_update_cluster(self):
+        """测试部分更新集群"""
+        cluster = Cluster.objects.create(name='OriginalCluster')
+        data = {'description': '新描述'}
+        response = self.client.patch(f'/api/clusters/{cluster.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['description'], '新描述')
+
+    def test_delete_cluster(self):
+        """测试删除集群"""
+        cluster = Cluster.objects.create(name='DeleteCluster')
+        response = self.client.delete(f'/api/clusters/{cluster.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Cluster.objects.filter(pk=cluster.pk).exists())
+
+    def test_delete_cluster_with_hosts_fails(self):
+        """测试删除有关联主机的集群失败"""
+        cluster = Cluster.objects.create(name='ClusterWithHosts')
+        Host.objects.create(
+            hostname='host1',
+            ip_address='192.168.1.1',
+            username='admin',
+            cluster=cluster
+        )
+        response = self.client.delete(f'/api/clusters/{cluster.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('该集群下存在主机', response.data['error'])
+
+    def test_get_cluster_hosts(self):
+        """测试获取集群关联的主机列表"""
+        cluster = Cluster.objects.create(name='TestCluster')
+        Host.objects.create(
+            hostname='host1',
+            ip_address='192.168.1.1',
+            username='admin',
+            cluster=cluster
+        )
+        response = self.client.get(f'/api/clusters/{cluster.pk}/hosts/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['hostname'], 'host1')
+
+    def test_get_cluster_tree(self):
+        """测试获取集群树"""
+        Cluster.objects.create(name='Cluster1')
+        Cluster.objects.create(name='Cluster2')
+        response = self.client.get('/api/clusters/tree/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['label'], 'Cluster1')
+
+
+class HostViewSetTest(APITestCase):
+    """HostViewSet 测试"""
+
+    def setUp(self):
+        """创建测试用户并获取JWT token"""
+        self.user = Users.objects.create(
+            user='testuser2',
+            password='testpass123',
+            nickname='测试用户2'
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        self.cluster = Cluster.objects.create(name='TestCluster')
+
+    def test_list_hosts(self):
+        """测试列出主机"""
+        Host.objects.create(hostname='host1', ip_address='192.168.1.1', username='admin')
+        Host.objects.create(hostname='host2', ip_address='192.168.1.2', username='admin')
+        response = self.client.get('/api/hosts/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        self.assertEqual(len(results), 2)
+
+    def test_create_host(self):
+        """测试创建主机"""
+        data = {
+            'hostname': 'new-host',
+            'ip_address': '192.168.1.50',
+            'username': 'admin',
+            'password': 'secret',
+            'cluster': self.cluster.id,
+            'status': 'online'
+        }
+        response = self.client.post('/api/hosts/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['hostname'], 'new-host')
+
+    def test_retrieve_host(self):
+        """测试获取单个主机"""
+        host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.60',
+            username='admin'
+        )
+        response = self.client.get(f'/api/hosts/{host.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['hostname'], 'test-host')
+
+    def test_update_host(self):
+        """测试更新主机"""
+        host = Host.objects.create(
+            hostname='original',
+            ip_address='192.168.1.70',
+            username='admin'
+        )
+        data = {
+            'hostname': 'updated',
+            'ip_address': '192.168.1.70',
+            'port': 22,
+            'username': 'admin',
+            'status': 'offline'
+        }
+        response = self.client.put(f'/api/hosts/{host.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['hostname'], 'updated')
+
+    def test_partial_update_host(self):
+        """测试部分更新主机"""
+        host = Host.objects.create(
+            hostname='original',
+            ip_address='192.168.1.80',
+            username='admin'
+        )
+        data = {'status': 'offline'}
+        response = self.client.patch(f'/api/hosts/{host.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'offline')
+
+    def test_delete_host(self):
+        """测试删除主机"""
+        host = Host.objects.create(
+            hostname='to-delete',
+            ip_address='192.168.1.90',
+            username='admin'
+        )
+        response = self.client.delete(f'/api/hosts/{host.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Host.objects.filter(pk=host.pk).exists())
+
+
+class VMViewSetTest(APITestCase):
+    """VMViewSet 测试"""
+
+    def setUp(self):
+        """创建测试用户并获取JWT token"""
+        self.user = Users.objects.create(
+            user='testuser3',
+            password='testpass123',
+            nickname='测试用户3'
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        self.cluster = Cluster.objects.create(name='TestCluster')
+        self.host = Host.objects.create(
+            hostname='vm-host',
+            ip_address='192.168.1.50',
+            username='admin'
+        )
+
+    def test_list_vms(self):
+        """测试列出VM"""
+        VM.objects.create(name='vm1', uuid='uuid-1', host=self.host)
+        VM.objects.create(name='vm2', uuid='uuid-2', host=self.host)
+        response = self.client.get('/api/vms/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        self.assertEqual(len(results), 2)
+
+    def test_create_vm(self):
+        """测试创建VM"""
+        data = {
+            'name': 'new-vm',
+            'uuid': '550e8400-e29b-41d4-a716-446655440001',
+            'host': self.host.id,
+            'cluster': self.cluster.id,
+            'status': 'stopped',
+            'vcpu': 4,
+            'memory': 8589934592
+        }
+        response = self.client.post('/api/vms/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], 'new-vm')
+
+    def test_retrieve_vm(self):
+        """测试获取单个VM"""
+        vm = VM.objects.create(
+            name='test-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440002',
+            host=self.host
+        )
+        response = self.client.get(f'/api/vms/{vm.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'test-vm')
+
+    def test_update_vm(self):
+        """测试更新VM"""
+        vm = VM.objects.create(
+            name='original-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440003',
+            host=self.host
+        )
+        data = {
+            'name': 'updated-vm',
+            'host': self.host.id,
+            'status': 'running',
+            'vcpu': 4
+        }
+        response = self.client.put(f'/api/vms/{vm.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], 'updated-vm')
+
+    def test_partial_update_vm(self):
+        """测试部分更新VM"""
+        vm = VM.objects.create(
+            name='original-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440004',
+            host=self.host
+        )
+        data = {'status': 'running'}
+        response = self.client.patch(f'/api/vms/{vm.pk}/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'running')
+
+    def test_delete_vm(self):
+        """测试删除VM"""
+        vm = VM.objects.create(
+            name='to-delete',
+            uuid='550e8400-e29b-41d4-a716-446655440005',
+            host=self.host
+        )
+        response = self.client.delete(f'/api/vms/{vm.pk}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(VM.objects.filter(pk=vm.pk).exists())
+
+    def test_vm_start_action(self):
+        """测试VM启动操作"""
+        vm = VM.objects.create(
+            name='test-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440006',
+            host=self.host
+        )
+        response = self.client.post(f'/api/vms/{vm.pk}/start/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('VM启动功能待实现', response.data['message'])
+
+    def test_vm_stop_action(self):
+        """测试VM停止操作"""
+        vm = VM.objects.create(
+            name='test-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440007',
+            host=self.host
+        )
+        response = self.client.post(f'/api/vms/{vm.pk}/stop/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('VM停止功能待实现', response.data['message'])
+
+    def test_vm_reboot_action(self):
+        """测试VM重启操作"""
+        vm = VM.objects.create(
+            name='test-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440008',
+            host=self.host
+        )
+        response = self.client.post(f'/api/vms/{vm.pk}/reboot/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('VM重启功能待实现', response.data['message'])
