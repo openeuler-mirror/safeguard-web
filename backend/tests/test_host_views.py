@@ -343,3 +343,54 @@ class VMViewSetTest(APITestCase):
         response = self.client.post(f'/api/vms/{vm.pk}/reboot/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('VM重启功能待实现', response.data['message'])
+
+
+class HostPermissionDeniedTest(APITestCase):
+    """测试非管理员用户无权访问主机资源"""
+
+    def setUp(self):
+        """创建普通用户（非管理员）"""
+        # 创建普通用户角色
+        self.normal_auth = Authority.objects.create(
+            authority_id=890,
+            authority_name='普通用户'
+        )
+        # 创建普通用户
+        self.user = Users.objects.create(
+            user='normaluser',
+            password='testpass123',
+            nickname='普通用户'
+        )
+        UserAuthority.objects.create(user=self.user, authority=self.normal_auth)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_non_admin_cannot_list_clusters(self):
+        """测试非管理员不能列出集群"""
+        response = self.client.get('/api/clusters/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_create_host(self):
+        """测试非管理员不能创建主机"""
+        data = {
+            'hostname': 'new-host',
+            'ip_address': '192.168.1.50',
+            'username': 'admin'
+        }
+        response = self.client.post('/api/hosts/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_create_vm(self):
+        """测试非管理员不能创建VM"""
+        host = Host.objects.create(
+            hostname='vm-host',
+            ip_address='192.168.1.50',
+            username='admin'
+        )
+        data = {
+            'name': 'new-vm',
+            'uuid': '550e8400-e29b-41d4-a716-446655440001',
+            'host': host.id
+        }
+        response = self.client.post('/api/vms/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
