@@ -14,6 +14,9 @@ export default {
 <style scoped>
 .dashboard-container {
   padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 100px);
 }
 
 h2 {

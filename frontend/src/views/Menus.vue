@@ -290,6 +290,7 @@ export default {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  min-height: calc(100vh - 100px);
 }
 
 .menus-header {
@@ -363,8 +364,9 @@ export default {
 .menu-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 12px 16px;
+  gap: 12px;
 }
 
 .menu-row:hover {
@@ -381,18 +383,14 @@ export default {
   align-items: center;
   gap: 12px;
   flex: 1;
-}
-
-.menu-icon {
-  font-size: 16px;
-  width: 24px;
-  text-align: center;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .menu-title {
   font-weight: 500;
   color: #333;
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .menu-path {
@@ -402,6 +400,7 @@ export default {
   background: #ecf5ff;
   padding: 2px 8px;
   border-radius: 3px;
+  white-space: nowrap;
 }
 
 .menu-component {
@@ -411,6 +410,13 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 200px;
+}
+
+.menu-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
 .menu-actions {
