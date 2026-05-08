@@ -18,14 +18,14 @@ from backend.serializers.host import (
     VMUpdateSerializer,
     VMListSerializer,
 )
-from backend.permissions.host import HostPermission
+from backend.permissions.authority import IsAdmin
 
 
 class ClusterViewSet(viewsets.ModelViewSet):
     """集群管理视图集"""
     queryset = Cluster.objects.all().order_by('id')
     serializer_class = ClusterSerializer
-    permission_classes = [IsAuthenticated, HostPermission]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -75,7 +75,7 @@ class HostViewSet(viewsets.ModelViewSet):
     """主机管理视图集"""
     queryset = Host.objects.select_related('cluster').all().order_by('id')
     serializer_class = HostSerializer
-    permission_classes = [IsAuthenticated, HostPermission]
+    permission_classes = [IsAuthenticated, IsAdmin]
     filterset_fields = ['hostname', 'ip_address', 'status', 'cluster']
     search_fields = ['hostname', 'ip_address']
     ordering_fields = ['created_at', 'id']
@@ -101,7 +101,7 @@ class VMViewSet(viewsets.ModelViewSet):
     """虚拟机管理视图集"""
     queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
     serializer_class = VMSerializer
-    permission_classes = [IsAuthenticated, HostPermission]
+    permission_classes = [IsAuthenticated, IsAdmin]
     filterset_fields = ['name', 'uuid', 'status', 'host', 'cluster']
     search_fields = ['name', 'uuid', 'ip_address']
     ordering_fields = ['created_at', 'id']

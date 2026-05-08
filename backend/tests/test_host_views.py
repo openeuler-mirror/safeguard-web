@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from backend.models import Cluster, Host, VM, Users
+from backend.models import Cluster, Host, VM, Users, Authority, UserAuthority
 
 
 class ClusterViewSetTest(APITestCase):
@@ -11,11 +11,19 @@ class ClusterViewSetTest(APITestCase):
 
     def setUp(self):
         """创建测试用户并获取JWT token"""
+        # 创建管理员角色
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        # 创建测试用户
         self.user = Users.objects.create(
             user='testuser',
             password='testpass123',
             nickname='测试用户'
         )
+        # 绑定管理员角色
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
 
@@ -108,11 +116,19 @@ class HostViewSetTest(APITestCase):
 
     def setUp(self):
         """创建测试用户并获取JWT token"""
+        # 创建管理员角色
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        # 创建测试用户
         self.user = Users.objects.create(
             user='testuser2',
             password='testpass123',
             nickname='测试用户2'
         )
+        # 绑定管理员角色
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.cluster = Cluster.objects.create(name='TestCluster')
@@ -198,11 +214,19 @@ class VMViewSetTest(APITestCase):
 
     def setUp(self):
         """创建测试用户并获取JWT token"""
+        # 创建管理员角色
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        # 创建测试用户
         self.user = Users.objects.create(
             user='testuser3',
             password='testpass123',
             nickname='测试用户3'
         )
+        # 绑定管理员角色
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
         self.cluster = Cluster.objects.create(name='TestCluster')
