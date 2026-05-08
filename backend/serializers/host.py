@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from backend.models.host import Cluster, Host
+from backend.models.host import Cluster, Host, VM
 
 
 class ClusterSerializer(serializers.ModelSerializer):
@@ -76,3 +76,51 @@ class HostListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Host
         fields = ['id', 'hostname', 'ip_address', 'port', 'cluster', 'cluster_name', 'status', 'os_type']
+
+
+class VMSerializer(serializers.ModelSerializer):
+    """VM序列化器"""
+    host_name = serializers.CharField(source='host.hostname', read_only=True)
+    cluster_name = serializers.CharField(source='cluster.name', read_only=True)
+
+    class Meta:
+        model = VM
+        fields = [
+            'id', 'name', 'uuid', 'host', 'host_name', 'cluster', 'cluster_name',
+            'status', 'vcpu', 'memory', 'disk', 'ip_address', 'mac_address',
+            'os_type', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class VMCreateSerializer(serializers.ModelSerializer):
+    """VM创建序列化器"""
+    class Meta:
+        model = VM
+        fields = [
+            'name', 'uuid', 'host', 'cluster', 'status', 'vcpu',
+            'memory', 'disk', 'ip_address', 'mac_address', 'os_type'
+        ]
+
+
+class VMUpdateSerializer(serializers.ModelSerializer):
+    """VM更新序列化器"""
+    class Meta:
+        model = VM
+        fields = [
+            'name', 'host', 'cluster', 'status', 'vcpu',
+            'memory', 'disk', 'ip_address', 'mac_address', 'os_type'
+        ]
+
+
+class VMListSerializer(serializers.ModelSerializer):
+    """VM列表序列化器（简化字段）"""
+    host_name = serializers.CharField(source='host.hostname', read_only=True)
+    cluster_name = serializers.CharField(source='cluster.name', read_only=True)
+
+    class Meta:
+        model = VM
+        fields = [
+            'id', 'name', 'uuid', 'host', 'host_name', 'cluster', 'cluster_name',
+            'status', 'vcpu', 'ip_address', 'os_type'
+        ]

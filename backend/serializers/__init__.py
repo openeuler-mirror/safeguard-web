@@ -25,6 +25,10 @@ from backend.serializers.host import (
     HostCreateSerializer,
     HostUpdateSerializer,
     HostListSerializer,
+    VMSerializer,
+    VMCreateSerializer,
+    VMUpdateSerializer,
+    VMListSerializer,
 )
 
 __all__ = [
@@ -52,4 +56,9 @@ __all__ = [
     'HostCreateSerializer',
     'HostUpdateSerializer',
     'HostListSerializer',
+    # VM serializers
+    'VMSerializer',
+    'VMCreateSerializer',
+    'VMUpdateSerializer',
+    'VMListSerializer',
 ]
