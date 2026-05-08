@@ -38,6 +38,7 @@
             <td>{{ cluster.host_count || 0 }}</td>
             <td>{{ formatDate(cluster.created_at) }}</td>
             <td>
+              <button class="btn-info" @click="openHostDialog(cluster)">主机</button>
               <button class="btn-edit" @click="openEditDialog(cluster)">编辑</button>
               <button class="btn-delete" @click="confirmDelete(cluster)">删除</button>
             </td>
@@ -115,11 +116,54 @@
         </div>
       </div>
     </div>
+
+    <!-- 查看主机弹窗 -->
+    <div v-if="hostDialogVisible" class="dialog-overlay" @click.self="closeHostDialog">
+      <div class="dialog dialog-wide">
+        <div class="dialog-header">
+          <h3>{{ selectedCluster?.name }} - 主机列表</h3>
+          <button class="dialog-close" @click="closeHostDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div v-if="hostsLoading" class="loading">加载中...</div>
+          <div v-else-if="clusterHosts.length === 0" class="empty-text">该集群下没有主机</div>
+          <table v-else class="hosts-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>主机名</th>
+                <th>IP地址</th>
+                <th>端口</th>
+                <th>状态</th>
+                <th>操作系统</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="host in clusterHosts" :key="host.id">
+                <td>{{ host.id }}</td>
+                <td>{{ host.hostname }}</td>
+                <td>{{ host.ip_address }}</td>
+                <td>{{ host.port }}</td>
+                <td>
+                  <span :class="host.status === 'online' ? 'status-online' : 'status-offline'">
+                    {{ host.status === 'online' ? '在线' : '离线' }}
+                  </span>
+                </td>
+                <td>{{ host.os_type || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeHostDialog">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { getClusters, createCluster, updateCluster, deleteCluster } from '@/api/host'
+import { getClusters, createCluster, updateCluster, deleteCluster, getClusterHosts } from '@/api/host'
 
 export default {
   name: 'Clusters',
@@ -131,6 +175,7 @@ export default {
       searchName: '',
       dialogVisible: false,
       deleteDialogVisible: false,
+      hostDialogVisible: false,
       isEdit: false,
       selectedCluster: null,
       formError: '',
@@ -139,7 +184,9 @@ export default {
         name: '',
         description: '',
         vcenter_id: ''
-      }
+      },
+      clusterHosts: [],
+      hostsLoading: false
     }
   },
   mounted() {
@@ -248,6 +295,24 @@ export default {
         alert(e.response?.data?.error || '删除失败')
       }
     },
+    async openHostDialog(cluster) {
+      this.selectedCluster = cluster
+      this.hostDialogVisible = true
+      this.clusterHosts = []
+      this.hostsLoading = true
+      try {
+        const res = await getClusterHosts(cluster.id)
+        this.clusterHosts = res.data
+      } catch (e) {
+        alert('加载主机列表失败')
+      } finally {
+        this.hostsLoading = false
+      }
+    },
+    closeHostDialog() {
+      this.hostDialogVisible = false
+      this.clusterHosts = []
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
@@ -346,15 +411,25 @@ tr:hover td {
 .empty-text {
   text-align: center;
   color: #999;
+  padding: 20px;
 }
 
-.btn-edit, .btn-delete {
+.btn-edit, .btn-delete, .btn-info {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
   margin-right: 8px;
+}
+
+.btn-info {
+  background: #909399;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #a6a9ab;
 }
 
 .btn-edit {
@@ -394,6 +469,10 @@ tr:hover td {
   border-radius: 8px;
   width: 480px;
   max-width: 90%;
+}
+
+.dialog-wide {
+  width: 700px;
 }
 
 .dialog-header {
@@ -515,5 +594,31 @@ tr:hover td {
 
 .btn-danger:hover {
   background: #f78989;
+}
+
+/* 主机列表表格 */
+.hosts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hosts-table th,
+.hosts-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.hosts-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.status-online {
+  color: #67c23a;
+}
+
+.status-offline {
+  color: #909399;
 }
 </style>
