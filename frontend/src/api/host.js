@@ -37,6 +37,11 @@ export function getClusterTopology(id) {
   return api.get(`/clusters/${id}/topology/`)
 }
 
+// 获取集群关联的主机列表
+export function getClusterHosts(id) {
+  return api.get(`/clusters/${id}/hosts/`)
+}
+
 // ========== Host ==========
 
 // 获取主机列表

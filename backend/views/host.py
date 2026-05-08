@@ -40,6 +40,14 @@ class ClusterViewSet(viewsets.ModelViewSet):
             )
         return super().destroy(request, *args, **kwargs)
 
+    @action(detail=True, methods=['get'], url_path='hosts')
+    def hosts(self, request, pk=None):
+        """获取集群关联的主机列表"""
+        cluster = self.get_object()
+        hosts = cluster.host_set.all()
+        serializer = HostListSerializer(hosts, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'], url_path='topology')
     def topology(self, request, pk=None):
         """获取集群拓扑"""
