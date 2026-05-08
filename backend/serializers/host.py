@@ -30,13 +30,13 @@ class ClusterUpdateSerializer(serializers.ModelSerializer):
 
 
 class HostSerializer(serializers.ModelSerializer):
-    """主机序列化器"""
+    """主机序列化器（不返回密码）"""
     cluster_name = serializers.CharField(source='cluster.name', read_only=True)
 
     class Meta:
         model = Host
         fields = [
-            'id', 'hostname', 'ip_address', 'port', 'username', 'password',
+            'id', 'hostname', 'ip_address', 'port', 'username',
             'cluster', 'cluster_name', 'status', 'os_type',
             'created_at', 'updated_at'
         ]
@@ -52,9 +52,21 @@ class HostCreateSerializer(serializers.ModelSerializer):
 
 class HostUpdateSerializer(serializers.ModelSerializer):
     """主机更新序列化器"""
+    password = serializers.CharField(required=False, allow_blank=True, write_only=True)
+
     class Meta:
         model = Host
         fields = ['hostname', 'port', 'username', 'password', 'cluster', 'status', 'os_type']
+
+    def update(self, instance, validated_data):
+        # 如果 password 为空，不更新密码字段
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.password = password
+        instance.save()
+        return instance
 
 
 class HostListSerializer(serializers.ModelSerializer):
