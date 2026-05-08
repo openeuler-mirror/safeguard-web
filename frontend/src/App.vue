@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <header class="app-header" v-show="$store.state.auth.isAuthenticated">
+    <header class="app-header" v-show="$store.state.auth.isAuthenticated && !sidebarHidden">
       <h1 class="logo" @click="goHome">Safeguard</h1>
       <div class="header-right">
         <div class="user-info" @click="toggleMenu">
@@ -14,7 +14,7 @@
         </div>
       </div>
     </header>
-    <div class="app-body" v-show="$store.state.auth.isAuthenticated">
+    <div class="app-body" v-show="$store.state.auth.isAuthenticated && !sidebarHidden">
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <button class="sidebar-toggle" @click="toggleSidebar" :title="sidebarCollapsed ? '展开菜单' : '收起菜单'">
           <span>{{ sidebarCollapsed ? '▶' : '◀' }}</span>
@@ -61,7 +61,7 @@
         </transition>
       </main>
     </div>
-    <main class="main-content full-width" v-show="!$store.state.auth.isAuthenticated">
+    <main class="main-content full-width" v-show="!$store.state.auth.isAuthenticated || sidebarHidden">
       <router-view></router-view>
     </main>
   </div>
@@ -79,6 +79,9 @@ export default {
   computed: {
     menus() {
       return this.$store.state.auth.menus
+    },
+    sidebarHidden() {
+      return this.$route.meta?.hideSidebar
     }
   },
   mounted() {

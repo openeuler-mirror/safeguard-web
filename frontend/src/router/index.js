@@ -24,7 +24,7 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, hideSidebar: true }
   },
   {
     path: '/users',
@@ -60,7 +60,7 @@ const routes = [
     path: '/change-password',
     name: 'ChangePassword',
     component: () => import('@/views/ChangePassword.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, hideSidebar: true }
   },
   {
     path: '/forgot-password',
