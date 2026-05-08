@@ -20,16 +20,30 @@
           <span>{{ sidebarCollapsed ? '▶' : '◀' }}</span>
         </button>
         <nav class="sidebar-nav">
-          <router-link
-            v-for="menu in menus"
-            :key="menu.path"
-            :to="menu.path"
-            class="nav-item"
-            :title="sidebarCollapsed ? menu.meta?.title || menu.name : ''"
-          >
-            <span class="nav-icon">{{ getMenuIcon(menu.path) }}</span>
-            <span class="nav-text" v-if="!sidebarCollapsed">{{ menu.meta?.title || menu.name }}</span>
-          </router-link>
+          <div v-for="menu in menus" :key="menu.path" class="nav-group">
+            <router-link
+              :to="menu.path"
+              class="nav-item"
+              :title="sidebarCollapsed ? menu.meta?.title || menu.name : ''"
+            >
+              <span class="nav-icon">{{ getMenuIcon(menu.path) }}</span>
+              <span class="nav-text" v-if="!sidebarCollapsed">{{ menu.meta?.title || menu.name }}</span>
+              <span v-if="!sidebarCollapsed && menu.children?.length" class="nav-arrow">▾</span>
+            </router-link>
+            <!-- 子菜单 -->
+            <div v-if="!sidebarCollapsed && menu.children?.length" class="nav-children">
+              <router-link
+                v-for="child in menu.children"
+                :key="child.path"
+                :to="child.path"
+                class="nav-item child"
+                :title="child.meta?.title || child.name"
+              >
+                <span class="nav-icon">{{ getMenuIcon(child.path) }}</span>
+                <span class="nav-text">{{ child.meta?.title || child.name }}</span>
+              </router-link>
+            </div>
+          </div>
         </nav>
       </aside>
       <main class="main-content">
@@ -260,6 +274,25 @@ body {
 .nav-item.router-link-active {
   background: #ecf5ff;
   color: #409eff;
+}
+
+.nav-arrow {
+  margin-left: auto;
+  font-size: 10px;
+  color: #c0c4cc;
+}
+
+.nav-children {
+  padding-left: 20px;
+}
+
+.nav-item.child {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.nav-item.child .nav-icon {
+  font-size: 14px;
 }
 
 .nav-icon {
