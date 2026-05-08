@@ -10,7 +10,7 @@ from backend.views.auth import (
     ResetPasswordView,
 )
 from backend.views.authority import AuthorityViewSet, MenuViewSet
-from backend.views.host import ClusterViewSet
+from backend.views.host import ClusterViewSet, HostViewSet
 
 __all__ = [
     # User views
@@ -28,4 +28,5 @@ __all__ = [
     'MenuViewSet',
     # Host views
     'ClusterViewSet',
+    'HostViewSet',
 ]
