@@ -121,3 +121,16 @@ class MenuViewSet(viewsets.ModelViewSet):
         )
         serializer = MenuTreeSerializer(root_menus, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='reorder')
+    def reorder(self, request):
+        """批量更新菜单排序"""
+        orders = request.data.get('orders', [])
+        try:
+            for item in orders:
+                menu_id = item.get('id')
+                sort = item.get('sort')
+                Menu.objects.filter(id=menu_id).update(sort=sort)
+            return Response({'message': '排序更新成功'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
