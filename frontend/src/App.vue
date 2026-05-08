@@ -21,17 +21,26 @@
         </button>
         <nav class="sidebar-nav">
           <div v-for="menu in menus" :key="menu.path" class="nav-group">
-            <router-link
-              :to="menu.path"
-              class="nav-item"
-              :title="sidebarCollapsed ? menu.meta?.title || menu.name : ''"
-            >
-              <span class="nav-icon">{{ getMenuIcon(menu.path) }}</span>
-              <span class="nav-text" v-if="!sidebarCollapsed">{{ menu.meta?.title || menu.name }}</span>
-              <span v-if="!sidebarCollapsed && menu.children?.length" class="nav-arrow">▾</span>
-            </router-link>
+            <div class="nav-item-row">
+              <router-link
+                :to="menu.path"
+                class="nav-item parent"
+                :title="sidebarCollapsed ? menu.meta?.title || menu.name : ''"
+              >
+                <span class="nav-icon">{{ getMenuIcon(menu.path) }}</span>
+                <span class="nav-text" v-if="!sidebarCollapsed">{{ menu.meta?.title || menu.name }}</span>
+              </router-link>
+              <span
+                v-if="!sidebarCollapsed && menu.children?.length"
+                class="nav-expand"
+                :class="{ expanded: expandedMenus[menu.id] }"
+                @click.stop="toggleExpand(menu.id)"
+              >
+                <span class="expand-icon">{{ expandedMenus[menu.id] ? '▼' : '▶' }}</span>
+              </span>
+            </div>
             <!-- 子菜单 -->
-            <div v-if="!sidebarCollapsed && menu.children?.length" class="nav-children">
+            <div v-if="!sidebarCollapsed && menu.children?.length && expandedMenus[menu.id]" class="nav-children">
               <router-link
                 v-for="child in menu.children"
                 :key="child.path"
@@ -63,7 +72,8 @@ export default {
   data() {
     return {
       menuVisible: false,
-      sidebarCollapsed: false
+      sidebarCollapsed: false,
+      expandedMenus: {}
     }
   },
   computed: {
@@ -83,6 +93,9 @@ export default {
   methods: {
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed
+    },
+    toggleExpand(menuId) {
+      this.expandedMenus[menuId] = !this.expandedMenus[menuId]
     },
     toggleMenu(e) {
       e.stopPropagation()
@@ -249,21 +262,32 @@ body {
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   overflow-y: auto;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-item-row {
+  display: flex;
+  align-items: center;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  color: #606266;
+  gap: 10px;
+  padding: 10px 12px;
+  color: #303133;
   text-decoration: none;
   border-radius: 4px;
   transition: all 0.2s;
   white-space: nowrap;
+  flex: 1;
 }
 
 .nav-item:hover {
@@ -271,34 +295,67 @@ body {
   color: #409eff;
 }
 
+.nav-item.parent {
+  font-weight: 500;
+}
+
 .nav-item.router-link-active {
   background: #ecf5ff;
   color: #409eff;
 }
 
-.nav-arrow {
-  margin-left: auto;
+.nav-expand {
+  padding: 8px;
+  cursor: pointer;
+  color: #909399;
+  transition: color 0.2s;
+}
+
+.nav-expand:hover {
+  color: #409eff;
+}
+
+.expand-icon {
   font-size: 10px;
-  color: #c0c4cc;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.nav-expand.expanded .expand-icon {
+  transform: rotate(0deg);
+}
+
+.nav-expand:not(.expanded) .expand-icon {
+  transform: rotate(-90deg);
 }
 
 .nav-children {
-  padding-left: 20px;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .nav-item.child {
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-size: 13px;
+  color: #606266;
 }
 
-.nav-item.child .nav-icon {
-  font-size: 14px;
+.nav-item.child:hover {
+  color: #409eff;
+  background: #f5f7fa;
+}
+
+.nav-item.child.router-link-active {
+  color: #409eff;
+  background: #ecf5ff;
 }
 
 .nav-icon {
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
-  width: 24px;
+  width: 20px;
   text-align: center;
 }
 
