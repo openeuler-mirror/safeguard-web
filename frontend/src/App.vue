@@ -1,20 +1,20 @@
 <template>
   <div id="app">
-    <header class="app-header" v-if="$store.state.auth.isAuthenticated">
+    <header class="app-header" v-show="$store.state.auth.isAuthenticated">
       <h1 class="logo" @click="goHome">Safeguard</h1>
       <div class="header-right">
         <div class="user-info" @click="toggleMenu">
           <span>{{ $store.state.auth.user?.nickname || $store.state.auth.user?.user }}</span>
           <span class="arrow">▾</span>
         </div>
-        <div class="dropdown" v-if="menuVisible">
+        <div class="dropdown" v-show="menuVisible">
           <div class="dropdown-item" @click="goHome">回到主页</div>
           <div class="dropdown-item" @click="toProfile">个人信息</div>
           <div class="dropdown-item logout" @click="logout">注销</div>
         </div>
       </div>
     </header>
-    <div class="app-body" v-if="$store.state.auth.isAuthenticated">
+    <div class="app-body" v-show="$store.state.auth.isAuthenticated">
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <button class="sidebar-toggle" @click="toggleSidebar" :title="sidebarCollapsed ? '展开菜单' : '收起菜单'">
           <span>{{ sidebarCollapsed ? '▶' : '◀' }}</span>
@@ -33,10 +33,12 @@
         </nav>
       </aside>
       <main class="main-content">
-        <router-view></router-view>
+        <transition name="fade" mode="out-in">
+          <router-view></router-view>
+        </transition>
       </main>
     </div>
-    <main class="main-content full-width" v-if="!$store.state.auth.isAuthenticated">
+    <main class="main-content full-width" v-show="!$store.state.auth.isAuthenticated">
       <router-view></router-view>
     </main>
   </div>
@@ -114,10 +116,13 @@ export default {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #app {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 </style>
 
@@ -283,11 +288,21 @@ body {
   flex: 1;
   overflow-y: auto;
   background: #f5f7fa;
-  min-height: calc(100vh - 60px);
 }
 
 .main-content.full-width {
   width: 100%;
-  min-height: calc(100vh - 60px);
+  height: 100vh;
+}
+
+/* 路由过渡效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
