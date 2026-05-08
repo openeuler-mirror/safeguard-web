@@ -17,6 +17,11 @@ from backend.serializers.authority import (
     UserAuthoritySerializer,
     SetUserRoleSerializer,
 )
+from backend.serializers.host import (
+    ClusterSerializer,
+    ClusterCreateSerializer,
+    ClusterUpdateSerializer,
+)
 
 __all__ = [
     # User serializers
@@ -35,4 +40,8 @@ __all__ = [
     'AuthorityButtonSerializer',
     'UserAuthoritySerializer',
     'SetUserRoleSerializer',
+    # Host serializers
+    'ClusterSerializer',
+    'ClusterCreateSerializer',
+    'ClusterUpdateSerializer',
 ]
