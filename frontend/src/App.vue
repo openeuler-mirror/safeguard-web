@@ -33,7 +33,9 @@
         </nav>
       </aside>
       <main class="main-content">
-        <router-view></router-view>
+        <transition name="fade" mode="out-in">
+          <router-view></router-view>
+        </transition>
       </main>
     </div>
     <main class="main-content full-width" v-if="!$store.state.auth.isAuthenticated">
@@ -289,5 +291,16 @@ body {
 .main-content.full-width {
   width: 100%;
   min-height: calc(100vh - 60px);
+}
+
+/* 路由过渡效果 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

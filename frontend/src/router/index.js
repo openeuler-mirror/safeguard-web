@@ -83,23 +83,27 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const isAuthenticated = store.state.auth.isAuthenticated
+  const hasToken = !!localStorage.getItem('access_token')
+  const hasUser = !!store.state.auth.user
 
   if (requiresAuth && !isAuthenticated) {
-    // 检查是否有token
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      // 尝试获取用户信息
-      try {
-        await store.dispatch('auth/fetchUser')
-        next()
-      } catch (e) {
-        next('/login')
+    if (hasToken) {
+      // 有 token 但没有用户信息，才获取
+      if (!hasUser) {
+        try {
+          await store.dispatch('auth/fetchUser')
+        } catch (e) {
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
+          next('/login')
+          return
+        }
       }
+      next()
     } else {
       next('/login')
     }
   } else if (!requiresAuth && isAuthenticated && (to.path === '/login' || to.path === '/register')) {
-    // 已登录且访问公开页面，跳转
     next('/dashboard')
   } else {
     next()
