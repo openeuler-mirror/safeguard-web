@@ -1,12 +1,7 @@
 <template>
   <div id="app">
     <header class="app-header" v-if="$store.state.auth.isAuthenticated">
-      <div class="header-left">
-        <button class="toggle-btn" @click="toggleSidebar" :title="sidebarCollapsed ? '展开菜单' : '收起菜单'">
-          <span class="toggle-icon">{{ sidebarCollapsed ? '▶' : '◀' }}</span>
-        </button>
-        <h1 class="logo" @click="goHome">Safeguard</h1>
-      </div>
+      <h1 class="logo" @click="goHome">Safeguard</h1>
       <div class="header-right">
         <div class="user-info" @click="toggleMenu">
           <span>{{ $store.state.auth.user?.nickname || $store.state.auth.user?.user }}</span>
@@ -21,6 +16,9 @@
     </header>
     <div class="app-body" v-if="$store.state.auth.isAuthenticated">
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <button class="sidebar-toggle" @click="toggleSidebar" :title="sidebarCollapsed ? '展开菜单' : '收起菜单'">
+          <span>{{ sidebarCollapsed ? '▶' : '◀' }}</span>
+        </button>
         <nav class="sidebar-nav">
           <router-link
             v-for="menu in menus"
@@ -127,42 +125,13 @@ body {
   background: #409eff;
   color: #fff;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 16px 0 8px;
+  padding: 0 16px;
   position: relative;
   z-index: 1000;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.toggle-btn {
-  background: rgba(255,255,255,0.2);
-  border: none;
-  color: #fff;
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.toggle-btn:hover {
-  background: rgba(255,255,255,0.3);
-}
-
-.toggle-icon {
-  font-size: 12px;
-}
-
-.header-left .logo {
+.logo {
   font-size: 20px;
   cursor: pointer;
   margin: 0;
@@ -227,10 +196,32 @@ body {
   border-right: 1px solid #e4e7ed;
   transition: width 0.3s ease;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar.collapsed {
   width: 60px;
+}
+
+.sidebar-toggle {
+  background: #f5f7fa;
+  border: none;
+  border-bottom: 1px solid #e4e7ed;
+  color: #606266;
+  width: 100%;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+  background: #e4e7ed;
+  color: #409eff;
 }
 
 .sidebar-nav {
@@ -238,6 +229,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .nav-item {
