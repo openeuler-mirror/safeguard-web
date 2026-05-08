@@ -4,11 +4,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from backend.models.host import Cluster
+from backend.models.host import Cluster, Host
 from backend.serializers.host import (
     ClusterSerializer,
     ClusterCreateSerializer,
     ClusterUpdateSerializer,
+    HostSerializer,
+    HostCreateSerializer,
+    HostUpdateSerializer,
+    HostListSerializer,
 )
 from backend.permissions.host import HostPermission
 
@@ -43,3 +47,29 @@ class ClusterViewSet(viewsets.ModelViewSet):
         clusters = Cluster.objects.all().order_by('id')
         data = [{'id': c.id, 'name': c.name, 'label': c.name} for c in clusters]
         return Response(data)
+
+
+class HostViewSet(viewsets.ModelViewSet):
+    """主机管理视图集"""
+    queryset = Host.objects.select_related('cluster').all().order_by('id')
+    serializer_class = HostSerializer
+    permission_classes = [IsAuthenticated, HostPermission]
+    filterset_fields = ['hostname', 'ip_address', 'status', 'cluster']
+    search_fields = ['hostname', 'ip_address']
+    ordering_fields = ['created_at', 'id']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return HostCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return HostUpdateSerializer
+        if self.action == 'list':
+            return HostListSerializer
+        return HostSerializer
+
+    @action(detail=True, methods=['post'], url_path='collect_hardware')
+    def collect_hardware(self, request, pk=None):
+        """采集主机硬件信息"""
+        host = self.get_object()
+        # TODO: 调用 HostService.collect_hardware()
+        return Response({'message': '硬件信息采集功能待实现'})
