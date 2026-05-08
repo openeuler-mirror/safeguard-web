@@ -30,6 +30,16 @@ class ClusterViewSet(viewsets.ModelViewSet):
             return ClusterUpdateSerializer
         return ClusterSerializer
 
+    def destroy(self, request, *args, **kwargs):
+        """删除集群前检查是否有主机关联"""
+        cluster = self.get_object()
+        if cluster.host_set.exists():
+            return Response(
+                {'error': '该集群下存在主机，无法删除'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @action(detail=True, methods=['get'], url_path='topology')
     def topology(self, request, pk=None):
         """获取集群拓扑"""
