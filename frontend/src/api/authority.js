@@ -76,3 +76,8 @@ export function updateMenu(id, data) {
 export function deleteMenu(id) {
   return api.delete(`${BASE_URL}/menus/${id}/`)
 }
+
+// 批量更新菜单排序
+export function reorderMenus(orders) {
+  return api.post(`${BASE_URL}/menus/reorder/`, { orders })
+}
