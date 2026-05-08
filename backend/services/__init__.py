@@ -1,7 +1,7 @@
 # Services module
 from backend.services.user import UserService, UserAuthorityService
 from backend.services.authority import AuthorityService, MenuService
-from backend.services.host import ClusterService, HostService
+from backend.services.host import ClusterService, HostService, VMService
 
 __all__ = [
     'UserService',
@@ -10,4 +10,5 @@ __all__ = [
     'MenuService',
     'ClusterService',
     'HostService',
+    'VMService',
 ]
