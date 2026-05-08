@@ -31,7 +31,7 @@ class ClusterUpdateSerializer(serializers.ModelSerializer):
 
 class HostSerializer(serializers.ModelSerializer):
     """主机序列化器（不返回密码）"""
-    cluster_name = serializers.CharField(source='cluster.name', read_only=True)
+    cluster_name = serializers.CharField(source='cluster.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Host
@@ -80,8 +80,8 @@ class HostListSerializer(serializers.ModelSerializer):
 
 class VMSerializer(serializers.ModelSerializer):
     """VM序列化器"""
-    host_name = serializers.CharField(source='host.hostname', read_only=True)
-    cluster_name = serializers.CharField(source='cluster.name', read_only=True)
+    host_name = serializers.CharField(source='host.hostname', read_only=True, allow_null=True)
+    cluster_name = serializers.CharField(source='cluster.name', read_only=True, allow_null=True)
 
     class Meta:
         model = VM
