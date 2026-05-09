@@ -73,3 +73,45 @@ export function deleteHost(id) {
 export function collectHardware(id) {
   return api.post(`/hosts/${id}/collect_hardware/`)
 }
+
+// ========== VM ==========
+
+// 获取VM列表
+export function getVMs(params) {
+  return api.get('/vms/', { params })
+}
+
+// 获取VM详情
+export function getVM(id) {
+  return api.get(`/vms/${id}/`)
+}
+
+// 创建VM
+export function createVM(data) {
+  return api.post('/vms/', data)
+}
+
+// 更新VM
+export function updateVM(id, data) {
+  return api.put(`/vms/${id}/`, data)
+}
+
+// 删除VM
+export function deleteVM(id) {
+  return api.delete(`/vms/${id}/`)
+}
+
+// 启动VM
+export function startVM(id) {
+  return api.post(`/vms/${id}/start/`)
+}
+
+// 停止VM
+export function stopVM(id) {
+  return api.post(`/vms/${id}/stop/`)
+}
+
+// 重启VM
+export function rebootVM(id) {
+  return api.post(`/vms/${id}/reboot/`)
+}

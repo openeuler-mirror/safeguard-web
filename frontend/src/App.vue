@@ -128,6 +128,7 @@ export default {
         '/menus': '📋',
         '/clusters': '🗄️',
         '/hosts': '🖥️',
+        '/vms': '💻',
         '/profile': '👤',
         '/change-password': '🔑'
       }
