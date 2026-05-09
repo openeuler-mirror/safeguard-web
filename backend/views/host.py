@@ -19,6 +19,7 @@ from backend.serializers.host import (
     VMListSerializer,
 )
 from backend.permissions.authority import IsAdmin
+from backend.common import ErrCode, SuccessResponse, ErrorResponse
 
 
 class ClusterViewSet(viewsets.ModelViewSet):
@@ -38,10 +39,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         """删除集群前检查是否有主机关联"""
         cluster = self.get_object()
         if cluster.host_set.exists():
-            return Response(
-                {'error': '该集群下存在主机，无法删除'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return ErrorResponse(ErrCode.CLUSTER_HAS_HOSTS)
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'], url_path='hosts')
@@ -50,14 +48,14 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster = self.get_object()
         hosts = cluster.host_set.all()
         serializer = HostListSerializer(hosts, many=True)
-        return Response(serializer.data)
+        return SuccessResponse(serializer.data)
 
     @action(detail=True, methods=['get'], url_path='topology')
     def topology(self, request, pk=None):
         """获取集群拓扑"""
         cluster = self.get_object()
         # TODO: 调用 ClusterService.get_cluster_topology()
-        return Response({
+        return SuccessResponse({
             'message': '拓扑功能待实现',
             'cluster_id': cluster.id,
             'cluster_name': cluster.name
@@ -68,7 +66,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         """获取集群树（用于下拉选择）"""
         clusters = Cluster.objects.all().order_by('id')
         data = [{'id': c.id, 'name': c.name, 'label': c.name} for c in clusters]
-        return Response(data)
+        return SuccessResponse(data)
 
 
 class HostViewSet(viewsets.ModelViewSet):
@@ -94,7 +92,7 @@ class HostViewSet(viewsets.ModelViewSet):
         """采集主机硬件信息"""
         host = self.get_object()
         # TODO: 调用 HostService.collect_hardware()
-        return Response({'message': '硬件信息采集功能待实现'})
+        return SuccessResponse(errmsg='硬件信息采集功能待实现')
 
 
 class VMViewSet(viewsets.ModelViewSet):
