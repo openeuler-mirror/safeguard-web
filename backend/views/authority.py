@@ -131,4 +131,4 @@ class MenuViewSet(viewsets.ModelViewSet):
                 Menu.objects.filter(id=menu_id).update(sort=sort)
             return SuccessResponse(errmsg='排序更新成功')
         except Exception as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e))

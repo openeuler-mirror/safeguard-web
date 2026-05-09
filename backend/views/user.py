@@ -43,13 +43,13 @@ class UsersViewSet(viewsets.ModelViewSet):
         try:
             UserUpdateRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return SuccessResponse(serializer.data)
-        return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(serializer.errors))
+        return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(serializer.errors))
 
     @action(detail=False, methods=['get'], url_path='menus')
     def menus(self, request):
@@ -78,7 +78,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         try:
             data = ResetPasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         user.password = make_password(data.new_password)
         user.save()
@@ -93,7 +93,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         try:
             data = ChangePasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         if not check_password(data.old_password, request.user.password):
             return ErrorResponse(ErrCode.PASSWORD_ERROR)
