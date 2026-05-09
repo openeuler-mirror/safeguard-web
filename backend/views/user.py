@@ -9,10 +9,10 @@ from backend.models import Users, UserAuthority, Authority
 from backend.serializers.user import UserSerializer, UserCreateSerializer
 from backend.serializers.authority import MenuSerializer, MenuTreeSerializer, UserAuthoritySerializer
 from backend.schemas import UserUpdateRequest, ResetPasswordRequest, MessageResponse, UserResponse
-from backend.common import ErrCode, SuccessResponse, ErrorResponse
+from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
 
 
-class UsersViewSet(viewsets.ModelViewSet):
+class UsersViewSet(UnifiedModelViewSet):
     """用户管理视图集
     提供用户的增删改查功能
     """
