@@ -106,18 +106,18 @@ class SendVerificationCodeView(APIView):
         try:
             data = SendVerificationCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         email = data.email
         user = None
 
         if data.purpose == 'register':
             if Users.objects.filter(email=email).exists():
-                return Response({"error": "该邮箱已被注册"}, status=400)
+                return ErrorResponse(ErrCode.EMAIL_ALREADY_EXISTS)
         elif data.purpose == 'forgot':
             user = Users.objects.filter(email=email).first()
             if not user:
-                return Response({"error": "该邮箱未注册"}, status=400)
+                return ErrorResponse(ErrCode.EMAIL_NOT_FOUND)
 
         # 生成6位验证码
         code = ''.join(random.choices(string.digits, k=6))
@@ -132,11 +132,10 @@ class SendVerificationCodeView(APIView):
 
         if IS_LOCAL:
             local_url = f"http://localhost:{BACKEND_PORT}/api/auth/local-verify/{email}/{code}/"
-            return Response({
-                "message": "本地验证模式",
+            return SuccessResponse({
                 "local_verify_url": local_url,
                 "code": code
-            })
+            }, errmsg="本地验证模式")
 
         try:
             send_mail(
@@ -147,9 +146,9 @@ class SendVerificationCodeView(APIView):
                 fail_silently=False,
             )
         except Exception as e:
-            return Response({"error": f"邮件发送失败: {str(e)}"}, status=500)
+            return ErrorResponse(ErrCode.CODE_SEND_FAILED, errmsg=f"邮件发送失败: {str(e)}")
 
-        return Response({"message": "验证码已发送"})
+        return SuccessResponse(errmsg="验证码已发送")
 
 
 class LocalVerifyView(APIView):
