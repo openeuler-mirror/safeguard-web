@@ -9,6 +9,7 @@ from backend.serializers.authority import (
     MenuSerializer, MenuUpdateSerializer, MenuTreeSerializer, MenuButtonSerializer,
 )
 from backend.permissions import AuthorityPermission
+from backend.common import ErrCode, SuccessResponse, ErrorResponse
 
 
 class AuthorityViewSet(viewsets.ModelViewSet):
@@ -32,14 +33,14 @@ class AuthorityViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             menus = Menu.objects.filter(authoritymenu__authority=authority)
             serializer = MenuSerializer(menus, many=True)
-            return Response(serializer.data)
+            return SuccessResponse(serializer.data)
 
         elif request.method == 'PUT':
             menu_ids = request.data.get('menu_ids', [])
             AuthorityMenu.objects.filter(authority=authority).delete()
             for menu_id in menu_ids:
                 AuthorityMenu.objects.create(authority=authority, menu_id=menu_id)
-            return Response({'message': '菜单绑定成功'})
+            return SuccessResponse(errmsg='菜单绑定成功')
 
     @action(detail=True, methods=['get', 'put'], url_path='btns')
     def btns(self, request, pk=None):
@@ -50,7 +51,7 @@ class AuthorityViewSet(viewsets.ModelViewSet):
             button_relations = AuthorityButton.objects.filter(authority=authority).select_related('menu', 'button')
             buttons = [rel.button for rel in button_relations]
             serializer = MenuButtonSerializer(buttons, many=True)
-            return Response(serializer.data)
+            return SuccessResponse(serializer.data)
 
         elif request.method == 'PUT':
             btn_data = request.data.get('buttons', [])
@@ -64,7 +65,7 @@ class AuthorityViewSet(viewsets.ModelViewSet):
                         menu_id=menu_id,
                         button_id=button_id
                     )
-            return Response({'message': '按钮权限绑定成功'})
+            return SuccessResponse(errmsg='按钮权限绑定成功')
 
     @action(detail=True, methods=['post'], url_path='copy')
     def copy(self, request, pk=None):
@@ -94,10 +95,7 @@ class AuthorityViewSet(viewsets.ModelViewSet):
                 button=rel.button
             )
 
-        return Response({
-            'message': '角色复制成功',
-            'id': new_authority.id
-        }, status=status.HTTP_201_CREATED)
+        return SuccessResponse({'id': new_authority.id}, errmsg='角色复制成功')
 
 
 class MenuViewSet(viewsets.ModelViewSet):
@@ -120,7 +118,7 @@ class MenuViewSet(viewsets.ModelViewSet):
             ))
         )
         serializer = MenuTreeSerializer(root_menus, many=True)
-        return Response(serializer.data)
+        return SuccessResponse(serializer.data)
 
     @action(detail=False, methods=['post'], url_path='reorder')
     def reorder(self, request):
@@ -131,6 +129,6 @@ class MenuViewSet(viewsets.ModelViewSet):
                 menu_id = item.get('id')
                 sort = item.get('sort')
                 Menu.objects.filter(id=menu_id).update(sort=sort)
-            return Response({'message': '排序更新成功'})
+            return SuccessResponse(errmsg='排序更新成功')
         except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e))
