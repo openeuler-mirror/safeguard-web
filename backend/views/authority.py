@@ -9,10 +9,10 @@ from backend.serializers.authority import (
     MenuSerializer, MenuUpdateSerializer, MenuTreeSerializer, MenuButtonSerializer,
 )
 from backend.permissions import AuthorityPermission
-from backend.common import ErrCode, SuccessResponse, ErrorResponse
+from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
 
 
-class AuthorityViewSet(viewsets.ModelViewSet):
+class AuthorityViewSet(UnifiedModelViewSet):
     """角色管理视图集"""
     queryset = Authority.objects.all().order_by('authority_id')
     serializer_class = AuthoritySerializer
@@ -98,7 +98,7 @@ class AuthorityViewSet(viewsets.ModelViewSet):
         return SuccessResponse({'id': new_authority.id}, errmsg='角色复制成功')
 
 
-class MenuViewSet(viewsets.ModelViewSet):
+class MenuViewSet(UnifiedModelViewSet):
     """菜单管理视图集"""
     queryset = Menu.objects.all().order_by('sort')
     serializer_class = MenuSerializer
@@ -131,4 +131,4 @@ class MenuViewSet(viewsets.ModelViewSet):
                 Menu.objects.filter(id=menu_id).update(sort=sort)
             return SuccessResponse(errmsg='排序更新成功')
         except Exception as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e))

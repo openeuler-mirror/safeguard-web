@@ -19,10 +19,10 @@ from backend.serializers.host import (
     VMListSerializer,
 )
 from backend.permissions.authority import IsAdmin
-from backend.common import ErrCode, SuccessResponse, ErrorResponse
+from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
 
 
-class ClusterViewSet(viewsets.ModelViewSet):
+class ClusterViewSet(UnifiedModelViewSet):
     """集群管理视图集"""
     queryset = Cluster.objects.all().order_by('id')
     serializer_class = ClusterSerializer
@@ -69,7 +69,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         return SuccessResponse(data)
 
 
-class HostViewSet(viewsets.ModelViewSet):
+class HostViewSet(UnifiedModelViewSet):
     """主机管理视图集"""
     queryset = Host.objects.select_related('cluster').all().order_by('id')
     serializer_class = HostSerializer
@@ -95,7 +95,7 @@ class HostViewSet(viewsets.ModelViewSet):
         return SuccessResponse(errmsg='硬件信息采集功能待实现')
 
 
-class VMViewSet(viewsets.ModelViewSet):
+class VMViewSet(UnifiedModelViewSet):
     """虚拟机管理视图集"""
     queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
     serializer_class = VMSerializer

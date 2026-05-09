@@ -34,7 +34,7 @@ class LoginView(APIView):
         try:
             data = LoginRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         # 手动查找用户并验证（支持用户名或邮箱登录）
         user = None
@@ -106,7 +106,7 @@ class SendVerificationCodeView(APIView):
         try:
             data = SendVerificationCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         email = data.email
         user = None
@@ -241,7 +241,7 @@ class VerifyCodeView(APIView):
         try:
             data = VerifyCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         email = data.email
         code = data.code
@@ -271,7 +271,7 @@ class ForgotPasswordView(APIView):
         try:
             data = ForgotPasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         email = data.email
 
@@ -319,7 +319,7 @@ class ResetPasswordView(APIView):
         try:
             data = ResetPasswordWithCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
         email = data.email
         code = data.code

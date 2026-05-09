@@ -2,6 +2,7 @@
 from backend.common.errcodes import ErrCode, get_errmsg
 from backend.common.responses import ApiResponse, SuccessResponse, ErrorResponse, api_response
 from backend.common.mixins import UnifiedSerializerMixin, ListUnifiedSerializerMixin
+from backend.common.viewsets import UnifiedModelViewSet
 
 __all__ = [
     'ErrCode',
@@ -12,4 +13,5 @@ __all__ = [
     'api_response',
     'UnifiedSerializerMixin',
     'ListUnifiedSerializerMixin',
+    'UnifiedModelViewSet',
 ]
