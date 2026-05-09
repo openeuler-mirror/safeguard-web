@@ -71,13 +71,13 @@ class RegisterView(APIView):
         password = request.data.get('password')
 
         if not user or not password:
-            return Response({"error": "用户名和密码不能为空"}, status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR)
 
         if len(password) < 6:
-            return Response({"error": "密码长度至少6位"}, status=400)
+            return ErrorResponse(ErrCode.PASSWORD_TOO_SHORT)
 
         if Users.objects.filter(user=user).exists():
-            return Response({"error": "用户名已存在"}, status=400)
+            return ErrorResponse(ErrCode.USER_ALREADY_EXISTS)
 
         nickname = request.data.get('nickname', '系统用户')
         phone = request.data.get('phone', '')
@@ -94,7 +94,7 @@ class RegisterView(APIView):
         except Authority.DoesNotExist:
             pass
 
-        return Response(UserSerializer(new_user).data, status=201)
+        return SuccessResponse(UserSerializer(new_user).data)
 
 
 class SendVerificationCodeView(APIView):
