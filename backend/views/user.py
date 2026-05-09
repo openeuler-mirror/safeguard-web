@@ -9,6 +9,7 @@ from backend.models import Users, UserAuthority, Authority
 from backend.serializers.user import UserSerializer, UserCreateSerializer
 from backend.serializers.authority import MenuSerializer, MenuTreeSerializer, UserAuthoritySerializer
 from backend.schemas import UserUpdateRequest, ResetPasswordRequest, MessageResponse, UserResponse
+from backend.common import ErrCode, SuccessResponse, ErrorResponse
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -37,18 +38,18 @@ class UsersViewSet(viewsets.ModelViewSet):
         """获取/更新当前登录用户信息"""
         user = request.user
         if request.method == 'GET':
-            return Response(UserSerializer(user).data)
+            return SuccessResponse(UserSerializer(user).data)
 
         try:
             UserUpdateRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         serializer = UserSerializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+            return SuccessResponse(serializer.data)
+        return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(serializer.errors))
 
     @action(detail=False, methods=['get'], url_path='menus')
     def menus(self, request):
@@ -68,7 +69,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
 
         serializer = MenuTreeSerializer(root_menus, many=True)
-        return Response(serializer.data)
+        return SuccessResponse(serializer.data)
 
     @action(detail=True, methods=['put'], url_path='password')
     def set_password(self, request, pk=None):
@@ -77,11 +78,11 @@ class UsersViewSet(viewsets.ModelViewSet):
         try:
             data = ResetPasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         user.password = make_password(data.new_password)
         user.save()
-        return Response({"message": "密码重置成功"})
+        return SuccessResponse(errmsg="密码重置成功")
 
     @action(detail=False, methods=['put'], url_path='me/password')
     def change_my_password(self, request):
@@ -92,14 +93,14 @@ class UsersViewSet(viewsets.ModelViewSet):
         try:
             data = ChangePasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         if not check_password(data.old_password, request.user.password):
-            return Response({"error": "旧密码不正确"}, status=400)
+            return ErrorResponse(ErrCode.PASSWORD_ERROR)
 
         request.user.set_password(data.new_password)
         request.user.save()
-        return Response({"message": "密码修改成功"})
+        return SuccessResponse(errmsg="密码修改成功")
 
     @action(detail=True, methods=['get'], url_path='authorities')
     def authorities(self, request, pk=None):
@@ -107,7 +108,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user_authorities = UserAuthority.objects.filter(user=user)
         serializer = UserAuthoritySerializer(user_authorities, many=True)
-        return Response(serializer.data)
+        return SuccessResponse(serializer.data)
 
     @action(detail=True, methods=['put'], url_path='authorities')
     def set_authorities(self, request, pk=None):
@@ -126,7 +127,7 @@ class UsersViewSet(viewsets.ModelViewSet):
             except Authority.DoesNotExist:
                 pass
 
-        return Response({"message": "角色设置成功"})
+        return SuccessResponse(errmsg="角色设置成功")
 
     @action(detail=True, methods=['post'], url_path='authorities/add')
     def add_authority(self, request, pk=None):
@@ -135,19 +136,19 @@ class UsersViewSet(viewsets.ModelViewSet):
         authority_id = request.data.get('authority_id')
 
         if not authority_id:
-            return Response({"error": "authority_id 不能为空"}, status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR)
 
         try:
             authority = Authority.objects.get(pk=authority_id)
         except Authority.DoesNotExist:
-            return Response({"error": "角色不存在"}, status=400)
+            return ErrorResponse(ErrCode.AUTHORITY_NOT_FOUND)
 
         user_authority, created = UserAuthority.objects.get_or_create(user=user, authority=authority)
         if not created:
-            return Response({"error": "用户已有该角色"}, status=400)
+            return ErrorResponse(ErrCode.USER_HAS_AUTHORITY)
 
         serializer = UserAuthoritySerializer(user_authority)
-        return Response(serializer.data, status=201)
+        return SuccessResponse(serializer.data)
 
     @action(detail=True, methods=['delete'], url_path='authorities')
     def remove_authority(self, request, pk=None):
@@ -156,12 +157,12 @@ class UsersViewSet(viewsets.ModelViewSet):
         authority_id = request.data.get('authority_id')
 
         if not authority_id:
-            return Response({"error": "authority_id 不能为空"}, status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR)
 
         try:
             user_authority = UserAuthority.objects.get(user=user, authority_id=authority_id)
             user_authority.delete()
         except UserAuthority.DoesNotExist:
-            return Response({"error": "用户没有该角色"}, status=400)
+            return ErrorResponse(ErrCode.USER_NOT_HAS_AUTHORITY)
 
-        return Response({"message": "角色移除成功"})
+        return SuccessResponse(errmsg="角色移除成功")
