@@ -27,6 +27,10 @@ from backend.schemas.host import (
     HostCreateRequest,
     HostUpdateRequest,
     HostResponse,
+    VMBase,
+    VMCreateRequest,
+    VMUpdateRequest,
+    VMResponse,
 )
 
 __all__ = [
@@ -56,4 +60,9 @@ __all__ = [
     'HostCreateRequest',
     'HostUpdateRequest',
     'HostResponse',
+    # VM schemas
+    'VMBase',
+    'VMCreateRequest',
+    'VMUpdateRequest',
+    'VMResponse',
 ]
