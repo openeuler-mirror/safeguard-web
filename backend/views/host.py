@@ -118,18 +118,18 @@ class VMViewSet(viewsets.ModelViewSet):
         """启动VM"""
         vm = self.get_object()
         # TODO: 调用 VMService.start_vm()
-        return Response({'message': 'VM启动功能待实现'})
+        return SuccessResponse(errmsg='VM启动功能待实现')
 
     @action(detail=True, methods=['post'], url_path='stop')
     def stop(self, request, pk=None):
         """停止VM"""
         vm = self.get_object()
         # TODO: 调用 VMService.stop_vm()
-        return Response({'message': 'VM停止功能待实现'})
+        return SuccessResponse(errmsg='VM停止功能待实现')
 
     @action(detail=True, methods=['post'], url_path='reboot')
     def reboot(self, request, pk=None):
         """重启VM"""
         vm = self.get_object()
         # TODO: 调用 VMService.reboot_vm()
-        return Response({'message': 'VM重启功能待实现'})
+        return SuccessResponse(errmsg='VM重启功能待实现')

@@ -47,3 +47,18 @@ class ErrorResponse(ApiResponse):
         if errmsg is None:
             errmsg = get_errmsg(errno)
         super().__init__(errno=errno, data=data, errmsg=errmsg)
+
+
+def api_response(errno=0, data=None, errmsg=None):
+    """
+    统一响应格式辅助函数
+    用于在视图中快速构建响应
+    """
+    if errmsg is None:
+        errmsg = get_errmsg(errno)
+
+    return {
+        'errno': errno,
+        'errmsg': errmsg,
+        'data': data if errno == 0 else None
+    }
