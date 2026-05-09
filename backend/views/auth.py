@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.http import HttpResponse
 from pydantic import ValidationError
+from datetime import timedelta
 import random
 import string
 
@@ -17,6 +18,7 @@ from backend.schemas import (
     SendVerificationCodeRequest, VerifyCodeRequest,
     ForgotPasswordRequest, ResetPasswordWithCodeRequest,
 )
+from backend.common import ErrCode, SuccessResponse, ErrorResponse
 from safeguard_web.settings import (
     IS_LOCAL, EMAIL_CODE_COOLDOWN, EMAIL_VERIFICATION_CODE_TTL,
     BACKEND_PORT, EMAIL_FROM, DEFAULT_USER_AUTHORITY_ID
@@ -32,7 +34,7 @@ class LoginView(APIView):
         try:
             data = LoginRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         # 手动查找用户并验证（支持用户名或邮箱登录）
         user = None
@@ -42,18 +44,18 @@ class LoginView(APIView):
             user = Users.objects.get(email=data.username)
 
         if not user:
-            return Response({"error": "用户名或密码错误"}, status=401)
+            return ErrorResponse(ErrCode.AUTH_FAILED)
 
         if not check_password(data.password, user.password):
-            return Response({"error": "用户名或密码错误"}, status=401)
+            return ErrorResponse(ErrCode.AUTH_FAILED)
 
         if not user.is_active:
-            return Response({"error": "用户已被禁用"}, status=401)
+            return ErrorResponse(ErrCode.USER_DISABLED)
 
         # 生成JWT token
         refresh = RefreshToken.for_user(user)
 
-        return Response(TokenResponse(
+        return SuccessResponse(TokenResponse(
             access=str(refresh.access_token),
             refresh=str(refresh)
         ).model_dump())
