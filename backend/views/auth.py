@@ -241,7 +241,7 @@ class VerifyCodeView(APIView):
         try:
             data = VerifyCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         email = data.email
         code = data.code
@@ -254,12 +254,12 @@ class VerifyCodeView(APIView):
         ).order_by('-created_at').first()
 
         if not verification:
-            return Response({"error": "验证码无效或已过期"}, status=400)
+            return ErrorResponse(ErrCode.VERIFY_CODE_ERROR)
 
         verification.used = True
         verification.save()
 
-        return Response({"message": "验证成功"})
+        return SuccessResponse(errmsg="验证成功")
 
 
 class ForgotPasswordView(APIView):
@@ -271,13 +271,13 @@ class ForgotPasswordView(APIView):
         try:
             data = ForgotPasswordRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         email = data.email
 
         user = Users.objects.filter(email=email).first()
         if not user:
-            return Response({"error": "该邮箱未注册"}, status=400)
+            return ErrorResponse(ErrCode.EMAIL_NOT_FOUND)
 
         code = ''.join(random.choices(string.digits, k=6))
         expires_at = timezone.now() + timedelta(minutes=EMAIL_VERIFICATION_CODE_TTL)
@@ -291,11 +291,10 @@ class ForgotPasswordView(APIView):
 
         if IS_LOCAL:
             local_url = f"http://localhost:{BACKEND_PORT}/api/auth/local-verify/{email}/{code}/"
-            return Response({
-                "message": "本地验证模式",
+            return SuccessResponse({
                 "local_verify_url": local_url,
                 "code": code
-            })
+            }, errmsg="本地验证模式")
 
         try:
             send_mail(
@@ -306,9 +305,9 @@ class ForgotPasswordView(APIView):
                 fail_silently=False,
             )
         except Exception as e:
-            return Response({"error": f"邮件发送失败: {str(e)}"}, status=500)
+            return ErrorResponse(ErrCode.CODE_SEND_FAILED, errmsg=f"邮件发送失败: {str(e)}")
 
-        return Response({"message": "验证码已发送"})
+        return SuccessResponse(errmsg="验证码已发送")
 
 
 class ResetPasswordView(APIView):
@@ -320,7 +319,7 @@ class ResetPasswordView(APIView):
         try:
             data = ResetPasswordWithCodeRequest.model_validate(request.data)
         except ValidationError as e:
-            return Response(e.errors(), status=400)
+            return ErrorResponse(ErrCode.PARAM_ERROR[0], errmsg=str(e.errors()))
 
         email = data.email
         code = data.code
@@ -334,11 +333,11 @@ class ResetPasswordView(APIView):
         ).order_by('-created_at').first()
 
         if not verification:
-            return Response({"error": "验证码无效或已过期"}, status=400)
+            return ErrorResponse(ErrCode.VERIFY_CODE_ERROR)
 
         user = verification.user
         if not user:
-            return Response({"error": "用户不存在"}, status=400)
+            return ErrorResponse(ErrCode.USER_NOT_FOUND)
 
         user.set_password(new_password)
         user.save()
@@ -346,4 +345,4 @@ class ResetPasswordView(APIView):
         verification.used = True
         verification.save()
 
-        return Response({"message": "密码重置成功"})
+        return SuccessResponse(errmsg="密码重置成功")
