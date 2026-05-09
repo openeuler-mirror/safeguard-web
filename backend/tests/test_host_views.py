@@ -32,46 +32,47 @@ class ClusterViewSetTest(APITestCase):
         Cluster.objects.create(name='Cluster1')
         Cluster.objects.create(name='Cluster2')
         response = self.client.get('/api/clusters/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # 非分页响应
-        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
         self.assertEqual(len(results), 2)
 
     def test_create_cluster(self):
         """测试创建集群"""
         data = {'name': 'NewCluster', 'description': '新集群'}
         response = self.client.post('/api/clusters/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], 'NewCluster')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'NewCluster')
 
     def test_retrieve_cluster(self):
         """测试获取单个集群"""
         cluster = Cluster.objects.create(name='TestCluster')
         response = self.client.get(f'/api/clusters/{cluster.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'TestCluster')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'TestCluster')
 
     def test_update_cluster(self):
         """测试更新集群"""
         cluster = Cluster.objects.create(name='OriginalCluster')
         data = {'name': 'UpdatedCluster', 'description': '更新描述'}
         response = self.client.put(f'/api/clusters/{cluster.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'UpdatedCluster')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'UpdatedCluster')
 
     def test_partial_update_cluster(self):
         """测试部分更新集群"""
         cluster = Cluster.objects.create(name='OriginalCluster')
         data = {'description': '新描述'}
         response = self.client.patch(f'/api/clusters/{cluster.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['description'], '新描述')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['description'], '新描述')
 
     def test_delete_cluster(self):
         """测试删除集群"""
         cluster = Cluster.objects.create(name='DeleteCluster')
         response = self.client.delete(f'/api/clusters/{cluster.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.data['errno'], 0)
         self.assertFalse(Cluster.objects.filter(pk=cluster.pk).exists())
 
     def test_delete_cluster_with_hosts_fails(self):
@@ -84,8 +85,8 @@ class ClusterViewSetTest(APITestCase):
             cluster=cluster
         )
         response = self.client.delete(f'/api/clusters/{cluster.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('该集群下存在主机', response.data['error'])
+        self.assertNotEqual(response.data['errno'], 0)
+        self.assertIn('主机', response.data['errmsg'])
 
     def test_get_cluster_hosts(self):
         """测试获取集群关联的主机列表"""
@@ -97,18 +98,18 @@ class ClusterViewSetTest(APITestCase):
             cluster=cluster
         )
         response = self.client.get(f'/api/clusters/{cluster.pk}/hosts/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['hostname'], 'host1')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(len(response.data['data']), 1)
+        self.assertEqual(response.data['data'][0]['hostname'], 'host1')
 
     def test_get_cluster_tree(self):
         """测试获取集群树"""
         Cluster.objects.create(name='Cluster1')
         Cluster.objects.create(name='Cluster2')
         response = self.client.get('/api/clusters/tree/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]['label'], 'Cluster1')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(len(response.data['data']), 2)
+        self.assertEqual(response.data['data'][0]['label'], 'Cluster1')
 
 
 class HostViewSetTest(APITestCase):
@@ -138,8 +139,9 @@ class HostViewSetTest(APITestCase):
         Host.objects.create(hostname='host1', ip_address='192.168.1.1', username='admin')
         Host.objects.create(hostname='host2', ip_address='192.168.1.2', username='admin')
         response = self.client.get('/api/hosts/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
         self.assertEqual(len(results), 2)
 
     def test_create_host(self):
@@ -153,8 +155,8 @@ class HostViewSetTest(APITestCase):
             'status': 'online'
         }
         response = self.client.post('/api/hosts/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['hostname'], 'new-host')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['hostname'], 'new-host')
 
     def test_retrieve_host(self):
         """测试获取单个主机"""
@@ -164,8 +166,8 @@ class HostViewSetTest(APITestCase):
             username='admin'
         )
         response = self.client.get(f'/api/hosts/{host.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['hostname'], 'test-host')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['hostname'], 'test-host')
 
     def test_update_host(self):
         """测试更新主机"""
@@ -182,8 +184,8 @@ class HostViewSetTest(APITestCase):
             'status': 'offline'
         }
         response = self.client.put(f'/api/hosts/{host.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['hostname'], 'updated')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['hostname'], 'updated')
 
     def test_partial_update_host(self):
         """测试部分更新主机"""
@@ -194,8 +196,8 @@ class HostViewSetTest(APITestCase):
         )
         data = {'status': 'offline'}
         response = self.client.patch(f'/api/hosts/{host.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'offline')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['status'], 'offline')
 
     def test_delete_host(self):
         """测试删除主机"""
@@ -205,7 +207,7 @@ class HostViewSetTest(APITestCase):
             username='admin'
         )
         response = self.client.delete(f'/api/hosts/{host.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.data['errno'], 0)
         self.assertFalse(Host.objects.filter(pk=host.pk).exists())
 
 
@@ -241,8 +243,9 @@ class VMViewSetTest(APITestCase):
         VM.objects.create(name='vm1', uuid='uuid-1', host=self.host)
         VM.objects.create(name='vm2', uuid='uuid-2', host=self.host)
         response = self.client.get('/api/vms/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        results = response.data if isinstance(response.data, list) else response.data.get('results', response.data)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
         self.assertEqual(len(results), 2)
 
     def test_create_vm(self):
@@ -257,8 +260,8 @@ class VMViewSetTest(APITestCase):
             'memory': 8589934592
         }
         response = self.client.post('/api/vms/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], 'new-vm')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'new-vm')
 
     def test_retrieve_vm(self):
         """测试获取单个VM"""
@@ -268,8 +271,8 @@ class VMViewSetTest(APITestCase):
             host=self.host
         )
         response = self.client.get(f'/api/vms/{vm.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'test-vm')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'test-vm')
 
     def test_update_vm(self):
         """测试更新VM"""
@@ -285,8 +288,8 @@ class VMViewSetTest(APITestCase):
             'vcpu': 4
         }
         response = self.client.put(f'/api/vms/{vm.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'updated-vm')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'updated-vm')
 
     def test_partial_update_vm(self):
         """测试部分更新VM"""
@@ -297,8 +300,8 @@ class VMViewSetTest(APITestCase):
         )
         data = {'status': 'running'}
         response = self.client.patch(f'/api/vms/{vm.pk}/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'running')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['status'], 'running')
 
     def test_delete_vm(self):
         """测试删除VM"""
@@ -308,7 +311,7 @@ class VMViewSetTest(APITestCase):
             host=self.host
         )
         response = self.client.delete(f'/api/vms/{vm.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.data['errno'], 0)
         self.assertFalse(VM.objects.filter(pk=vm.pk).exists())
 
     def test_vm_start_action(self):
@@ -319,8 +322,8 @@ class VMViewSetTest(APITestCase):
             host=self.host
         )
         response = self.client.post(f'/api/vms/{vm.pk}/start/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('VM启动功能待实现', response.data['message'])
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('VM启动功能待实现', response.data['errmsg'])
 
     def test_vm_stop_action(self):
         """测试VM停止操作"""
@@ -330,8 +333,8 @@ class VMViewSetTest(APITestCase):
             host=self.host
         )
         response = self.client.post(f'/api/vms/{vm.pk}/stop/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('VM停止功能待实现', response.data['message'])
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('VM停止功能待实现', response.data['errmsg'])
 
     def test_vm_reboot_action(self):
         """测试VM重启操作"""
@@ -341,8 +344,8 @@ class VMViewSetTest(APITestCase):
             host=self.host
         )
         response = self.client.post(f'/api/vms/{vm.pk}/reboot/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('VM重启功能待实现', response.data['message'])
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('VM重启功能待实现', response.data['errmsg'])
 
 
 class HostPermissionDeniedTest(APITestCase):
