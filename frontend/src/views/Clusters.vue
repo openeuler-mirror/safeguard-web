@@ -198,9 +198,9 @@ export default {
       this.error = ''
       try {
         const res = await getClusters()
-        this.clusters = res.data.results || res.data
+        this.clusters = res.results || res || []
       } catch (e) {
-        this.error = e.response?.data?.error || '加载集群列表失败'
+        this.error = e.message || '加载集群列表失败'
       } finally {
         this.loading = false
       }
@@ -292,7 +292,7 @@ export default {
         this.closeDeleteDialog()
         this.loadClusters()
       } catch (e) {
-        alert(e.response?.data?.error || '删除失败')
+        alert(e.message || '删除失败')
       }
     },
     async openHostDialog(cluster) {
@@ -302,7 +302,7 @@ export default {
       this.hostsLoading = true
       try {
         const res = await getClusterHosts(cluster.id)
-        this.clusterHosts = res.data
+        this.clusterHosts = res || []
       } catch (e) {
         alert('加载主机列表失败')
       } finally {
