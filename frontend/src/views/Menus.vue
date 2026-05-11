@@ -210,11 +210,11 @@ export default {
       this.error = ''
       try {
         const res = await getMenuTree()
-        this.menuTree = res.data
+        this.menuTree = res
         // 扁平化所有菜单用于父菜单选择
-        this.allMenus = this.flattenMenus(res.data)
+        this.allMenus = this.flattenMenus(res)
       } catch (e) {
-        this.error = e.response?.data?.error || '加载菜单列表失败'
+        this.error = e.message || '加载菜单列表失败'
       } finally {
         this.loading = false
       }
@@ -394,7 +394,7 @@ export default {
         await deleteMenu(menu.id)
         this.loadMenus()
       } catch (e) {
-        alert(e.response?.data?.error || '删除失败')
+        alert(e.message || '删除失败')
       }
     }
   }
