@@ -112,7 +112,7 @@ describe('ForgotPassword.vue', () => {
 
     it('输入邮箱后点击发送验证码', async () => {
       const wrapper = createWrapper()
-      sendVerificationCode.mockResolvedValue({ data: {} })
+      sendVerificationCode.mockResolvedValue({ local_verify_url: null })
       await wrapper.find('#email').setValue('test@example.com')
       await wrapper.find('.send-code-btn').trigger('click')
       await wrapper.vm.$nextTick()
@@ -121,7 +121,7 @@ describe('ForgotPassword.vue', () => {
 
     it('发送验证码成功后启动倒计时', async () => {
       const wrapper = createWrapper()
-      sendVerificationCode.mockResolvedValue({ data: {} })
+      sendVerificationCode.mockResolvedValue({ local_verify_url: null })
       await wrapper.find('#email').setValue('test@example.com')
       await wrapper.find('.send-code-btn').trigger('click')
       await wrapper.vm.$nextTick()
@@ -132,7 +132,7 @@ describe('ForgotPassword.vue', () => {
   describe('重置密码成功', () => {
     it('所有条件满足时调用 resetPasswordWithCode', async () => {
       const wrapper = createWrapper()
-      resetPasswordWithCode.mockResolvedValue({ data: { message: 'success' } })
+      resetPasswordWithCode.mockResolvedValue({ errmsg: 'success' })
       const routerPush = vi.fn()
       wrapper.vm.$router = { push: routerPush }
 

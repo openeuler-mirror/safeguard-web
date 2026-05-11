@@ -365,9 +365,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -386,7 +386,7 @@ describe('VMs.vue', () => {
       const wrapper = createWrapper()
       const mockVM = { id: 1, name: 'vm1', status: 'stopped' }
 
-      startVM.mockResolvedValue({ data: {} })
+      startVM.mockResolvedValue({ errmsg: 'success' })
       await wrapper.vm.handleStart(mockVM)
 
       expect(startVM).toHaveBeenCalledWith(1)
@@ -396,7 +396,7 @@ describe('VMs.vue', () => {
       const wrapper = createWrapper()
       const mockVM = { id: 1, name: 'vm1', status: 'running' }
 
-      stopVM.mockResolvedValue({ data: {} })
+      stopVM.mockResolvedValue({ errmsg: 'success' })
       await wrapper.vm.handleStop(mockVM)
 
       expect(stopVM).toHaveBeenCalledWith(1)
@@ -406,7 +406,7 @@ describe('VMs.vue', () => {
       const wrapper = createWrapper()
       const mockVM = { id: 1, name: 'vm1', status: 'running' }
 
-      rebootVM.mockResolvedValue({ data: {} })
+      rebootVM.mockResolvedValue({ errmsg: 'success' })
       await wrapper.vm.handleReboot(mockVM)
 
       expect(rebootVM).toHaveBeenCalledWith(1)
@@ -416,7 +416,7 @@ describe('VMs.vue', () => {
       const wrapper = createWrapper()
       const mockVM = { id: 1, name: 'vm1' }
 
-      deleteVM.mockResolvedValue({ data: {} })
+      deleteVM.mockResolvedValue({ errmsg: 'success' })
       await wrapper.vm.handleDelete()
 
       expect(deleteVM).toHaveBeenCalledWith(1)
