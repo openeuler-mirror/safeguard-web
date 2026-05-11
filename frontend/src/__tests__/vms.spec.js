@@ -167,9 +167,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -195,9 +195,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -223,9 +223,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -251,9 +251,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -281,9 +281,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -308,9 +308,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -467,9 +467,9 @@ describe('VMs.vue', () => {
 
   describe('对话框', () => {
     it('创建对话框正确初始化', async () => {
-      getVMs.mockResolvedValue({ data: { results: [] } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue([])
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
