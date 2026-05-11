@@ -157,9 +157,9 @@ export default {
       this.error = ''
       try {
         const res = await getAuthorities()
-        this.authorities = res.data.results || res.data
+        this.authorities = res.results || res || []
       } catch (e) {
-        this.error = e.response?.data?.error || '加载角色列表失败'
+        this.error = e.message || '加载角色列表失败'
       } finally {
         this.loading = false
       }
@@ -224,7 +224,7 @@ export default {
           this.loadAuthorities()
         }, 1000)
       } catch (e) {
-        this.formError = e.response?.data?.error || (this.isEdit ? '更新失败' : '创建失败')
+        this.formError = e.message || (this.isEdit ? '更新失败' : '创建失败')
       } finally {
         this.saving = false
       }
@@ -234,7 +234,7 @@ export default {
         await copyAuthority(auth.id)
         this.loadAuthorities()
       } catch (e) {
-        alert(e.response?.data?.error || '复制失败')
+        alert(e.message || '复制失败')
       }
     },
     async handleDelete(auth) {
@@ -245,7 +245,7 @@ export default {
         await deleteAuthority(auth.id)
         this.loadAuthorities()
       } catch (e) {
-        alert(e.response?.data?.error || '删除失败')
+        alert(e.message || '删除失败')
       }
     },
     handleMenuSuccess() {
