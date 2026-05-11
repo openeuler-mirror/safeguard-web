@@ -68,10 +68,8 @@ describe('auth store', () => {
     describe('login', () => {
       it('登录成功时设置用户和token', async () => {
         const mockUser = { id: 1, username: 'test' }
-        login.mockResolvedValue({
-          data: { access: 'access-token', refresh: 'refresh-token' }
-        })
-        getMe.mockResolvedValue({ data: mockUser })
+        login.mockResolvedValue({ access: 'access-token', refresh: 'refresh-token' })
+        getMe.mockResolvedValue(mockUser)
 
         const result = await store.dispatch('login', { username: 'test', password: '123456' })
 
@@ -82,7 +80,9 @@ describe('auth store', () => {
       })
 
       it('登录失败时返回错误', async () => {
-        login.mockRejectedValue({ response: { data: { error: 'Invalid credentials' } } })
+        const error = new Error('Invalid credentials')
+        error.errno = 2001
+        login.mockRejectedValue(error)
 
         const result = await store.dispatch('login', { username: 'test', password: 'wrong' })
 
@@ -114,7 +114,7 @@ describe('auth store', () => {
       it('有token时获取用户信息', async () => {
         const mockUser = { id: 1, username: 'test' }
         localStorage.setItem('access_token', 'valid-token')
-        getMe.mockResolvedValue({ data: mockUser })
+        getMe.mockResolvedValue(mockUser)
 
         await store.dispatch('fetchUser')
 
@@ -123,7 +123,7 @@ describe('auth store', () => {
 
       it('获取用户信息失败时清除状态和token', async () => {
         localStorage.setItem('access_token', 'invalid-token')
-        getMe.mockRejectedValue({ response: { status: 401 } })
+        getMe.mockRejectedValue(new Error('Unauthorized'))
 
         await store.dispatch('fetchUser')
 
