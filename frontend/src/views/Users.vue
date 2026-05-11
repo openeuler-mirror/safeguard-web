@@ -81,9 +81,9 @@ export default {
       this.error = ''
       try {
         const res = await getUsers()
-        this.users = res.data
+        this.users = res
       } catch (e) {
-        this.error = e.response?.data?.error || '加载用户列表失败'
+        this.error = e.message || '加载用户列表失败'
       } finally {
         this.loading = false
       }
@@ -91,7 +91,7 @@ export default {
     async loadAuthorities() {
       try {
         const res = await getAuthorities()
-        this.allRoles = res.data.results || res.data
+        this.allRoles = res.results || res || []
       } catch (e) {
         console.error('加载角色列表失败', e)
       }
