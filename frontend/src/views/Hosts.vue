@@ -331,7 +331,7 @@ export default {
         this.closeDeleteDialog()
         this.loadHosts()
       } catch (e) {
-        alert(e.response?.data?.error || '删除失败')
+        alert(e.message || '删除失败')
       }
     },
     formatDate(dateStr) {
