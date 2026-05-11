@@ -105,11 +105,11 @@ export default {
           getMenuTree(),
           getAuthorityMenus(this.authorityInfo.id)
         ])
-        this.menuTree = treeRes.data
+        this.menuTree = treeRes
         // 从响应中提取已选中的菜单ID
-        this.selectedMenuIds = menuRes.data.map(item => item.id)
+        this.selectedMenuIds = menuRes.map(item => item.id)
       } catch (e) {
-        this.error = e.response?.data?.error || '加载菜单数据失败'
+        this.error = e.message || '加载菜单数据失败'
       } finally {
         this.loading = false
       }
@@ -134,7 +134,7 @@ export default {
           this.$emit('close')
         }, 1000)
       } catch (e) {
-        this.message = e.response?.data?.error || '保存失败'
+        this.message = e.message || '保存失败'
         this.messageType = 'error'
       } finally {
         this.saving = false

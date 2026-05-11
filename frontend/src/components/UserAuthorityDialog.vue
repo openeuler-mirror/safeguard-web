@@ -94,9 +94,9 @@ export default {
       try {
         const res = await getUserAuthorities(this.userInfo.id)
         // 从响应中提取 authority_id 列表
-        this.selectedRoles = res.data.map(item => item.authority.authority_id)
+        this.selectedRoles = res.map(item => item.authority.authority_id)
       } catch (e) {
-        this.error = e.response?.data?.error || '加载用户角色失败'
+        this.error = e.message || '加载用户角色失败'
       } finally {
         this.loading = false
       }
@@ -113,7 +113,7 @@ export default {
           this.$emit('close')
         }, 1000)
       } catch (e) {
-        this.message = e.response?.data?.error || '保存失败'
+        this.message = e.message || '保存失败'
         this.messageType = 'error'
       } finally {
         this.saving = false
