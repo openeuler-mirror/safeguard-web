@@ -247,9 +247,9 @@ export default {
         if (this.filterHost) params.host = this.filterHost
         if (this.filterStatus) params.status = this.filterStatus
         const res = await getVMs(params)
-        this.vms = res.data.results || res.data
+        this.vms = res.results || res || []
       } catch (e) {
-        this.error = e.response?.data?.error || '加载虚拟机列表失败'
+        this.error = e.message || '加载虚拟机列表失败'
       } finally {
         this.loading = false
       }
@@ -257,7 +257,7 @@ export default {
     async loadClusterTree() {
       try {
         const res = await getClusterTree()
-        this.clusterTree = res.data || []
+        this.clusterTree = res || []
       } catch (e) {
         console.error('加载集群树下拉失败', e)
       }
@@ -265,7 +265,7 @@ export default {
     async loadHostList() {
       try {
         const res = await getHosts()
-        this.hostList = res.data.results || res.data
+        this.hostList = res.results || res || []
       } catch (e) {
         console.error('加载宿主机列表失败', e)
       }
@@ -391,7 +391,7 @@ export default {
         this.closeDeleteDialog()
         this.loadVMs()
       } catch (e) {
-        alert(e.response?.data?.error || '删除失败')
+        alert(e.message || '删除失败')
       }
     },
     async handleStart(vm) {
@@ -399,7 +399,7 @@ export default {
         await startVM(vm.id)
         this.loadVMs()
       } catch (e) {
-        alert(e.response?.data?.error || '启动失败')
+        alert(e.message || '启动失败')
       }
     },
     async handleStop(vm) {
@@ -407,7 +407,7 @@ export default {
         await stopVM(vm.id)
         this.loadVMs()
       } catch (e) {
-        alert(e.response?.data?.error || '停止失败')
+        alert(e.message || '停止失败')
       }
     },
     async handleReboot(vm) {
@@ -415,7 +415,7 @@ export default {
         await rebootVM(vm.id)
         this.loadVMs()
       } catch (e) {
-        alert(e.response?.data?.error || '重启失败')
+        alert(e.message || '重启失败')
       }
     },
     getStatusClass(status) {
