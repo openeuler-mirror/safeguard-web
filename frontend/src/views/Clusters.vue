@@ -249,34 +249,8 @@ export default {
         this.closeDialog()
         this.loadClusters()
       } catch (e) {
-        const errorData = e.response?.data
-        if (errorData) {
-          const fieldErrors = {}
-          let generalError = ''
-
-          for (const [field, messages] of Object.entries(errorData)) {
-            if (Array.isArray(messages)) {
-              if (field === 'detail' || field === 'non_field_errors') {
-                generalError = messages.join(', ')
-              } else {
-                fieldErrors[field] = messages.join(', ')
-              }
-            } else if (typeof messages === 'string') {
-              if (field === 'detail') {
-                generalError = messages
-              } else {
-                fieldErrors[field] = messages
-              }
-            }
-          }
-
-          if (generalError) {
-            this.formError = generalError
-          }
-          this.errors = fieldErrors
-        } else {
-          this.formError = '操作失败，请稍后重试'
-        }
+        this.formError = e.message || '操作失败，请稍后重试'
+        this.errors = {}
       }
     },
     confirmDelete(cluster) {

@@ -297,7 +297,7 @@ export default {
           this.loadMenus()
         }, 1000)
       } catch (e) {
-        this.formError = e.response?.data?.error || (this.isEdit ? '更新失败' : '创建失败')
+        this.formError = e.message || (this.isEdit ? '更新失败' : '创建失败')
       } finally {
         this.saving = false
       }
