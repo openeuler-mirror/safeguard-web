@@ -58,8 +58,8 @@ describe('VMs.vue', () => {
   describe('数据加载', () => {
     it('加载时显示 loading', async () => {
       getVMs.mockImplementation(() => new Promise(() => {}))
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       wrapper.vm.loading = true
@@ -76,9 +76,9 @@ describe('VMs.vue', () => {
     })
 
     it('无数据时显示暂无数据', async () => {
-      getVMs.mockResolvedValue({ data: { results: [] } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue([])
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -107,9 +107,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
@@ -138,9 +138,9 @@ describe('VMs.vue', () => {
         created_at: '2026-01-01T00:00:00Z'
       }]
 
-      getVMs.mockResolvedValue({ data: { results: mockVMs } })
-      getClusterTree.mockResolvedValue({ data: [] })
-      getHosts.mockResolvedValue({ data: [] })
+      getVMs.mockResolvedValue({ results: mockVMs })
+      getClusterTree.mockResolvedValue([])
+      getHosts.mockResolvedValue([])
 
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
