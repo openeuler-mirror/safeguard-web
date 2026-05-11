@@ -19,9 +19,25 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 响应拦截器：处理token过期和权限拒绝
+// 响应拦截器：处理token过期、权限拒绝和统一响应格式
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const res = response.data
+    // 处理统一响应格式 {errno, errmsg, data}
+    if (res && typeof res === 'object' && 'errno' in res) {
+      if (res.errno !== 0) {
+        // 业务错误，抛出带有 errno 和 errmsg 的错误
+        const error = new Error(res.errmsg || '操作失败')
+        error.errno = res.errno
+        error.response = response
+        return Promise.reject(error)
+      }
+      // 成功时返回 data 部分，简化视图层取值
+      return res.data
+    }
+    // 非统一响应格式（如 token 刷新），直接返回
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
     const status = error.response?.status
