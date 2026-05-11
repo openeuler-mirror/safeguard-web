@@ -33,21 +33,22 @@ export default {
     async login({ commit }, { username, password }) {
       commit('SET_LOADING', true)
       try {
-        const res = await login(username, password)
-        const { access, refresh } = res.data
+        // res is already the data body after interceptor unwrapping
+        const tokenData = await login(username, password)
+        const { access, refresh } = tokenData
         localStorage.setItem('access_token', access)
         localStorage.setItem('refresh_token', refresh)
 
         // 获取用户信息
-        const userRes = await getMe()
-        commit('SET_USER', userRes.data)
+        const userData = await getMe()
+        commit('SET_USER', userData)
 
         // 获取用户菜单
         await this.dispatch('auth/fetchMenus')
 
         return { success: true }
       } catch (error) {
-        return { success: false, error: error.response?.data?.error || '登录失败' }
+        return { success: false, error: error.message || error.errno || '登录失败' }
       } finally {
         commit('SET_LOADING', false)
       }
