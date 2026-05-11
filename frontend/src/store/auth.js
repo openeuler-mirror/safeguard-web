@@ -66,8 +66,9 @@ export default {
         return
       }
       try {
-        const res = await getMe()
-        commit('SET_USER', res.data)
+        // res.data is the unwrapped data body after interceptor
+        const userData = await getMe()
+        commit('SET_USER', userData)
       } catch (error) {
         commit('CLEAR_AUTH')
         localStorage.removeItem('access_token')
@@ -77,8 +78,9 @@ export default {
 
     async fetchMenus({ commit }) {
       try {
-        const res = await api.get('/users/menus/')
-        commit('SET_MENUS', res.data)
+        // res is already unwrapped by interceptor
+        const menuData = await api.get('/users/menus/')
+        commit('SET_MENUS', menuData)
       } catch (error) {
         console.error('获取菜单失败', error)
       }
