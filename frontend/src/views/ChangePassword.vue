@@ -77,7 +77,7 @@ export default {
         this.form.new_password = ''
         this.confirmPassword = ''
       } catch (e) {
-        this.error = e.response?.data?.error || '修改失败'
+        this.error = e.message || '修改失败'
       } finally {
         this.loading = false
       }

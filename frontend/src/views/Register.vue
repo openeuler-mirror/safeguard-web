@@ -134,10 +134,10 @@ export default {
       this.error = ''
       try {
         const res = await sendVerificationCode(this.form.email, 'register')
-        if (res.data.local_verify_url) {
+        if (res.local_verify_url) {
           // 本地模式：打开验证页面
-          this.localVerifyUrl = res.data.local_verify_url
-          window.open(res.data.local_verify_url, '_blank')
+          this.localVerifyUrl = res.local_verify_url
+          window.open(res.local_verify_url, '_blank')
         }
         // 启动60秒本地倒计时（刷新页面后重置）
         this.countdown = 60
@@ -146,7 +146,7 @@ export default {
           if (this.countdown <= 0) clearInterval(timer)
         }, 1000)
       } catch (e) {
-        this.error = e.response?.data?.error || '发送验证码失败'
+        this.error = e.message || '发送验证码失败'
       } finally {
         this.codeSending = false
       }
@@ -175,7 +175,7 @@ export default {
           this.$router.push('/login')
         }, 1500)
       } catch (e) {
-        this.error = e.response?.data?.error || e.response?.data?.user?.[0] || e.response?.data?.password?.[0] || '注册失败'
+        this.error = e.message || '注册失败'
       } finally {
         this.loading = false
       }
