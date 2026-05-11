@@ -197,9 +197,9 @@ export default {
         if (this.filterCluster) params.cluster = this.filterCluster
         if (this.filterStatus) params.status = this.filterStatus
         const res = await getHosts(params)
-        this.hosts = res.data.results || res.data
+        this.hosts = res.results || res || []
       } catch (e) {
-        this.error = e.response?.data?.error || '加载主机列表失败'
+        this.error = e.message || '加载主机列表失败'
       } finally {
         this.loading = false
       }
@@ -207,7 +207,7 @@ export default {
     async loadClusterTree() {
       try {
         const res = await getClusterTree()
-        this.clusterTree = res.data || []
+        this.clusterTree = res || []
       } catch (e) {
         console.error('加载集群树下拉失败', e)
       }
