@@ -104,8 +104,8 @@ export default {
       this.error = ''
       try {
         const res = await sendVerificationCode(this.email, 'forgot')
-        if (res.data.local_verify_url) {
-          window.open(res.data.local_verify_url, '_blank')
+        if (res.local_verify_url) {
+          window.open(res.local_verify_url, '_blank')
         }
         this.countdown = 60
         const timer = setInterval(() => {
@@ -113,7 +113,7 @@ export default {
           if (this.countdown <= 0) clearInterval(timer)
         }, 1000)
       } catch (e) {
-        this.error = e.response?.data?.error || '发送验证码失败'
+        this.error = e.message || '发送验证码失败'
       } finally {
         this.codeSending = false
       }
@@ -145,7 +145,7 @@ export default {
           this.$router.push('/login')
         }, 2000)
       } catch (e) {
-        this.error = e.response?.data?.error || '重置失败'
+        this.error = e.message || '重置失败'
       } finally {
         this.loading = false
       }

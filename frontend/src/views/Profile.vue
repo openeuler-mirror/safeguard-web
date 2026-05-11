@@ -88,7 +88,7 @@ export default {
         this.message = '保存成功'
         this.messageType = 'success'
       } catch (e) {
-        this.message = e.response?.data?.error || '保存失败'
+        this.message = e.message || '保存失败'
         this.messageType = 'error'
       }
     },
