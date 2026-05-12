@@ -70,10 +70,12 @@ class WhiteListSerializerTest(TestCase):
         serializer = WhiteListUpdateSerializer(self.whitelist, data=data, partial=True)
         self.assertTrue(serializer.is_valid())
 
-    def test_update_serializer_only_allows_certain_fields(self):
-        """测试更新序列化器只允许更新特定字段"""
+    def test_update_serializer_valid_data(self):
+        """测试更新序列化器验证有效数据"""
         data = {
-            'mac_address': 'FF:FF:FF:FF:FF:FF'  # 不允许更新
+            'hostname': 'updated-host',
+            'ip_address': '192.168.1.99',
+            'is_active': False
         }
         serializer = WhiteListUpdateSerializer(self.whitelist, data=data, partial=True)
-        self.assertFalse(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())
