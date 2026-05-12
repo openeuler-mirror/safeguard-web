@@ -9,6 +9,15 @@ from backend.models.authority import (
     AuthorityButton,
     UserAuthority
 )
+from backend.models.osdeploy import (
+    JobStatus,
+    RepoStatus,
+    PXEServerStatus,
+    KickStartFileStatus,
+    ISOFileStatus,
+    WhiteList,
+    OutIpSN,
+)
 
 __all__ = [
     'Users',
@@ -22,4 +31,11 @@ __all__ = [
     'AuthorityMenu',
     'AuthorityButton',
     'UserAuthority',
+    'JobStatus',
+    'RepoStatus',
+    'PXEServerStatus',
+    'KickStartFileStatus',
+    'ISOFileStatus',
+    'WhiteList',
+    'OutIpSN',
 ]
