@@ -130,15 +130,19 @@ class DHCPServiceTest(TestCase):
 
     def test_list_pxe_servers_with_pagination(self):
         """测试PXE服务器列表分页"""
+        # 先删除setUp中创建的，避免冲突
+        PXEServerStatus.objects.all().delete()
         for i in range(15):
             PXEServerStatus.objects.create(
                 server_ip=f'192.168.2.{i+1}',
                 interface='eth0',
                 dhcp_range_start=f'192.168.2.{i+10}',
-                dhcp_range_end=f'192.168.2.{i+20}'
+                dhcp_range_end=f'192.168.2.{i+20}',
+                subnet='255.255.255.0',
+                gateway='192.168.2.1'
             )
         result = DHCPService.list_pxe_servers(page=1, page_size=5)
-        self.assertEqual(result['total'], 16)
+        self.assertEqual(result['total'], 15)
         self.assertEqual(len(result['results']), 5)
 
     def test_validate_mac_address_valid(self):
