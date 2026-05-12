@@ -12,16 +12,19 @@ class DHCPService:
         # TODO: 实现实际的DHCP服务配置逻辑
         # 例如：写入/etc/dhcp/dhcpd.conf等
 
+        defaults = {
+            'interface': interface,
+            'dhcp_range_start': range_start,
+            'dhcp_range_end': range_end,
+            'status': 'active',
+        }
+        if subnet is not None:
+            defaults['subnet'] = subnet
+        if gateway is not None:
+            defaults['gateway'] = gateway
         pxe_server, created = PXEServerStatus.objects.update_or_create(
             server_ip=server_ip,
-            defaults={
-                'interface': interface,
-                'dhcp_range_start': range_start,
-                'dhcp_range_end': range_end,
-                'subnet': subnet or '',
-                'gateway': gateway or '',
-                'status': 'active',
-            }
+            defaults=defaults
         )
         return pxe_server
 
