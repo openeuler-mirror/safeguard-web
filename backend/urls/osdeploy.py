@@ -1,0 +1,19 @@
+"""OS部署相关 URL 配置"""
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from backend.views.osdeploy import (
+    JobViewSet,
+    RepoViewSet,
+    PXEServerStatusViewSet,
+    KickStartViewSet,
+)
+
+router = DefaultRouter()
+router.register(r'jobs', JobViewSet, basename='job')
+router.register(r'repos', RepoViewSet, basename='repo')
+router.register(r'pxe-servers', PXEServerStatusViewSet, basename='pxe-server')
+router.register(r'kickstarts', KickStartViewSet, basename='kickstart')
+
+urlpatterns = [
+    path('', include(router.urls)),
+]

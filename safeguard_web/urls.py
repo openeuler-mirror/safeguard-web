@@ -19,6 +19,9 @@ urlpatterns = [
     # Host routes
     path('api/', include('backend.urls.host')),
 
+    # OSDeploy routes
+    path('api/', include('backend.urls.osdeploy')),
+
     # DRF auth
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
