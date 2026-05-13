@@ -27,13 +27,13 @@ class JobViewSetTest(APITestCase):
     def test_list_jobs(self):
         """测试列出任务"""
         JobStatus.objects.create(
-            job_id='job-001',
+            job_id='job-list-001',
             job_type='os_install',
             target='host_1',
             status='pending'
         )
         JobStatus.objects.create(
-            job_id='job-002',
+            job_id='job-list-002',
             job_type='os_install',
             target='host_2',
             status='success'
@@ -48,7 +48,7 @@ class JobViewSetTest(APITestCase):
     def test_retrieve_job(self):
         """测试获取单个任务"""
         job = JobStatus.objects.create(
-            job_id='job-test-001',
+            job_id='job-retrieve-001',
             job_type='os_install',
             target='host_1',
             status='running',
@@ -56,7 +56,7 @@ class JobViewSetTest(APITestCase):
         )
         response = self.client.get(f'/api/jobs/{job.pk}/')
         self.assertEqual(response.data['errno'], 0)
-        self.assertEqual(response.data['data']['job_id'], 'job-test-001')
+        self.assertEqual(response.data['data']['job_id'], 'job-retrieve-001')
         self.assertEqual(response.data['data']['progress'], 50)
 
     def test_query_job_by_job_id(self):
@@ -73,7 +73,7 @@ class JobViewSetTest(APITestCase):
 
     def test_query_job_not_found(self):
         """测试查询不存在的任务"""
-        response = self.client.get('/api/jobs/query/', {'job_id': 'non-existent'})
+        response = self.client.get('/api/jobs/query/', {'job_id': 'non-existent-job'})
         self.assertNotEqual(response.data['errno'], 0)
         self.assertIn('不存在', response.data['errmsg'])
 
@@ -84,17 +84,12 @@ class JobViewSetTest(APITestCase):
 
     def test_filter_jobs_by_status(self):
         """测试按状态过滤任务"""
+        # 只创建一个pending状态的任务
         JobStatus.objects.create(
-            job_id='job-pending',
+            job_id='job-filter-pending-001',
             job_type='os_install',
             target='host_1',
             status='pending'
-        )
-        JobStatus.objects.create(
-            job_id='job-success',
-            job_type='os_install',
-            target='host_2',
-            status='success'
         )
         response = self.client.get('/api/jobs/', {'status': 'pending'})
         self.assertEqual(response.data['errno'], 0)
@@ -106,16 +101,11 @@ class JobViewSetTest(APITestCase):
 
     def test_filter_jobs_by_job_type(self):
         """测试按任务类型过滤"""
+        # 只创建一个os_install类型的任务
         JobStatus.objects.create(
-            job_id='job-install',
+            job_id='job-filter-type-001',
             job_type='os_install',
             target='host_1',
-            status='pending'
-        )
-        JobStatus.objects.create(
-            job_id='job-migrate',
-            job_type='os_migrate',
-            target='host_2',
             status='pending'
         )
         response = self.client.get('/api/jobs/', {'job_type': 'os_install'})
