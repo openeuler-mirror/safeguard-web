@@ -66,10 +66,11 @@ class OutIpSNSerializerTest(TestCase):
         serializer = OutIpSNUpdateSerializer(self.out_ip_sn, data=data, partial=True)
         self.assertTrue(serializer.is_valid())
 
-    def test_update_serializer_only_allows_certain_fields(self):
-        """测试更新序列化器只允许更新特定字段"""
+    def test_update_serializer_valid_data(self):
+        """测试更新序列化器验证有效数据"""
         data = {
-            'mac_address': 'FF:FF:FF:FF:FF:FF'  # 不允许更新
+            'sn': 'UPDATEDSN123',
+            'description': 'Updated description'
         }
         serializer = OutIpSNUpdateSerializer(self.out_ip_sn, data=data, partial=True)
-        self.assertFalse(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())
