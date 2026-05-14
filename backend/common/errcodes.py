@@ -64,6 +64,9 @@ class ErrCode:
     USER_ROLE_ADD_FAILED = 6002
     USER_ROLE_REMOVE_FAILED = 6003
 
+    # OS部署相关 (7xxx)
+    REPO_HAS_KICKSTART = 7001
+
 
 # 错误码到描述的映射
 _ERRCODE_MAP = {
@@ -103,6 +106,9 @@ _ERRCODE_MAP = {
     6001: "角色设置失败",
     6002: "角色添加失败",
     6003: "角色移除失败",
+
+    # OS部署相关 (7xxx)
+    7001: "仓库存在关联的Kickstart模板，无法删除",
 }
 
 
