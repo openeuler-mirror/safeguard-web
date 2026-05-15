@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Prefetch
 
 from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton
@@ -37,9 +38,14 @@ class AuthorityViewSet(UnifiedModelViewSet):
 
         elif request.method == 'PUT':
             menu_ids = request.data.get('menu_ids', [])
-            AuthorityMenu.objects.filter(authority=authority).delete()
-            for menu_id in menu_ids:
-                AuthorityMenu.objects.create(authority=authority, menu_id=menu_id)
+            unique_menu_ids = set(menu_ids)
+            if Menu.objects.filter(id__in=unique_menu_ids).count() != len(unique_menu_ids):
+                return ErrorResponse(ErrCode.MENU_NOT_FOUND)
+
+            with transaction.atomic():
+                AuthorityMenu.objects.filter(authority=authority).delete()
+                for menu_id in unique_menu_ids:
+                    AuthorityMenu.objects.create(authority=authority, menu_id=menu_id)
             return SuccessResponse(errmsg='菜单绑定成功')
 
     @action(detail=True, methods=['get', 'put'], url_path='btns')
@@ -55,16 +61,34 @@ class AuthorityViewSet(UnifiedModelViewSet):
 
         elif request.method == 'PUT':
             btn_data = request.data.get('buttons', [])
-            AuthorityButton.objects.filter(authority=authority).delete()
-            for item in btn_data:
-                menu_id = item.get('menu_id')
-                button_ids = item.get('button_ids', [])
-                for button_id in button_ids:
-                    AuthorityButton.objects.create(
-                        authority=authority,
-                        menu_id=menu_id,
-                        button_id=button_id
-                    )
+            menu_ids = [item.get('menu_id') for item in btn_data]
+            button_ids = [
+                button_id
+                for item in btn_data
+                for button_id in item.get('button_ids', [])
+            ]
+            unique_menu_ids = set(menu_ids)
+            unique_button_ids = set(button_ids)
+            if Menu.objects.filter(id__in=unique_menu_ids).count() != len(unique_menu_ids):
+                return ErrorResponse(ErrCode.MENU_NOT_FOUND)
+            if MenuButton.objects.filter(id__in=unique_button_ids).count() != len(unique_button_ids):
+                return ErrorResponse(ErrCode.PARAM_ERROR)
+
+            with transaction.atomic():
+                AuthorityButton.objects.filter(authority=authority).delete()
+                bound_buttons = set()
+                for item in btn_data:
+                    menu_id = item.get('menu_id')
+                    button_ids = item.get('button_ids', [])
+                    for button_id in button_ids:
+                        if button_id in bound_buttons:
+                            continue
+                        bound_buttons.add(button_id)
+                        AuthorityButton.objects.create(
+                            authority=authority,
+                            menu_id=menu_id,
+                            button_id=button_id
+                        )
             return SuccessResponse(errmsg='按钮权限绑定成功')
 
     @action(detail=True, methods=['post'], url_path='copy')

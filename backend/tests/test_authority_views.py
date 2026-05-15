@@ -138,6 +138,23 @@ class AuthorityViewSetTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(AuthorityMenu.objects.filter(authority=auth).count(), 2)
 
+    def test_bind_authority_menus_keeps_existing_bindings_on_invalid_menu(self):
+        auth = Authority.objects.create(authority_id=1, authority_name='admin')
+        menu = Menu.objects.create(path='/users', name='Users', sort=1)
+        AuthorityMenu.objects.create(authority=auth, menu=menu)
+
+        response = self.client.put(
+            f'/api/authority/authorities/{auth.pk}/menus/',
+            {'menu_ids': [menu.pk, 999999]},
+            format='json',
+        )
+
+        self.assertNotEqual(response.data['errno'], 0)
+        self.assertEqual(
+            list(AuthorityMenu.objects.filter(authority=auth).values_list('menu_id', flat=True)),
+            [menu.pk],
+        )
+
     def test_get_authority_buttons(self):
         """测试获取角色按钮权限"""
         auth = Authority.objects.create(authority_id=1, authority_name='管理员')
@@ -162,6 +179,24 @@ class AuthorityViewSetTest(APITestCase):
         response = self.client.put(f'/api/authority/authorities/{auth.pk}/btns/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(AuthorityButton.objects.filter(authority=auth).count(), 2)
+
+    def test_bind_authority_buttons_keeps_existing_bindings_on_invalid_button(self):
+        auth = Authority.objects.create(authority_id=1, authority_name='admin')
+        menu = Menu.objects.create(path='/users', name='Users', sort=1)
+        btn = MenuButton.objects.create(menu=menu, name='add')
+        AuthorityButton.objects.create(authority=auth, menu=menu, button=btn)
+
+        response = self.client.put(
+            f'/api/authority/authorities/{auth.pk}/btns/',
+            {'buttons': [{'menu_id': menu.pk, 'button_ids': [btn.pk, 999999]}]},
+            format='json',
+        )
+
+        self.assertNotEqual(response.data['errno'], 0)
+        self.assertEqual(
+            list(AuthorityButton.objects.filter(authority=auth).values_list('button_id', flat=True)),
+            [btn.pk],
+        )
 
     def test_copy_authority(self):
         """测试复制角色"""
