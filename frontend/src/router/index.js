@@ -74,6 +74,55 @@ const routes = [
     component: () => import('@/views/ForgotPassword.vue'),
     meta: { requiresAuth: false }
   },
+  // OS部署模块
+  {
+    path: '/osdeploy/jobs',
+    name: 'OsdeployJobs',
+    component: () => import('@/views/osdeploy/Jobs.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/repos',
+    name: 'OsdeployRepos',
+    component: () => import('@/views/osdeploy/Repos.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/kickstarts',
+    name: 'OsdeployKickstarts',
+    component: () => import('@/views/osdeploy/Kickstarts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/pxe',
+    name: 'OsdeployPXE',
+    component: () => import('@/views/osdeploy/PXEConfig.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/auto-install',
+    name: 'OsdeployAutoInstall',
+    component: () => import('@/views/osdeploy/AutoInstall.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/whitelist',
+    name: 'OsdeployWhiteList',
+    component: () => import('@/views/osdeploy/WhiteList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/isos',
+    name: 'OsdeployISOFiles',
+    component: () => import('@/views/osdeploy/ISOFiles.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/osdeploy/outipsn',
+    name: 'OsdeployOutIpSN',
+    component: () => import('@/views/osdeploy/OutIpSN.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     redirect: '/dashboard'
