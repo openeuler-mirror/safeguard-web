@@ -130,7 +130,15 @@ export default {
         '/hosts': '🖥️',
         '/vms': '💻',
         '/profile': '👤',
-        '/change-password': '🔑'
+        '/change-password': '🔑',
+        '/osdeploy/jobs': '📦',
+        '/osdeploy/repos': '📁',
+        '/osdeploy/kickstarts': '📝',
+        '/osdeploy/pxe': '⚙️',
+        '/osdeploy/auto-install': '🚀',
+        '/osdeploy/whitelist': '📋',
+        '/osdeploy/isos': '💿',
+        '/osdeploy/outipsn': '🔢'
       }
       return icons[path] || '📄'
     }
