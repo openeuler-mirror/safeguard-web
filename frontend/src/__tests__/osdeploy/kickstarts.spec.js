@@ -429,7 +429,7 @@ describe('Kickstarts.vue', () => {
     it('formatKernelOptions 正确序列化内核参数', () => {
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      const options = { ksdevice: 'eth0', inst.stage2: 'http://example.com' }
+      const options = { 'ksdevice': 'eth0', 'inst.stage2': 'http://example.com' }
       expect(wrapper.vm.formatKernelOptions(options)).toBe(JSON.stringify(options))
     })
 
