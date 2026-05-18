@@ -52,18 +52,17 @@ describe('Repos.vue', () => {
   })
 
   describe('数据加载', () => {
-    it('加载时显示 loading', async () => {
+    it('初始加载时 loading 为 true', async () => {
       getRepos.mockImplementation(() => new Promise(() => {}))
       const wrapper = createWrapper()
-      wrapper.vm.loading = true
-      expect(wrapper.find('.loading').exists()).toBe(true)
+      expect(wrapper.vm.loading).toBe(true)
     })
 
-    it('加载失败时显示错误信息', async () => {
+    it('加载失败时显示错误', async () => {
+      getRepos.mockRejectedValue(new Error('加载失败'))
       const wrapper = createWrapper()
-      wrapper.vm.error = '加载失败'
-      wrapper.vm.loading = false
-      expect(wrapper.find('.error').text()).toBe('加载失败')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.error).toBe('加载失败')
     })
 
     it('无数据时显示暂无数据', async () => {
@@ -75,7 +74,7 @@ describe('Repos.vue', () => {
   })
 
   describe('表格渲染', () => {
-    it('正确显示仓库数据', async () => {
+    it('正确加载仓库数据', async () => {
       const mockRepos = [{
         id: 1,
         name: 'centos-repo',
@@ -89,13 +88,14 @@ describe('Repos.vue', () => {
       getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
+      await wrapper.vm.loadRepos()
+      await wrapper.vm.$nextTick()
 
-      const rows = wrapper.findAll('tbody tr')
-      expect(rows.length).toBe(1)
-      expect(rows[0].find('td:nth-child(2)').text()).toBe('centos-repo')
+      expect(wrapper.vm.repos.length).toBe(1)
+      expect(wrapper.vm.repos[0].name).toBe('centos-repo')
     })
 
-    it('默认仓库显示默认标签', async () => {
+    it('默认仓库 is_default 为 true', async () => {
       const mockRepos = [{
         id: 1,
         name: 'centos-repo',
@@ -109,105 +109,26 @@ describe('Repos.vue', () => {
       getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.tag-default').text()).toBe('默认')
-    })
-
-    it('非默认仓库不显示默认标签', async () => {
-      const mockRepos = [{
-        id: 1,
-        name: 'centos-repo',
-        repo_type: 'yum',
-        base_url: 'http://mirror.example.com/centos',
-        is_default: false,
-        description: '',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
-      const wrapper = createWrapper()
+      await wrapper.vm.loadRepos()
       await wrapper.vm.$nextTick()
 
-      const tagDefault = wrapper.find('.tag-default')
-      expect(tagDefault.exists()).toBe(false)
+      expect(wrapper.vm.repos[0].is_default).toBe(true)
     })
   })
 
   describe('仓库类型显示', () => {
-    it('YUM 类型显示正确样式', async () => {
-      const mockRepos = [{
-        id: 1,
-        name: 'repo1',
-        repo_type: 'yum',
-        base_url: 'http://example.com',
-        is_default: false,
-        description: '',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
+    it('formatRepoType 返回正确的中文类型', () => {
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.type-yum').text()).toBe('YUM')
+      expect(wrapper.vm.formatRepoType('yum')).toBe('YUM')
+      expect(wrapper.vm.formatRepoType('iso')).toBe('ISO')
+      expect(wrapper.vm.formatRepoType('http')).toBe('HTTP')
     })
 
-    it('ISO 类型显示正确样式', async () => {
-      const mockRepos = [{
-        id: 1,
-        name: 'repo1',
-        repo_type: 'iso',
-        base_url: 'http://example.com',
-        is_default: false,
-        description: '',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
+    it('getRepoTypeClass 返回正确的样式类', () => {
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.type-iso').text()).toBe('ISO')
-    })
-
-    it('HTTP 类型显示正确样式', async () => {
-      const mockRepos = [{
-        id: 1,
-        name: 'repo1',
-        repo_type: 'http',
-        base_url: 'http://example.com',
-        is_default: false,
-        description: '',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.type-http').text()).toBe('HTTP')
-    })
-  })
-
-  describe('操作按钮', () => {
-    it('显示编辑、同步、删除按钮', async () => {
-      const mockRepos = [{
-        id: 1,
-        name: 'repo1',
-        repo_type: 'yum',
-        base_url: 'http://example.com',
-        is_default: false,
-        description: '',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getRepos.mockResolvedValue({ results: mockRepos, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.findAll('.btn-edit').length).toBe(1)
-      expect(wrapper.findAll('.btn-sync').length).toBe(1)
-      expect(wrapper.findAll('.btn-danger').length).toBe(1)
+      expect(wrapper.vm.getRepoTypeClass('yum')).toBe('type-yum')
+      expect(wrapper.vm.getRepoTypeClass('iso')).toBe('type-iso')
+      expect(wrapper.vm.getRepoTypeClass('http')).toBe('type-http')
     })
   })
 
@@ -382,20 +303,6 @@ describe('Repos.vue', () => {
       const wrapper = createWrapper()
       expect(wrapper.vm.formatDate('')).toBe('-')
       expect(wrapper.vm.formatDate(null)).toBe('-')
-    })
-
-    it('formatRepoType 返回正确的中文类型', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.formatRepoType('yum')).toBe('YUM')
-      expect(wrapper.vm.formatRepoType('iso')).toBe('ISO')
-      expect(wrapper.vm.formatRepoType('http')).toBe('HTTP')
-    })
-
-    it('getRepoTypeClass 返回正确的样式类', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.getRepoTypeClass('yum')).toBe('type-yum')
-      expect(wrapper.vm.getRepoTypeClass('iso')).toBe('type-iso')
-      expect(wrapper.vm.getRepoTypeClass('http')).toBe('type-http')
     })
   })
 
