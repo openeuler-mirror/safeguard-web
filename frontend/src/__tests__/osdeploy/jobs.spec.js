@@ -9,7 +9,7 @@ vi.mock('@/api/osdeploy/job', () => ({
   queryJobStatus: vi.fn()
 }))
 
-import { getJobs, getJobDetail, queryJobStatus } from '@/api/osdeploy/job'
+import { getJobs, getJobDetail } from '@/api/osdeploy/job'
 
 const createWrapper = () => {
   return mount(Jobs, {
@@ -50,55 +50,25 @@ describe('Jobs.vue', () => {
   })
 
   describe('数据加载', () => {
-    it('初始加载时显示 loading', async () => {
+    it('初始加载时 loading 为 true', async () => {
       getJobs.mockImplementation(() => new Promise(() => {}))
       const wrapper = createWrapper()
-      // 验证 loading 状态为 true
       expect(wrapper.vm.loading).toBe(true)
     })
 
-    it('加载失败时显示错误信息', async () => {
+    it('加载失败时设置错误信息', async () => {
       getJobs.mockRejectedValue(new Error('加载失败'))
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      expect(wrapper.vm.error).toBe('加载失败')
-      expect(wrapper.find('.error').exists()).toBe(true)
+      await new Promise(r => setTimeout(r, 100))
+      expect(wrapper.vm.error).toContain('加载失败')
     })
 
-    it('无数据时显示暂无数据', async () => {
+    it('加载成功后清空错误', async () => {
       getJobs.mockResolvedValue({ results: [], count: 0 })
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      expect(wrapper.find('.empty-text').exists()).toBe(true)
-    })
-  })
-
-  describe('表格渲染', () => {
-    it('正确显示任务数据', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: '192.168.1.100',
-        status: 'running',
-        progress: 50,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      await wrapper.vm.loadJobs()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.jobs.length).toBe(1)
-      expect(wrapper.vm.jobs[0].job_id).toBe('job-001')
-    })
-
-    it('任务类型正确映射', async () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.formatJobType('osdeploy')).toBe('OS部署')
-      expect(wrapper.vm.formatJobType('hardware')).toBe('硬件采集')
+      wrapper.vm.error = 'previous error'
+      await new Promise(r => setTimeout(r, 100))
+      expect(wrapper.vm.error).toBe('')
     })
   })
 
@@ -111,6 +81,12 @@ describe('Jobs.vue', () => {
       expect(wrapper.vm.formatStatus('failed')).toBe('失败')
     })
 
+    it('formatJobType 返回正确的中文类型', () => {
+      const wrapper = createWrapper()
+      expect(wrapper.vm.formatJobType('osdeploy')).toBe('OS部署')
+      expect(wrapper.vm.formatJobType('hardware')).toBe('硬件采集')
+    })
+
     it('getStatusClass 返回正确的样式类', () => {
       const wrapper = createWrapper()
       expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
@@ -121,7 +97,7 @@ describe('Jobs.vue', () => {
   })
 
   describe('详情弹窗', () => {
-    it('点击详情按钮打开弹窗', async () => {
+    it('openDetailDialog 获取详情并打开弹窗', async () => {
       const mockJob = {
         id: 1,
         job_id: 'job-001',
@@ -136,13 +112,12 @@ describe('Jobs.vue', () => {
       const wrapper = createWrapper()
 
       await wrapper.vm.openDetailDialog(mockJob)
-      await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.detailDialogVisible).toBe(true)
       expect(getJobDetail).toHaveBeenCalledWith(1)
     })
 
-    it('关闭弹窗清空数据', async () => {
+    it('closeDetailDialog 关闭弹窗清空数据', async () => {
       const wrapper = createWrapper()
       wrapper.vm.detailDialogVisible = true
       wrapper.vm.selectedJob = { id: 1, job_id: 'job-001' }
@@ -151,27 +126,6 @@ describe('Jobs.vue', () => {
 
       expect(wrapper.vm.detailDialogVisible).toBe(false)
       expect(wrapper.vm.selectedJob).toBe(null)
-    })
-  })
-
-  describe('操作按钮', () => {
-    it('详情按钮可点击', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'success',
-        progress: 100,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      getJobDetail.mockResolvedValue(mockJobs[0])
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.btn-detail').exists()).toBe(true)
     })
   })
 

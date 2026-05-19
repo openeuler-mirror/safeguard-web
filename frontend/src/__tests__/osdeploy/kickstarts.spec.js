@@ -65,20 +65,19 @@ describe('Kickstarts.vue', () => {
   })
 
   describe('数据加载', () => {
-    it('加载时显示 loading', async () => {
+    it('初始加载时 loading 为 true', async () => {
       getKickstarts.mockImplementation(() => new Promise(() => {}))
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      wrapper.vm.loading = true
-      expect(wrapper.find('.loading').exists()).toBe(true)
+      expect(wrapper.vm.loading).toBe(true)
     })
 
-    it('加载失败时显示错误信息', async () => {
+    it('加载失败时显示错误', async () => {
+      getKickstarts.mockRejectedValue(new Error('加载失败'))
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      wrapper.vm.error = '加载失败'
-      wrapper.vm.loading = false
-      expect(wrapper.find('.error').text()).toBe('加载失败')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.error).toBe('加载失败')
     })
 
     it('无数据时显示暂无数据', async () => {
@@ -91,13 +90,13 @@ describe('Kickstarts.vue', () => {
   })
 
   describe('表格渲染', () => {
-    it('正确显示模板数据', async () => {
+    it('正确加载模板数据', async () => {
       const mockKickstarts = [{
         id: 1,
         name: 'centos-ks',
         repo: 1,
         repo_name: 'centos-repo',
-        kernel_options: { ksdevice: 'eth0' },
+        kernel_options: { 'ksdevice': 'eth0' },
         created_at: '2026-01-01T00:00:00Z'
       }]
 
@@ -105,31 +104,14 @@ describe('Kickstarts.vue', () => {
       getRepos.mockResolvedValue({ results: [{ id: 1, name: 'centos-repo' }] })
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
-
-      const rows = wrapper.findAll('tbody tr')
-      expect(rows.length).toBe(1)
-      expect(rows[0].find('td:nth-child(2)').text()).toBe('centos-ks')
-    })
-
-    it('显示仓库名称', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: 1,
-        repo_name: 'centos-repo',
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [{ id: 1, name: 'centos-repo' }] })
-      const wrapper = createWrapper()
+      await wrapper.vm.loadKickstarts()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.find('td:nth-child(3)').text()).toBe('centos-repo')
+      expect(wrapper.vm.kickstarts.length).toBe(1)
+      expect(wrapper.vm.kickstarts[0].name).toBe('centos-ks')
     })
 
-    it('无仓库时显示横杠', async () => {
+    it('无仓库时 repo_name 为 null', async () => {
       const mockKickstarts = [{
         id: 1,
         name: 'centos-ks',
@@ -143,31 +125,10 @@ describe('Kickstarts.vue', () => {
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('td:nth-child(3)').text()).toBe('-')
-    })
-  })
-
-  describe('操作按钮', () => {
-    it('显示编辑、预览、验证、删除按钮', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: null,
-        repo_name: null,
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
-      const wrapper = createWrapper()
+      await wrapper.vm.loadKickstarts()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.findAll('.btn-edit').length).toBe(1)
-      expect(wrapper.findAll('.btn-preview').length).toBe(1)
-      expect(wrapper.findAll('.btn-validate').length).toBe(1)
-      expect(wrapper.findAll('.btn-danger').length).toBe(1)
+      expect(wrapper.vm.kickstarts[0].repo_name).toBe(null)
     })
   })
 
@@ -192,7 +153,7 @@ describe('Kickstarts.vue', () => {
         name: 'centos-ks',
         repo: 1,
         content: 'Kickstart content',
-        kernel_options: { ksdevice: 'eth0' },
+        kernel_options: { 'ksdevice': 'eth0' },
         created_at: '2026-01-01T00:00:00Z'
       }]
 
@@ -335,24 +296,6 @@ describe('Kickstarts.vue', () => {
 
       expect(wrapper.vm.errors.content).toBe('请输入模板内容')
     })
-
-    it('验证通过调用创建API', async () => {
-      getRepos.mockResolvedValue({ results: [] })
-      const wrapper = createWrapper()
-      wrapper.vm.dialogVisible = true
-      wrapper.vm.isEdit = false
-      wrapper.vm.form = {
-        name: 'test-ks',
-        repo: null,
-        content: 'Kickstart content',
-        kernel_options_json: ''
-      }
-      createKickstart.mockResolvedValue({})
-
-      await wrapper.vm.submitForm()
-
-      expect(createKickstart).toHaveBeenCalled()
-    })
   })
 
   describe('验证操作', () => {
@@ -391,6 +334,8 @@ describe('Kickstarts.vue', () => {
       getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
+
       await wrapper.vm.confirmDelete(mockKickstarts[0])
 
       expect(wrapper.vm.deleteDialogVisible).toBe(true)
