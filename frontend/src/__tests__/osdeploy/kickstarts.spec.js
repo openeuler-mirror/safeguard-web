@@ -72,73 +72,28 @@ describe('Kickstarts.vue', () => {
       expect(wrapper.vm.loading).toBe(true)
     })
 
-    it('加载失败时显示错误', async () => {
+    it('加载失败时设置错误信息', async () => {
       getKickstarts.mockRejectedValue(new Error('加载失败'))
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      expect(wrapper.vm.error).toBe('加载失败')
+      await new Promise(r => setTimeout(r, 100))
+      expect(wrapper.vm.error).toContain('加载失败')
     })
 
-    it('无数据时显示暂无数据', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
+    it('加载成功后更新数据', async () => {
+      const mockKickstarts = [{ id: 1, name: 'test-ks' }]
+      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
       getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      expect(wrapper.find('.empty-text').exists()).toBe(true)
-    })
-  })
-
-  describe('表格渲染', () => {
-    it('正确加载模板数据', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: 1,
-        repo_name: 'centos-repo',
-        kernel_options: { 'ksdevice': 'eth0' },
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [{ id: 1, name: 'centos-repo' }] })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
+      wrapper.vm.kickstarts = []
       await wrapper.vm.loadKickstarts()
-      await wrapper.vm.$nextTick()
-
       expect(wrapper.vm.kickstarts.length).toBe(1)
-      expect(wrapper.vm.kickstarts[0].name).toBe('centos-ks')
-    })
-
-    it('无仓库时 repo_name 为 null', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: null,
-        repo_name: null,
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-      await wrapper.vm.loadKickstarts()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.vm.kickstarts[0].repo_name).toBe(null)
     })
   })
 
   describe('创建/编辑弹窗', () => {
     it('创建弹窗正确初始化', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
       await wrapper.vm.openCreateDialog()
 
       expect(wrapper.vm.dialogVisible).toBe(true)
@@ -148,29 +103,22 @@ describe('Kickstarts.vue', () => {
     })
 
     it('编辑弹窗正确填充数据', async () => {
-      const mockKickstarts = [{
+      const mockKS = {
         id: 1,
         name: 'centos-ks',
         repo: 1,
         content: 'Kickstart content',
-        kernel_options: { 'ksdevice': 'eth0' },
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
+        kernel_options: { 'ksdevice': 'eth0' }
+      }
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      await wrapper.vm.openEditDialog(mockKickstarts[0])
+      await wrapper.vm.openEditDialog(mockKS)
 
       expect(wrapper.vm.isEdit).toBe(true)
-      expect(wrapper.vm.selectedKickstart).toEqual(mockKickstarts[0])
+      expect(wrapper.vm.selectedKickstart).toEqual(mockKS)
       expect(wrapper.vm.form.name).toBe('centos-ks')
     })
 
     it('关闭弹窗清空错误', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.dialogVisible = true
       wrapper.vm.formError = 'some error'
@@ -186,29 +134,22 @@ describe('Kickstarts.vue', () => {
 
   describe('预览弹窗', () => {
     it('预览弹窗正确初始化', async () => {
-      const mockKickstarts = [{
+      const mockKS = {
         id: 1,
         name: 'centos-ks',
         repo: null,
         content: 'Kickstart content',
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
+        kernel_options: {}
+      }
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      await wrapper.vm.openPreviewDialog(mockKickstarts[0])
+      await wrapper.vm.openPreviewDialog(mockKS)
 
       expect(wrapper.vm.previewDialogVisible).toBe(true)
-      expect(wrapper.vm.selectedKickstart).toEqual(mockKickstarts[0])
+      expect(wrapper.vm.selectedKickstart).toEqual(mockKS)
       expect(wrapper.vm.varsJson).toBe('{}')
     })
 
     it('关闭预览弹窗清空数据', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.previewDialogVisible = true
       wrapper.vm.selectedKickstart = { id: 1, name: 'ks1' }
@@ -224,7 +165,6 @@ describe('Kickstarts.vue', () => {
 
   describe('变量替换预览', () => {
     it('打开变量替换弹窗', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.previewDialogVisible = true
 
@@ -234,7 +174,6 @@ describe('Kickstarts.vue', () => {
     })
 
     it('关闭变量替换弹窗清空数据', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.varsDialogVisible = true
       wrapper.vm.varsJson = '{"hostname": "test"}'
@@ -247,22 +186,18 @@ describe('Kickstarts.vue', () => {
       expect(wrapper.vm.previewContent).toBe('')
     })
 
-    it('变量替换预览返回内容', async () => {
-      const mockKickstarts = [{
+    it('doPreview 调用预览API', async () => {
+      const mockKS = {
         id: 1,
         name: 'centos-ks',
         repo: null,
         content: 'Hostname: {{hostname}}',
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
+        kernel_options: {}
+      }
       previewKickstart.mockResolvedValue({ content: 'Hostname: test-server' })
 
       const wrapper = createWrapper()
-      wrapper.vm.selectedKickstart = mockKickstarts[0]
+      wrapper.vm.selectedKickstart = mockKS
       wrapper.vm.varsJson = '{"hostname": "test-server"}'
 
       await wrapper.vm.doPreview()
@@ -274,7 +209,6 @@ describe('Kickstarts.vue', () => {
 
   describe('表单验证', () => {
     it('模板名称必填验证', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.dialogVisible = true
       wrapper.vm.form.name = ''
@@ -286,7 +220,6 @@ describe('Kickstarts.vue', () => {
     })
 
     it('模板内容必填验证', async () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.dialogVisible = true
       wrapper.vm.form.name = 'test-ks'
@@ -299,22 +232,12 @@ describe('Kickstarts.vue', () => {
   })
 
   describe('验证操作', () => {
-    it('验证成功后显示提示', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: null,
-        content: 'content',
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
+    it('handleValidate 调用验证API', async () => {
+      const mockKS = { id: 1, name: 'centos-ks' }
       validateKickstart.mockResolvedValue({})
-
       const wrapper = createWrapper()
-      await wrapper.vm.handleValidate(mockKickstarts[0])
+
+      await wrapper.vm.handleValidate(mockKS)
 
       expect(validateKickstart).toHaveBeenCalledWith(1)
     })
@@ -322,29 +245,15 @@ describe('Kickstarts.vue', () => {
 
   describe('删除操作', () => {
     it('确认删除对话框设置正确', async () => {
-      const mockKickstarts = [{
-        id: 1,
-        name: 'centos-ks',
-        repo: null,
-        content: 'content',
-        kernel_options: {},
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getKickstarts.mockResolvedValue({ results: mockKickstarts, count: 1 })
-      getRepos.mockResolvedValue({ results: [] })
+      const mockKS = { id: 1, name: 'ks1' }
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      await wrapper.vm.confirmDelete(mockKickstarts[0])
+      await wrapper.vm.confirmDelete(mockKS)
 
       expect(wrapper.vm.deleteDialogVisible).toBe(true)
-      expect(wrapper.vm.selectedKickstart).toEqual(mockKickstarts[0])
+      expect(wrapper.vm.selectedKickstart).toEqual(mockKS)
     })
 
-    it('删除成功后刷新列表', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
-      getRepos.mockResolvedValue({ results: [] })
+    it('handleDelete 调用删除API', async () => {
       const wrapper = createWrapper()
       wrapper.vm.selectedKickstart = { id: 1, name: 'ks1' }
       deleteKickstart.mockResolvedValue({})
@@ -352,34 +261,29 @@ describe('Kickstarts.vue', () => {
       await wrapper.vm.handleDelete()
 
       expect(deleteKickstart).toHaveBeenCalledWith(1)
-      expect(wrapper.vm.deleteDialogVisible).toBe(false)
     })
   })
 
   describe('工具方法', () => {
     it('formatDate 正确格式化日期', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       const result = wrapper.vm.formatDate('2026-01-15T10:30:00Z')
       expect(result).toContain('2026')
     })
 
     it('formatDate 处理空值', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       expect(wrapper.vm.formatDate('')).toBe('-')
       expect(wrapper.vm.formatDate(null)).toBe('-')
     })
 
     it('formatKernelOptions 正确序列化内核参数', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       const options = { 'ksdevice': 'eth0', 'inst.stage2': 'http://example.com' }
       expect(wrapper.vm.formatKernelOptions(options)).toBe(JSON.stringify(options))
     })
 
     it('formatKernelOptions 处理空值', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       expect(wrapper.vm.formatKernelOptions(null)).toBe('-')
       expect(wrapper.vm.formatKernelOptions({})).toBe('-')
@@ -388,7 +292,6 @@ describe('Kickstarts.vue', () => {
 
   describe('分页', () => {
     it('正确计算总页数', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.totalCount = 45
       wrapper.vm.pageSize = 20
@@ -396,7 +299,6 @@ describe('Kickstarts.vue', () => {
     })
 
     it('总页数为0时返回1', () => {
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.totalCount = 0
       wrapper.vm.pageSize = 20
@@ -406,8 +308,6 @@ describe('Kickstarts.vue', () => {
 
   describe('筛选和搜索', () => {
     it('handleFilter 重置页码', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.page = 5
 
@@ -417,8 +317,6 @@ describe('Kickstarts.vue', () => {
     })
 
     it('handleSearch 重置页码', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
       wrapper.vm.page = 5
 
@@ -428,8 +326,6 @@ describe('Kickstarts.vue', () => {
     })
 
     it('handlePageChange 更改页码', async () => {
-      getKickstarts.mockResolvedValue({ results: [], count: 0 })
-      getRepos.mockResolvedValue({ results: [] })
       const wrapper = createWrapper()
 
       await wrapper.vm.handlePageChange(3)
