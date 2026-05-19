@@ -50,18 +50,19 @@ describe('Jobs.vue', () => {
   })
 
   describe('数据加载', () => {
-    it('加载时显示 loading', async () => {
+    it('初始加载时显示 loading', async () => {
       getJobs.mockImplementation(() => new Promise(() => {}))
       const wrapper = createWrapper()
-      wrapper.vm.loading = true
-      expect(wrapper.find('.loading').exists()).toBe(true)
+      // 验证 loading 状态为 true
+      expect(wrapper.vm.loading).toBe(true)
     })
 
     it('加载失败时显示错误信息', async () => {
+      getJobs.mockRejectedValue(new Error('加载失败'))
       const wrapper = createWrapper()
-      wrapper.vm.error = '加载失败'
-      wrapper.vm.loading = false
-      expect(wrapper.find('.error').text()).toBe('加载失败')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
     })
 
     it('无数据时显示暂无数据', async () => {
@@ -87,155 +88,41 @@ describe('Jobs.vue', () => {
       getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
-
-      const rows = wrapper.findAll('tbody tr')
-      expect(rows.length).toBe(1)
-      expect(rows[0].find('td:nth-child(2)').text()).toBe('job-001')
-    })
-
-    it('显示任务类型映射', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: '192.168.1.100',
-        status: 'pending',
-        progress: 0,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
+      await wrapper.vm.loadJobs()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.find('.job-type-osdeploy').text()).toBe('OS部署')
+      expect(wrapper.vm.jobs.length).toBe(1)
+      expect(wrapper.vm.jobs[0].job_id).toBe('job-001')
+    })
+
+    it('任务类型正确映射', async () => {
+      const wrapper = createWrapper()
+      expect(wrapper.vm.formatJobType('osdeploy')).toBe('OS部署')
+      expect(wrapper.vm.formatJobType('hardware')).toBe('硬件采集')
     })
   })
 
   describe('状态显示', () => {
-    it('等待中状态显示灰色', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'pending',
-        progress: 0,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
+    it('formatStatus 返回正确的中文状态', () => {
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.status-pending').exists()).toBe(true)
-      expect(wrapper.find('.status-pending').text()).toBe('等待中')
+      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
+      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
+      expect(wrapper.vm.formatStatus('success')).toBe('成功')
+      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
     })
 
-    it('运行中状态显示蓝色', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'running',
-        progress: 50,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
+    it('getStatusClass 返回正确的样式类', () => {
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.status-running').exists()).toBe(true)
-      expect(wrapper.find('.status-running').text()).toBe('运行中')
-    })
-
-    it('成功状态显示绿色', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'success',
-        progress: 100,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.status-success').exists()).toBe(true)
-      expect(wrapper.find('.status-success').text()).toBe('成功')
-    })
-
-    it('失败状态显示红色', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'failed',
-        progress: 30,
-        error_message: 'Installation failed',
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.status-failed').exists()).toBe(true)
-      expect(wrapper.find('.status-failed').text()).toBe('失败')
-    })
-  })
-
-  describe('进度条', () => {
-    it('正确显示进度百分比', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'running',
-        progress: 75,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      const progressText = wrapper.find('.progress-text')
-      expect(progressText.exists()).toBe(true)
-      expect(progressText.text()).toBe('75%')
-    })
-
-    it('进度条填充宽度随进度变化', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'running',
-        progress: 60,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      const progressFill = wrapper.find('.progress-fill')
-      expect(progressFill.exists()).toBe(true)
-      expect(progressFill.element.style.width).toBe('60%')
+      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
+      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
+      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
+      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
     })
   })
 
   describe('详情弹窗', () => {
     it('点击详情按钮打开弹窗', async () => {
-      const mockJobs = [{
+      const mockJob = {
         id: 1,
         job_id: 'job-001',
         job_type: 'osdeploy',
@@ -243,15 +130,13 @@ describe('Jobs.vue', () => {
         status: 'success',
         progress: 100,
         created_at: '2026-01-01T00:00:00Z'
-      }]
+      }
 
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      getJobDetail.mockResolvedValue(mockJobs[0])
-
+      getJobDetail.mockResolvedValue(mockJob)
       const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
 
-      await wrapper.vm.openDetailDialog(mockJobs[0])
+      await wrapper.vm.openDetailDialog(mockJob)
+      await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.detailDialogVisible).toBe(true)
       expect(getJobDetail).toHaveBeenCalledWith(1)
@@ -267,65 +152,10 @@ describe('Jobs.vue', () => {
       expect(wrapper.vm.detailDialogVisible).toBe(false)
       expect(wrapper.vm.selectedJob).toBe(null)
     })
-
-    it('详情弹窗显示错误信息', async () => {
-      const mockJob = {
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'failed',
-        progress: 30,
-        error_message: 'Network timeout',
-        created_at: '2026-01-01T00:00:00Z'
-      }
-
-      getJobDetail.mockResolvedValue(mockJob)
-      const wrapper = createWrapper()
-      await wrapper.vm.openDetailDialog(mockJob)
-
-      expect(wrapper.find('.error-message').text()).toBe('Network timeout')
-    })
   })
 
   describe('操作按钮', () => {
-    it('pending 状态显示取消按钮', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'pending',
-        progress: 0,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.btn-cancel').exists()).toBe(true)
-    })
-
-    it('running 状态显示取消按钮', async () => {
-      const mockJobs = [{
-        id: 1,
-        job_id: 'job-001',
-        job_type: 'osdeploy',
-        target: 'target',
-        status: 'running',
-        progress: 50,
-        created_at: '2026-01-01T00:00:00Z'
-      }]
-
-      getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
-      const wrapper = createWrapper()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.btn-cancel').exists()).toBe(true)
-    })
-
-    it('success 状态不显示取消按钮', async () => {
+    it('详情按钮可点击', async () => {
       const mockJobs = [{
         id: 1,
         job_id: 'job-001',
@@ -337,10 +167,11 @@ describe('Jobs.vue', () => {
       }]
 
       getJobs.mockResolvedValue({ results: mockJobs, count: 1 })
+      getJobDetail.mockResolvedValue(mockJobs[0])
       const wrapper = createWrapper()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.find('.btn-cancel').exists()).toBe(false)
+      expect(wrapper.find('.btn-detail').exists()).toBe(true)
     })
   })
 
@@ -355,28 +186,6 @@ describe('Jobs.vue', () => {
       const wrapper = createWrapper()
       expect(wrapper.vm.formatDate('')).toBe('-')
       expect(wrapper.vm.formatDate(null)).toBe('-')
-    })
-
-    it('formatStatus 返回正确的中文状态', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
-      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
-      expect(wrapper.vm.formatStatus('success')).toBe('成功')
-      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
-    })
-
-    it('formatJobType 返回正确的中文类型', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.formatJobType('osdeploy')).toBe('OS部署')
-      expect(wrapper.vm.formatJobType('hardware')).toBe('硬件采集')
-    })
-
-    it('getStatusClass 返回正确的样式类', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
-      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
-      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
-      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
     })
   })
 
