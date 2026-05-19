@@ -18,6 +18,13 @@ from backend.models.osdeploy import (
     WhiteList,
     OutIpSN,
 )
+from backend.models.network import (
+    LoadBalancer,
+    LBListener,
+    LBPool,
+    LBMember,
+    LBHealthMonitor,
+)
 
 __all__ = [
     'Users',
@@ -38,4 +45,9 @@ __all__ = [
     'ISOFileStatus',
     'WhiteList',
     'OutIpSN',
+    'LoadBalancer',
+    'LBListener',
+    'LBPool',
+    'LBMember',
+    'LBHealthMonitor',
 ]
