@@ -2,6 +2,7 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from backend.models.osdeploy import KickStartFileStatus
 from backend.serializers.osdeploy import (
@@ -10,7 +11,8 @@ from backend.serializers.osdeploy import (
     KickStartFileStatusCreateSerializer,
     KickStartFileStatusUpdateSerializer,
 )
-from backend.common import SuccessResponse, ErrorResponse, ErrCode
+from backend.schemas.osdeploy import KickStartFileStatusResponse
+from backend.common import SuccessResponse
 from backend.common.viewsets import UnifiedModelViewSet
 
 
@@ -32,6 +34,11 @@ class KickStartViewSet(UnifiedModelViewSet):
             return KickStartFileStatusListSerializer
         return KickStartFileStatusSerializer
 
+    @extend_schema(
+        summary="验证Kickstart模板",
+        description="验证Kickstart模板语法是否正确",
+        responses={200: OpenApiResponse(description="验证功能待实现")}
+    )
     @action(detail=True, methods=['post'], url_path='validate')
     def validate(self, request, pk=None):
         """验证Kickstart模板语法"""
@@ -39,6 +46,11 @@ class KickStartViewSet(UnifiedModelViewSet):
         # TODO: 调用 DeployService.validate_kickstart()
         return SuccessResponse(errmsg='Kickstart模板验证功能待实现')
 
+    @extend_schema(
+        summary="预览Kickstart模板",
+        description="预览生成的Kickstart文件内容，支持变量替换",
+        responses={200: OpenApiResponse(description="模板预览")}
+    )
     @action(detail=True, methods=['post'], url_path='preview')
     def preview(self, request, pk=None):
         """预览生成的Kickstart文件内容"""
