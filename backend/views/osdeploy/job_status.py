@@ -2,9 +2,11 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from backend.models.osdeploy import JobStatus
 from backend.serializers.osdeploy import JobStatusSerializer, JobStatusListSerializer
+from backend.schemas.osdeploy import JobStatusResponse
 from backend.services.osdeploy import DeployService
 from backend.common import SuccessResponse, ErrorResponse, ErrCode
 from backend.common.viewsets import UnifiedModelViewSet
@@ -24,6 +26,13 @@ class JobViewSet(UnifiedModelViewSet):
             return JobStatusListSerializer
         return JobStatusSerializer
 
+    @extend_schema(
+        summary="查询任务状态",
+        description="根据job_id查询任务状态",
+        responses={
+            200: OpenApiResponse(response=JobStatusResponse, description="任务详情"),
+        }
+    )
     @action(detail=False, methods=['get'], url_path='query')
     def query(self, request):
         """
