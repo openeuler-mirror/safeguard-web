@@ -1,7 +1,7 @@
 """PXEServerStatus 视图集"""
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
 
 from backend.models.osdeploy import PXEServerStatus
 from backend.serializers.osdeploy import (
@@ -10,7 +10,6 @@ from backend.serializers.osdeploy import (
     PXEServerStatusCreateSerializer,
     PXEServerStatusUpdateSerializer,
 )
-from backend.common import SuccessResponse
 from backend.common.viewsets import UnifiedModelViewSet
 
 
