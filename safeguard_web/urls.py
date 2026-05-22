@@ -22,6 +22,9 @@ urlpatterns = [
     # OSDeploy routes
     path('api/', include('backend.urls.osdeploy')),
 
+    # Network routes
+    path('api/', include('backend.urls.network')),
+
     # DRF auth
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
