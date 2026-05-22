@@ -8,6 +8,13 @@ from backend.admin.authority import (
     AuthorityButtonAdmin,
     UserAuthorityAdmin,
 )
+from backend.admin.network import (
+    LoadBalancerAdmin,
+    LBListenerAdmin,
+    LBPoolAdmin,
+    LBMemberAdmin,
+    LBHealthMonitorAdmin,
+)
 
 __all__ = [
     'UsersAdmin',
@@ -18,4 +25,9 @@ __all__ = [
     'AuthorityMenuAdmin',
     'AuthorityButtonAdmin',
     'UserAuthorityAdmin',
+    'LoadBalancerAdmin',
+    'LBListenerAdmin',
+    'LBPoolAdmin',
+    'LBMemberAdmin',
+    'LBHealthMonitorAdmin',
 ]
