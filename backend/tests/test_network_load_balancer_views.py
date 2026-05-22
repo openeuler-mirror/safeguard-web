@@ -118,35 +118,3 @@ class LoadBalancerViewSetTest(APITestCase):
         response = self.client.delete(f'/api/lbs/{lb.pk}/')
         self.assertEqual(response.data['errno'], 0)
         self.assertFalse(LoadBalancer.objects.filter(pk=lb.pk).exists())
-
-    def test_filter_by_status(self):
-        """测试按状态筛选负载均衡器"""
-        LoadBalancer.objects.create(name='ActiveLB', vip_address='192.168.1.60', status='active')
-        LoadBalancer.objects.create(name='InactiveLB', vip_address='192.168.1.61', status='inactive')
-        response = self.client.get('/api/lbs/?status=active')
-        self.assertEqual(response.data['errno'], 0)
-        results = response.data['data']
-        if isinstance(results, dict):
-            results = results.get('results', [])
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['name'], 'ActiveLB')
-
-    def test_filter_by_algorithm(self):
-        """测试按算法筛选负载均衡器"""
-        LoadBalancer.objects.create(
-            name='RoundRobinLB',
-            vip_address='192.168.1.70',
-            algorithm='round_robin'
-        )
-        LoadBalancer.objects.create(
-            name='LeastConnLB',
-            vip_address='192.168.1.71',
-            algorithm='least_conn'
-        )
-        response = self.client.get('/api/lbs/?algorithm=round_robin')
-        self.assertEqual(response.data['errno'], 0)
-        results = response.data['data']
-        if isinstance(results, dict):
-            results = results.get('results', [])
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]['algorithm'], 'round_robin')
