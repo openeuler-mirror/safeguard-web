@@ -123,6 +123,37 @@ const routes = [
     component: () => import('@/views/osdeploy/OutIpSN.vue'),
     meta: { requiresAuth: true }
   },
+  // Network 模块
+  {
+    path: '/network/lbs',
+    name: 'NetworkLoadBalancers',
+    component: () => import('@/views/network/LoadBalancers.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/network/listeners',
+    name: 'NetworkListeners',
+    component: () => import('@/views/network/Listeners.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/network/pools',
+    name: 'NetworkPools',
+    component: () => import('@/views/network/Pools.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/network/members',
+    name: 'NetworkMembers',
+    component: () => import('@/views/network/Members.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/network/health-monitors',
+    name: 'NetworkHealthMonitors',
+    component: () => import('@/views/network/HealthMonitors.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     redirect: '/dashboard'

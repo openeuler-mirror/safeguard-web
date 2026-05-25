@@ -138,7 +138,12 @@ export default {
         '/osdeploy/auto-install': '🚀',
         '/osdeploy/whitelist': '📋',
         '/osdeploy/isos': '💿',
-        '/osdeploy/outipsn': '🔢'
+        '/osdeploy/outipsn': '🔢',
+        '/network/lbs': '⚖️',
+        '/network/listeners': '👂',
+        '/network/pools': '📊',
+        '/network/members': '👥',
+        '/network/health-monitors': '❤'
       }
       return icons[path] || '📄'
     }
