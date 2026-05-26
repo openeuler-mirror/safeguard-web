@@ -26,6 +26,8 @@ class SafeguardDeploy(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", verbose_name="状态")
     result = models.JSONField(default=dict, blank=True, verbose_name="结果详情")
     error_message = models.TextField(blank=True, verbose_name="错误信息")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "safeguard_deploy"
