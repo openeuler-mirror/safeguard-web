@@ -56,8 +56,13 @@ class HealthMonitorServiceTest(TestCase):
 
     def test_list_monitors_with_filter(self):
         """测试健康检查列表过滤"""
+        another_pool = LBPool.objects.create(
+            loadbalancer=self.lb,
+            name='FilterPool',
+            protocol='http'
+        )
         LBHealthMonitor.objects.create(
-            pool=self.pool,
+            pool=another_pool,
             monitor_type='http',
             interval=10,
             timeout=5,
