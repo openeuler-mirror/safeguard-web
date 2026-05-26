@@ -25,6 +25,7 @@ from backend.models.network import (
     LBMember,
     LBHealthMonitor,
 )
+from backend.models.security import SafeguardDeploy
 
 __all__ = [
     'Users',
@@ -50,4 +51,5 @@ __all__ = [
     'LBPool',
     'LBMember',
     'LBHealthMonitor',
+    'SafeguardDeploy',
 ]
