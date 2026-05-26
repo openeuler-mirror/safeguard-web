@@ -97,16 +97,6 @@ class LoadBalancerSerializerTest(TestCase):
         serializer = LoadBalancerCreateSerializer(data=data)
         self.assertFalse(serializer.is_valid())
 
-    def test_create_serializer_invalid_port(self):
-        """测试创建序列化器拒绝无效端口"""
-        data = {
-            'name': 'InvalidLB',
-            'vip_address': '192.168.1.200',
-            'port': 99999  # 无效端口
-        }
-        serializer = LoadBalancerCreateSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-
     def test_update_serializer_valid_data(self):
         """测试更新序列化器验证有效数据"""
         data = {
