@@ -113,6 +113,10 @@ _ERRCODE_MAP = {
 
     # OS部署相关 (7xxx)
     7001: "仓库存在关联的Kickstart模板，无法删除",
+
+    # Security/Safeguard相关 (72xx)
+    7201: "部署失败",
+    7202: "回滚失败",
 }
 
 
