@@ -67,6 +67,10 @@ class ErrCode:
     # OS部署相关 (7xxx)
     REPO_HAS_KICKSTART = 7001
 
+    # Security/Safeguard相关 (72xx)
+    DEPLOY_FAILED = 7201
+    ROLLBACK_FAILED = 7202
+
 
 # 错误码到描述的映射
 _ERRCODE_MAP = {
