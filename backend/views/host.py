@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from backend.models.host import Cluster, Host, VM
 from backend.serializers.host import (
@@ -20,6 +21,7 @@ from backend.serializers.host import (
 )
 from backend.permissions.authority import IsAdmin
 from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
+from backend.services.host import ClusterService, HostService, VMService
 
 
 class ClusterViewSet(UnifiedModelViewSet):
@@ -53,13 +55,10 @@ class ClusterViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['get'], url_path='topology')
     def topology(self, request, pk=None):
         """获取集群拓扑"""
-        cluster = self.get_object()
-        # TODO: 调用 ClusterService.get_cluster_topology()
-        return SuccessResponse({
-            'message': '拓扑功能待实现',
-            'cluster_id': cluster.id,
-            'cluster_name': cluster.name
-        })
+        topology = ClusterService.get_cluster_topology(pk)
+        if topology is None:
+            return ErrorResponse(ErrCode.CLUSTER_NOT_FOUND)
+        return SuccessResponse(topology)
 
     @action(detail=False, methods=['get'], url_path='tree')
     def tree(self, request):
@@ -74,8 +73,8 @@ class HostViewSet(UnifiedModelViewSet):
     queryset = Host.objects.select_related('cluster').all().order_by('id')
     serializer_class = HostSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    filterset_fields = ['hostname', 'ip_address', 'status', 'cluster']
-    search_fields = ['hostname', 'ip_address']
+    filterset_fields = ['hostname', 'ip_address', 'status', 'cluster', 'host_type']
+    search_fields = ['hostname', 'ip_address', 'serial_number']
     ordering_fields = ['created_at', 'id']
 
     def get_serializer_class(self):
@@ -90,9 +89,36 @@ class HostViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['post'], url_path='collect_hardware')
     def collect_hardware(self, request, pk=None):
         """采集主机硬件信息"""
-        host = self.get_object()
-        # TODO: 调用 HostService.collect_hardware()
-        return SuccessResponse(errmsg='硬件信息采集功能待实现')
+        result = HostService.collect_hardware(pk)
+        if result['success']:
+            return SuccessResponse(result['data'], errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_HARDWARE_COLLECT_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['post'], url_path='collect_lldp')
+    def collect_lldp(self, request, pk=None):
+        """采集 LLDP 拓扑信息"""
+        result = HostService.collect_lldp(pk)
+        if result['success']:
+            return SuccessResponse(result['data'], errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_LLDP_COLLECT_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['post'], url_path='collect_all')
+    def collect_all(self, request, pk=None):
+        """采集主机所有硬件信息（包括 LLDP）"""
+        result = HostService.collect_all(pk)
+        if result['success']:
+            return SuccessResponse(result['data'], errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_HARDWARE_COLLECT_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['post'], url_path='update_password')
+    def update_password(self, request, pk=None):
+        """修改主机密码"""
+        new_password = request.data.get('password')
+        key = request.data.get('key', 'culinux')
+        result = HostService.update_host_password(pk, new_password, key)
+        if result['success']:
+            return SuccessResponse({'password': result['password']}, errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
 
 
 class VMViewSet(UnifiedModelViewSet):
@@ -116,20 +142,47 @@ class VMViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['post'], url_path='start')
     def start(self, request, pk=None):
         """启动VM"""
-        vm = self.get_object()
-        # TODO: 调用 VMService.start_vm()
-        return SuccessResponse(errmsg='VM启动功能待实现')
+        result = VMService.start_vm(pk)
+        if result['success']:
+            return SuccessResponse(errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
 
     @action(detail=True, methods=['post'], url_path='stop')
     def stop(self, request, pk=None):
         """停止VM"""
-        vm = self.get_object()
-        # TODO: 调用 VMService.stop_vm()
-        return SuccessResponse(errmsg='VM停止功能待实现')
+        result = VMService.stop_vm(pk)
+        if result['success']:
+            return SuccessResponse(errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
 
     @action(detail=True, methods=['post'], url_path='reboot')
     def reboot(self, request, pk=None):
         """重启VM"""
-        vm = self.get_object()
-        # TODO: 调用 VMService.reboot_vm()
-        return SuccessResponse(errmsg='VM重启功能待实现')
+        result = VMService.reboot_vm(pk)
+        if result['success']:
+            return SuccessResponse(errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['post'], url_path='pause')
+    def pause(self, request, pk=None):
+        """暂停VM"""
+        result = VMService.pause_vm(pk)
+        if result['success']:
+            return SuccessResponse(errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['post'], url_path='resume')
+    def resume(self, request, pk=None):
+        """恢复VM"""
+        result = VMService.resume_vm(pk)
+        if result['success']:
+            return SuccessResponse(errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+
+    @action(detail=True, methods=['get'], url_path='status')
+    def status(self, request, pk=None):
+        """获取VM状态"""
+        result = VMService.get_vm_status(pk)
+        if result['success']:
+            return SuccessResponse({'status': result['status']}, errmsg=result['message'])
+        return ErrorResponse(ErrCode.VM_NOT_FOUND, errmsg=result['message'])
