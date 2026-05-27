@@ -30,7 +30,7 @@ class SafeguardViewSet(UnifiedModelViewSet):
             return SafeguardDeployListSerializer
         return SafeguardDeploySerializer
 
-    @action(['post'], False)
+    @action(['post'], True)
     def deploy(self, request, pk=None):
         """执行部署"""
         safeguard = self.get_object()
@@ -39,7 +39,7 @@ class SafeguardViewSet(UnifiedModelViewSet):
             return self.success_response(data={'message': '部署任务已启动'})
         return self.error_response(code=7001, message='启动部署失败')
 
-    @action(['post'], False)
+    @action(['post'], True)
     def rollback(self, request, pk=None):
         """回滚部署"""
         safeguard = self.get_object()
