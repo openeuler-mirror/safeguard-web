@@ -143,7 +143,8 @@ export default {
         '/network/listeners': '👂',
         '/network/pools': '📊',
         '/network/members': '👥',
-        '/network/health-monitors': '❤'
+        '/network/health-monitors': '❤',
+        '/security/safeguards': '🛡️'
       }
       return icons[path] || '📄'
     }

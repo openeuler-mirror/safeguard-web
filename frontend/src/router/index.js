@@ -154,6 +154,13 @@ const routes = [
     component: () => import('@/views/network/HealthMonitors.vue'),
     meta: { requiresAuth: true }
   },
+  // Security 模块
+  {
+    path: '/security/safeguards',
+    name: 'SecuritySafeguards',
+    component: () => import('@/views/security/Safeguards.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     redirect: '/dashboard'
