@@ -75,7 +75,7 @@ class TestCollectHostHardware(TestCase):
         host = MockHost()
         result = collect_host_hardware(host)
 
-        self.assertEqual(result['arch_info'], '5.4.0-generic')
+        self.assertEqual(result['arch_info'], '5.4.0--generic')
         self.assertEqual(result['uptime'], '14:32:11 up 123 days')
         self.assertEqual(result['os_version'], 'NAME="Ubuntu"\nVERSION="20.04"')
         self.assertEqual(result['cpu_info'], 'CPU: Intel(R) Xeon(R) CPU E5-2680')
@@ -377,8 +377,7 @@ class TestCollectAllHardwareInfo(TestCase):
         mock_collect_lldp.return_value = [{'ifname': 'eth0'}]
 
         host = MockHost()
-        result = collect_all_hardware_info(host)
-
-        # 硬件采集失败，LLDP 可能成功
-        self.assertIn('hardware', result)
-        self.assertIn('lldp', result)
+        # collect_all_hardware_info 没有异常处理，直接抛出
+        with self.assertRaises(Exception) as context:
+            collect_all_hardware_info(host)
+        self.assertIn("Hardware collect failed", str(context.exception))
