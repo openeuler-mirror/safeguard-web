@@ -30,14 +30,31 @@ class ClusterUpdateSerializer(serializers.ModelSerializer):
 
 
 class HostSerializer(serializers.ModelSerializer):
-    """主机序列化器（不返回密码）"""
+    """主机序列化器（完整信息）"""
     cluster_name = serializers.CharField(source='cluster.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Host
         fields = [
-            'id', 'hostname', 'ip_address', 'port', 'username',
-            'cluster', 'cluster_name', 'status', 'os_type',
+            'id', 'serial_number', 'hostname', 'ip_address', 'port', 'username',
+            'cluster', 'cluster_name', 'status', 'os_type', 'host_type',
+            'use_name', 'use_for',
+            'netmask', 'bond_type', 'manage_vlan', 'manage_nic1', 'manage_nic2',
+            'manage_address_ipv6', 'manage_netmask_ipv6',
+            'ipmi_address', 'ipmi_user', 'ipmi_password', 'ipmi_vlan',
+            'storage_vlan', 'storage_ifname', 'storage_address', 'storage_netmask',
+            'business_vlan', 'business_ifname', 'business_address', 'business_netmask',
+            'business_bond_type', 'business_nic1', 'business_nic2',
+            'other_vlan', 'other_ifname', 'other_address', 'other_netmask',
+            'other_nic1', 'other_nic2',
+            'is_cluster_type', 'is_zone_type', 'is_bind_cell_type', 'flag',
+            'raid', 'bios_config', 'asset_number', 'is_warranty_period',
+            'server_brand', 'server_model', 'server_size',
+            'base_location', 'server_room_number', 'cabinet_number',
+            'lldp_infos', 'cell_vip', 'ntp_address',
+            'arch_info', 'os_version', 'uptime', 'cpu_info', 'disk_info',
+            'memory_info', 'network_info', 'mount_info', 'dmesg_info',
+            'mac_address', 'region',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -47,7 +64,18 @@ class HostCreateSerializer(serializers.ModelSerializer):
     """主机创建序列化器"""
     class Meta:
         model = Host
-        fields = ['hostname', 'ip_address', 'port', 'username', 'password', 'cluster', 'status', 'os_type']
+        fields = [
+            'serial_number', 'hostname', 'ip_address', 'port', 'username', 'password',
+            'cluster', 'status', 'os_type', 'host_type',
+            'use_name', 'use_for',
+            'netmask', 'bond_type', 'manage_vlan', 'manage_nic1', 'manage_nic2',
+            'ipmi_address', 'ipmi_user', 'ipmi_password', 'ipmi_vlan',
+            'storage_vlan', 'storage_ifname', 'storage_address', 'storage_netmask',
+            'business_vlan', 'business_ifname', 'business_address', 'business_netmask',
+            'raid', 'asset_number', 'server_brand', 'server_model',
+            'base_location', 'server_room_number', 'cabinet_number',
+            'cluster_name', 'region'
+        ]
 
 
 class HostUpdateSerializer(serializers.ModelSerializer):
@@ -56,10 +84,29 @@ class HostUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Host
-        fields = ['hostname', 'port', 'username', 'password', 'cluster', 'status', 'os_type']
+        fields = [
+            'serial_number', 'hostname', 'port', 'username', 'password',
+            'cluster', 'status', 'os_type', 'host_type',
+            'use_name', 'use_for',
+            'netmask', 'bond_type', 'manage_vlan', 'manage_nic1', 'manage_nic2',
+            'manage_address_ipv6', 'manage_netmask_ipv6',
+            'ipmi_address', 'ipmi_user', 'ipmi_password', 'ipmi_vlan',
+            'storage_vlan', 'storage_ifname', 'storage_address', 'storage_netmask',
+            'business_vlan', 'business_ifname', 'business_address', 'business_netmask',
+            'business_bond_type', 'business_nic1', 'business_nic2',
+            'other_vlan', 'other_ifname', 'other_address', 'other_netmask',
+            'other_nic1', 'other_nic2',
+            'is_cluster_type', 'is_zone_type', 'is_bind_cell_type', 'flag',
+            'raid', 'bios_config', 'asset_number', 'is_warranty_period',
+            'server_brand', 'server_model', 'server_size',
+            'base_location', 'server_room_number', 'cabinet_number',
+            'cluster_name', 'cell_vip', 'ntp_address',
+            'arch_info', 'os_version', 'uptime', 'cpu_info', 'disk_info',
+            'memory_info', 'network_info', 'mount_info', 'dmesg_info',
+            'mac_address', 'region', 'lldp_infos'
+        ]
 
     def update(self, instance, validated_data):
-        # 如果 password 为空，不更新密码字段
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -75,20 +122,27 @@ class HostListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Host
-        fields = ['id', 'hostname', 'ip_address', 'port', 'cluster', 'cluster_name', 'status', 'os_type']
+        fields = [
+            'id', 'hostname', 'ip_address', 'port', 'cluster', 'cluster_name',
+            'status', 'os_type', 'host_type', 'serial_number'
+        ]
 
 
 class VMSerializer(serializers.ModelSerializer):
-    """VM序列化器"""
+    """VM序列化器（完整信息）"""
     host_name = serializers.CharField(source='host.hostname', read_only=True, allow_null=True)
     cluster_name = serializers.CharField(source='cluster.name', read_only=True, allow_null=True)
 
     class Meta:
         model = VM
         fields = [
-            'id', 'name', 'uuid', 'host', 'host_name', 'cluster', 'cluster_name',
-            'status', 'vcpu', 'memory', 'disk', 'ip_address', 'mac_address',
-            'os_type', 'created_at', 'updated_at'
+            'id', 'name', 'uuid', 'mac_address',
+            'host', 'host_name', 'cluster', 'cluster_name',
+            'status', 'vcpu', 'memory', 'disk',
+            'ip_address', 'management_ip', 'storage_ip',
+            'os_type',
+            'vm_image_path', 'vm_disk_path', 'vm_network_bridge',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -98,8 +152,10 @@ class VMCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VM
         fields = [
-            'name', 'uuid', 'host', 'cluster', 'status', 'vcpu',
-            'memory', 'disk', 'ip_address', 'mac_address', 'os_type'
+            'name', 'uuid', 'mac_address', 'host', 'cluster',
+            'status', 'vcpu', 'memory', 'disk',
+            'ip_address', 'management_ip', 'storage_ip',
+            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge'
         ]
 
 
@@ -108,8 +164,10 @@ class VMUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = VM
         fields = [
-            'name', 'host', 'cluster', 'status', 'vcpu',
-            'memory', 'disk', 'ip_address', 'mac_address', 'os_type'
+            'name', 'mac_address', 'host', 'cluster',
+            'status', 'vcpu', 'memory', 'disk',
+            'ip_address', 'management_ip', 'storage_ip',
+            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge'
         ]
 
 
