@@ -394,6 +394,22 @@ export default {
         alert(e.message || '重启失败')
       }
     },
+    async handlePause(vm) {
+      try {
+        await pauseVM(vm.id)
+        this.loadVMs()
+      } catch (e) {
+        alert(e.message || '暂停失败')
+      }
+    },
+    async handleResume(vm) {
+      try {
+        await resumeVM(vm.id)
+        this.loadVMs()
+      } catch (e) {
+        alert(e.message || '恢复失败')
+      }
+    },
     getStatusClass(status) {
       const statusMap = {
         'running': 'status-running',
