@@ -74,6 +74,21 @@ export function collectHardware(id) {
   return api.post(`/hosts/${id}/collect_hardware/`)
 }
 
+// 采集主机 LLDP 信息
+export function collectLLDP(id) {
+  return api.post(`/hosts/${id}/collect_lldp/`)
+}
+
+// 采集主机全部信息
+export function collectAll(id) {
+  return api.post(`/hosts/${id}/collect_all/`)
+}
+
+// 修改主机密码
+export function updateHostPassword(id, data) {
+  return api.post(`/hosts/${id}/update_password/`, data)
+}
+
 // ========== VM ==========
 
 // 获取VM列表
