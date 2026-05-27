@@ -368,7 +368,7 @@ class TestHostCommand(TestCase):
 class TestLocalCommand(TestCase):
     """本地命令测试类"""
 
-    @patch('backend.utils.host_command.subprocess.run')
+    @patch('subprocess.run')
     def test_local_host_command_success(self, mock_run):
         """测试本地命令执行成功"""
         mock_result = MagicMock()
@@ -381,7 +381,7 @@ class TestLocalCommand(TestCase):
         self.assertEqual(stdout, "output")
         mock_run.assert_called_once()
 
-    @patch('backend.utils.host_command.subprocess.run')
+    @patch('subprocess.run')
     def test_local_host_command_error(self, mock_run):
         """测试本地命令执行错误"""
         mock_run.side_effect = Exception("Command failed")
