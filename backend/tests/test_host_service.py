@@ -250,7 +250,7 @@ class TestVMService(TestCase):
     def test_create_vm(self):
         data = {
             'name': 'new-vm', 'uuid': 'new-uuid-456',
-            'status': 'stopped', 'host': self.host.id, 'cluster': self.cluster.id
+            'status': 'stopped', 'host': self.host, 'cluster': self.cluster
         }
         vm = VMService.create_vm(data)
         self.assertEqual(vm.name, 'new-vm')
