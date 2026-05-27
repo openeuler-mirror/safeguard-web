@@ -222,3 +222,15 @@ EMAIL_CODE_COOLDOWN = int(os.getenv("EMAIL_CODE_COOLDOWN", "60"))
 
 # 默认用户角色 ID（新用户注册时自动分配）
 DEFAULT_USER_AUTHORITY_ID = int(os.getenv("DEFAULT_USER_AUTHORITY_ID", "890"))
+
+# SSH 配置
+SSH_TIMEOUT = int(os.getenv("SSH_TIMEOUT", "10"))
+SSH_DEFAULT_PORT = int(os.getenv("SSH_DEFAULT_PORT", "22"))
+
+# OSDeploy 相关路径
+ISOPATH = str(BASE_DIR / "data" / "iso")
+KICKSTART_PATH = str(BASE_DIR / "data" / "kickstart")
+
+# Repo 配置
+REPO_SAFEGUARDX86 = os.getenv("REPO_SAFEGUARDX86", "http://repo.example.com/safeguardx86.rpm")
+REPO_SAFEGUARDARM = os.getenv("REPO_SAFEGUARDARM", "http://repo.example.com/safeguardarm.rpm")
