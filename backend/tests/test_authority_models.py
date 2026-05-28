@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton, UserAuthority
+from backend.models import Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton, UserAuthority, Users
 
 
 class AuthorityModelTest(TestCase):

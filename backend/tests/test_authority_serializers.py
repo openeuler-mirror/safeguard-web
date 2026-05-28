@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from backend.models import Authority, Menu, MenuButton, AuthorityMenu, UserAuthority
+from backend.models import Authority, Menu, MenuButton, AuthorityMenu, UserAuthority, Users
 from backend.serializers.authority import (
     AuthoritySerializer, AuthorityCreateSerializer,
     MenuSerializer, MenuTreeSerializer, MenuButtonSerializer,
