@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from backend.models.host import Cluster, Host, VM
+from backend.models.host import Cluster, Host, VM, Image
 
 
 class ClusterSerializer(serializers.ModelSerializer):
