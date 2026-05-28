@@ -58,6 +58,10 @@ class ErrCode:
     CLUSTER_HAS_HOSTS = 5004
     VM_NOT_FOUND = 5005
     VM_EXISTS = 5006
+    HOST_HARDWARE_COLLECT_FAILED = 5007
+    HOST_LLDP_COLLECT_FAILED = 5008
+    HOST_PASSWORD_UPDATE_FAILED = 5009
+    VM_OPERATION_FAILED = 5010
 
     # 用户-角色关联 (6xxx)
     USER_ROLE_SET_FAILED = 6001
@@ -107,6 +111,10 @@ _ERRCODE_MAP = {
     5004: "集群下存在主机，无法删除",
     5005: "虚拟机不存在",
     5006: "虚拟机已存在",
+    5007: "主机硬件信息采集失败",
+    5008: "主机LLDP信息采集失败",
+    5009: "主机密码更新失败",
+    5010: "虚拟机操作失败",
     6001: "角色设置失败",
     6002: "角色添加失败",
     6003: "角色移除失败",
