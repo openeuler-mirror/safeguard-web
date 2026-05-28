@@ -185,3 +185,27 @@ class VMListSerializer(serializers.ModelSerializer):
             'id', 'name', 'uuid', 'host', 'host_name', 'cluster', 'cluster_name',
             'status', 'vcpu', 'ip_address', 'os_type'
         ]
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    """镜像序列化器"""
+    host_name = serializers.CharField(source='host.hostname', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Image
+        fields = ['id', 'name', 'ostype', 'path', 'host', 'host_name', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ImageCreateSerializer(serializers.ModelSerializer):
+    """镜像创建序列化器"""
+    class Meta:
+        model = Image
+        fields = ['id', 'name', 'ostype', 'path', 'host']
+
+
+class ImageUpdateSerializer(serializers.ModelSerializer):
+    """镜像更新序列化器"""
+    class Meta:
+        model = Image
+        fields = ['name', 'ostype', 'path', 'host']

@@ -191,3 +191,29 @@ class VM(models.Model):
         ordering = ['id']
         verbose_name = "虚拟机"
         verbose_name_plural = verbose_name
+
+
+class Image(models.Model):
+    """虚拟机镜像"""
+
+    # 基本信息
+    id = models.CharField(max_length=100, primary_key=True, verbose_name="镜像ID")
+    name = models.CharField(max_length=255, verbose_name="镜像名称")
+    ostype = models.CharField(max_length=50, blank=True, verbose_name="操作系统类型")
+    path = models.CharField(max_length=255, verbose_name="镜像路径")
+
+    # 关联信息
+    host = models.ForeignKey(Host, on_delete=models.CASCADE, verbose_name="所属宿主机")
+
+    # 时间戳
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.ostype})"
+
+    class Meta:
+        db_table = "images"
+        ordering = ['id']
+        verbose_name = "虚拟机镜像"
+        verbose_name_plural = verbose_name
