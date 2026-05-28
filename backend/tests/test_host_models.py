@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from backend.models import Cluster, Host, VM
+from backend.models import Cluster, Host, VM, Image
 
 
 class ClusterModelTest(TestCase):
