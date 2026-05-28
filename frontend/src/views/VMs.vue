@@ -632,6 +632,22 @@ tr:hover td {
   background: #66b1ff;
 }
 
+.btn-pause {
+  background: #e6a23c;
+}
+
+.btn-pause:hover {
+  background: #ebb563;
+}
+
+.btn-resume {
+  background: #909399;
+}
+
+.btn-resume:hover {
+  background: #a6a9ad;
+}
+
 /* 弹窗样式 */
 .dialog-overlay {
   position: fixed;
