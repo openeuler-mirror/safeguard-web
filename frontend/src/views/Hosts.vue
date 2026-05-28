@@ -57,6 +57,8 @@
             <td>{{ host.os_type || '-' }}</td>
             <td>{{ formatDate(host.created_at) }}</td>
             <td>
+              <button class="btn-action btn-collect" @click="handleCollectHardware(host)" title="采集硬件信息">采集硬件</button>
+              <button class="btn-action btn-collect-lldp" @click="handleCollectLLDP(host)" title="采集LLDP信息">LLDP</button>
               <button class="btn-edit" @click="openEditDialog(host)">编辑</button>
               <button class="btn-danger" @click="confirmDelete(host)">删除</button>
             </td>
@@ -152,7 +154,7 @@
 </template>
 
 <script>
-import { getHosts, createHost, updateHost, deleteHost, getClusterTree } from '@/api/host'
+import { getHosts, createHost, updateHost, deleteHost, getClusterTree, collectHardware, collectLLDP, collectAll } from '@/api/host'
 
 export default {
   name: 'Hosts',
