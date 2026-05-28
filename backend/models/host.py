@@ -173,6 +173,12 @@ class VM(models.Model):
     vm_disk_path = models.CharField(max_length=255, blank=True, verbose_name="虚拟机磁盘路径")
     vm_network_bridge = models.CharField(max_length=50, blank=True, verbose_name="虚拟机网桥")
 
+    # oskit 扩展字段
+    imageid = models.CharField(max_length=100, blank=True, verbose_name="镜像ID")
+    sysdisk = models.JSONField(default=dict, blank=True, verbose_name="系统盘信息")
+    datadisk = models.JSONField(default=list, blank=True, verbose_name="数据盘信息")
+    status_message = models.CharField(max_length=255, blank=True, verbose_name="状态消息")
+
     # 时间戳
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
