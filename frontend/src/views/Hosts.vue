@@ -309,6 +309,24 @@ export default {
         alert(e.message || '删除失败')
       }
     },
+    async handleCollectHardware(host) {
+      try {
+        await collectHardware(host.id)
+        alert('硬件信息采集成功')
+        this.loadHosts()
+      } catch (e) {
+        alert(e.message || '硬件信息采集失败')
+      }
+    },
+    async handleCollectLLDP(host) {
+      try {
+        await collectLLDP(host.id)
+        alert('LLDP信息采集成功')
+        this.loadHosts()
+      } catch (e) {
+        alert(e.message || 'LLDP信息采集失败')
+      }
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
