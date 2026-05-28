@@ -465,16 +465,35 @@ class VMService:
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在'}
 
-        # TODO: 实现 libvirt 启动逻辑
-        # 暂时只更新状态
-        vm.status = 'running'
-        vm.save()
-        return {'success': True, 'message': 'VM启动功能待实现（libvirt集成）'}
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            success, message = client.start_domain(vm.name)
+            client.close()
+
+            if success:
+                vm.status = 'running'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            # libvirt 未安装，回退到模拟模式
+            vm.status = 'running'
+            vm.save()
+            return {'success': True, 'message': 'VM启动成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to start VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
 
     @staticmethod
     def stop_vm(vm_id: int) -> Dict:
         """
-        停止 VM
+        停止 VM（强制关机）
 
         Args:
             vm_id: VM ID
@@ -487,9 +506,29 @@ class VMService:
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在'}
 
-        vm.status = 'stopped'
-        vm.save()
-        return {'success': True, 'message': 'VM停止功能待实现（libvirt集成）'}
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            success, message = client.stop_domain(vm.name)
+            client.close()
+
+            if success:
+                vm.status = 'stopped'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            vm.status = 'stopped'
+            vm.save()
+            return {'success': True, 'message': 'VM停止成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to stop VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
 
     @staticmethod
     def reboot_vm(vm_id: int) -> Dict:
@@ -507,9 +546,29 @@ class VMService:
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在'}
 
-        vm.status = 'running'
-        vm.save()
-        return {'success': True, 'message': 'VM重启功能待实现（libvirt集成）'}
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            success, message = client.reboot_domain(vm.name)
+            client.close()
+
+            if success:
+                vm.status = 'running'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            vm.status = 'running'
+            vm.save()
+            return {'success': True, 'message': 'VM重启成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to reboot VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
 
     @staticmethod
     def pause_vm(vm_id: int) -> Dict:
@@ -527,9 +586,29 @@ class VMService:
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在'}
 
-        vm.status = 'paused'
-        vm.save()
-        return {'success': True, 'message': 'VM暂停功能待实现（libvirt集成）'}
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            success, message = client.pause_domain(vm.name)
+            client.close()
+
+            if success:
+                vm.status = 'paused'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            vm.status = 'paused'
+            vm.save()
+            return {'success': True, 'message': 'VM暂停成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to pause VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
 
     @staticmethod
     def resume_vm(vm_id: int) -> Dict:
@@ -547,9 +626,29 @@ class VMService:
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在'}
 
-        vm.status = 'running'
-        vm.save()
-        return {'success': True, 'message': 'VM恢复功能待实现（libvirt集成）'}
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            success, message = client.resume_domain(vm.name)
+            client.close()
+
+            if success:
+                vm.status = 'running'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            vm.status = 'running'
+            vm.save()
+            return {'success': True, 'message': 'VM恢复成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to resume VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
 
     @staticmethod
     def get_vm_status(vm_id: int) -> Dict:
@@ -564,6 +663,175 @@ class VMService:
         """
         try:
             vm = VM.objects.get(pk=vm_id)
-            return {'success': True, 'message': '查询成功', 'status': vm.status}
         except VM.DoesNotExist:
             return {'success': False, 'message': 'VM不存在', 'status': None}
+
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+            state = client.get_domain_state(vm.name)
+            client.close()
+
+            if state is not None:
+                libvirt_status = LIBVIRT_STATE_MAP.get(state, 'unknown')
+                return {'success': True, 'message': '查询成功', 'status': libvirt_status}
+            else:
+                return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+        except ImportError:
+            return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+        except Exception as e:
+            logger.error(f"Failed to get VM status {vm_id}: {e}")
+            return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+
+    @staticmethod
+    def delete_vm_from_libvirt(vm_id: int) -> Dict:
+        """
+        从 libvirt 删除 VM（先关机再删除定义）
+
+        Args:
+            vm_id: VM ID
+
+        Returns:
+            {'success': bool, 'message': str}
+        """
+        try:
+            vm = VM.objects.get(pk=vm_id)
+        except VM.DoesNotExist:
+            return {'success': False, 'message': 'VM不存在'}
+
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+
+            # 先尝试关机
+            client.stop_domain(vm.name)
+            # 再删除定义
+            success, message = client.undefine_domain(vm.name)
+            client.close()
+
+            if success:
+                # 从数据库删除
+                vm.delete()
+            return {'success': success, 'message': message}
+        except ImportError:
+            vm.delete()
+            return {'success': True, 'message': 'VM删除成功（模拟模式）'}
+        except Exception as e:
+            logger.error(f"Failed to delete VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
+
+    @staticmethod
+    def create_vm_in_libvirt(vm_id: int) -> Dict:
+        """
+        在 libvirt 中创建 VM
+
+        Args:
+            vm_id: VM ID
+
+        Returns:
+            {'success': bool, 'message': str}
+        """
+        try:
+            vm = VM.objects.get(pk=vm_id)
+        except VM.DoesNotExist:
+            return {'success': False, 'message': 'VM不存在'}
+
+        try:
+            from backend.utils.libvirt_client import LibvirtClient
+
+            host = vm.host
+            client = LibvirtClient(
+                host=host.ip_address,
+                username=host.username,
+                password=host.password,
+            )
+
+            # 生成 Domain XML
+            xml = VMService._generate_domain_xml(vm)
+            success, message = client.create_domain(xml)
+            client.close()
+
+            if success:
+                vm.status = 'running'
+                vm.save()
+            return {'success': success, 'message': message}
+        except ImportError:
+            return {'success': False, 'message': 'libvirt 未安装'}
+        except Exception as e:
+            logger.error(f"Failed to create VM {vm_id}: {e}")
+            return {'success': False, 'message': str(e)}
+
+    @staticmethod
+    def _generate_domain_xml(vm: VM) -> str:
+        """
+        生成 libvirt Domain XML
+
+        Args:
+            vm: VM 实例
+
+        Returns:
+            XML 字符串
+        """
+        # 获取数据盘信息
+        datadisks_xml = ""
+        if vm.datadisk and isinstance(vm.datadisk, list):
+            for i, disk in enumerate(vm.datadisk):
+                disk_path = disk.get('path', '')
+                if disk_path:
+                    datadisks_xml += f'''
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='raw'/>
+      <source file='{disk_path}'/>
+      <target dev='vd{"bcdefghijklmnopqrstuvwxyz"[i]}' bus='virtio'/>
+    </disk>'''
+
+        # 获取网桥信息
+        netdevname = vm.vm_network_bridge or "mgmt"
+        network_xml = f'''
+    <interface type='bridge'>
+      <source bridge='{netdevname}'/>
+      <model type='virtio'/>
+    </interface>'''
+
+        # 内存单位转换（字节 -> GiB）
+        memory_gib = max(vm.memory // (1024**3), 1)
+
+        xml = f'''<domain type='kvm'>
+  <name>{vm.name}</name>
+  <memory unit='GiB'>{memory_gib}</memory>
+  <currentMemory unit='GiB'>{memory_gib}</currentMemory>
+  <vcpu placement='static'>{vm.vcpu}</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-2.9'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <devices>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='{vm.vm_image_path}'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    {datadisks_xml}
+    {network_xml}
+    <graphics type='vnc' port='-1' autoport='yes' listen='0.0.0.0'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='1'/>
+    </channel>
+  </devices>
+</domain>'''
+        return xml
