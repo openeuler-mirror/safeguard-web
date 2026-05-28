@@ -186,3 +186,119 @@ class VMViewSet(UnifiedModelViewSet):
         if result['success']:
             return SuccessResponse({'status': result['status']}, errmsg=result['message'])
         return ErrorResponse(ErrCode.VM_NOT_FOUND, errmsg=result['message'])
+
+
+class ImageViewSet(UnifiedModelViewSet):
+    """镜像管理视图集"""
+    queryset = Image.objects.select_related('host').all().order_by('id')
+    serializer_class = ImageSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    lookup_field = 'id'
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ImageCreateSerializer
+        if self.action in ('update', 'partial_update'):
+            return ImageUpdateSerializer
+        return ImageSerializer
+
+    @action(detail=False, methods=['get'], url_path='list_by_host')
+    def list_by_host(self, request):
+        """根据主机获取镜像列表"""
+        host_id = request.query_params.get('host_id')
+        if not host_id:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id is required')
+
+        images = Image.objects.filter(host_id=host_id)
+        serializer = ImageSerializer(images, many=True)
+        return SuccessResponse(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='refresh')
+    def refresh(self, request, pk=None):
+        """从远程主机刷新镜像列表"""
+        try:
+            image = Image.objects.get(pk=pk)
+        except Image.DoesNotExist:
+            return ErrorResponse(ErrCode.NOT_FOUND, errmsg='镜像不存在')
+
+        try:
+            from backend.utils.ssh import SSHClient
+
+            host = image.host
+            client = SSHClient(
+                host=host.ip_address,
+                port=host.port,
+                username=host.username,
+                password=host.password,
+            )
+            if not client.connect():
+                return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg='无法连接到主机')
+
+            # 执行 ls 命令获取镜像列表
+            stdout, stderr, exit_code = client.execute_command(f'ls -l {image.path}')
+            client.close()
+
+            if exit_code != 0:
+                return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=stderr)
+
+            # 解析输出，提取 .qcow2 文件
+            import re
+            import time
+            import random
+
+            image_list = []
+            lines = stdout.split('\n')
+            for line in lines:
+                if '.qcow2' in line:
+                    fields = line.split()
+                    if len(fields) >= 9:
+                        filename = fields[-1]
+                        # 生成 ID：8位随机字符 + 时间戳
+                        random_str = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(8))
+                        image_id = f"{random_str}{int(time.time())}"
+
+                        # 判断操作系统类型
+                        filename_lower = filename.lower()
+                        if 'centos' in filename_lower:
+                            ostype = 'centos'
+                        elif 'culinux' in filename_lower:
+                            ostype = 'culinux'
+                        elif 'openeuler' in filename_lower:
+                            ostype = 'openeuler'
+                        else:
+                            ostype = 'unknown'
+
+                        full_path = f"{image.path}/{filename}"
+                        image_list.append({
+                            'id': image_id,
+                            'name': filename,
+                            'ostype': ostype,
+                            'path': full_path,
+                            'host': host.id,
+                        })
+
+            # 批量创建镜像记录
+            created_count = 0
+            for img_data in image_list:
+                _, created = Image.objects.get_or_create(
+                    id=img_data['id'],
+                    defaults={
+                        'name': img_data['name'],
+                        'ostype': img_data['ostype'],
+                        'path': img_data['path'],
+                        'host_id': img_data['host'],
+                    }
+                )
+                if created:
+                    created_count += 1
+
+            return SuccessResponse({
+                'total': len(image_list),
+                'created': created_count,
+            }, errmsg=f'成功刷新 {created_count} 个镜像')
+
+        except ImportError:
+            return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg='SSH 客户端未安装')
+        except Exception as e:
+            logger.error(f"Failed to refresh images: {e}")
+            return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=str(e))
