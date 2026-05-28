@@ -1,11 +1,14 @@
 """主机相关视图集"""
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from backend.models.host import Cluster, Host, VM
+logger = logging.getLogger(__name__)
+
+from backend.models.host import Cluster, Host, VM, Image
 from backend.serializers.host import (
     ClusterSerializer,
     ClusterCreateSerializer,
@@ -18,6 +21,9 @@ from backend.serializers.host import (
     VMCreateSerializer,
     VMUpdateSerializer,
     VMListSerializer,
+    ImageSerializer,
+    ImageCreateSerializer,
+    ImageUpdateSerializer,
 )
 from backend.permissions.authority import IsAdmin
 from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
