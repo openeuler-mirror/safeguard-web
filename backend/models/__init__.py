@@ -1,6 +1,6 @@
 # Models module
 from backend.models.user import Users, EmailVerification
-from backend.models.host import Cluster, Host, VM
+from backend.models.host import Cluster, Host, VM, Image
 from backend.models.authority import (
     Authority,
     Menu,
@@ -33,6 +33,7 @@ __all__ = [
     'Host',
     'Cluster',
     'VM',
+    'Image',
     'Authority',
     'Menu',
     'MenuButton',

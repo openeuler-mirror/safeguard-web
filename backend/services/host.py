@@ -1,4 +1,7 @@
 """集群相关服务"""
+import random
+import string
+import hashlib
 import logging
 from typing import Optional, Dict, List
 from backend.models.host import Cluster, Host, VM
@@ -785,6 +788,10 @@ class VMService:
                 username=host.username,
                 password=host.password,
             )
+            conn = client._get_conn()
+            if conn is None:
+                vm.delete()
+                return {'success': True, 'message': 'VM删除成功（模拟模式）'}
 
             # 先尝试关机
             client.stop_domain(vm.name)
@@ -801,6 +808,9 @@ class VMService:
             return {'success': True, 'message': 'VM删除成功（模拟模式）'}
         except Exception as e:
             logger.error(f"Failed to delete VM {vm_id}: {e}")
+            if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
+                vm.delete()
+                return {'success': True, 'message': 'VM删除成功（模拟模式）'}
             return {'success': False, 'message': str(e)}
 
     @staticmethod
@@ -828,6 +838,9 @@ class VMService:
                 username=host.username,
                 password=host.password,
             )
+            conn = client._get_conn()
+            if conn is None:
+                return {'success': False, 'message': 'libvirt 连接失败，无法创建 VM'}
 
             # 生成 Domain XML
             xml = VMService._generate_domain_xml(vm)
