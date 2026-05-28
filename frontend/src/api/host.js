@@ -130,3 +130,18 @@ export function stopVM(id) {
 export function rebootVM(id) {
   return api.post(`/vms/${id}/reboot/`)
 }
+
+// 暂停VM
+export function pauseVM(id) {
+  return api.post(`/vms/${id}/pause/`)
+}
+
+// 恢复VM
+export function resumeVM(id) {
+  return api.post(`/vms/${id}/resume/`)
+}
+
+// 获取VM状态
+export function getVMStatus(id) {
+  return api.get(`/vms/${id}/status/`)
+}
