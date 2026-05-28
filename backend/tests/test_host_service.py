@@ -314,3 +314,57 @@ class TestVMService(TestCase):
         result = VMService.get_vm_status(self.vm.id)
         self.assertTrue(result['success'])
         self.assertEqual(result['status'], 'running')
+
+    def test_delete_vm_from_libvirt_not_found(self):
+        result = VMService.delete_vm_from_libvirt(9999)
+        self.assertFalse(result['success'])
+        self.assertEqual(result['message'], 'VM不存在')
+
+    @patch('backend.services.host.LibvirtClient')
+    def test_delete_vm_from_libvirt_success(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client.stop_domain.return_value = (True, 'stopped')
+        mock_client.undefine_domain.return_value = (True, 'undefined')
+        mock_client_class.return_value = mock_client
+
+        result = VMService.delete_vm_from_libvirt(self.vm.id)
+        self.assertTrue(result['success'])
+        self.assertEqual(result['message'], 'undefined')
+
+    @patch('backend.services.host.LibvirtClient')
+    def test_create_vm_in_libvirt_not_found(self, mock_client_class):
+        result = VMService.create_vm_in_libvirt(9999)
+        self.assertFalse(result['success'])
+        self.assertEqual(result['message'], 'VM不存在')
+
+    @patch('backend.services.host.LibvirtClient')
+    def test_create_vm_in_libvirt_success(self, mock_client_class):
+        mock_client = MagicMock()
+        mock_client.create_domain.return_value = (True, 'created')
+        mock_client_class.return_value = mock_client
+
+        self.vm.vm_image_path = '/var/lib/libvirt/images/test.qcow2'
+        self.vm.vm_network_bridge = 'mgmt'
+        self.vm.save()
+
+        result = VMService.create_vm_in_libvirt(self.vm.id)
+        self.assertTrue(result['success'])
+        self.assertEqual(result['message'], 'created')
+        self.vm.refresh_from_db()
+        self.assertEqual(self.vm.status, 'running')
+
+    def test_generate_domain_xml(self):
+        self.vm.vcpu = 4
+        self.vm.memory = 8 * 1024**3  # 8 GiB
+        self.vm.vm_image_path = '/var/lib/libvirt/images/test.qcow2'
+        self.vm.vm_network_bridge = 'mgmt'
+        self.vm.datadisk = [{'type': 'qcow2', 'path': '/var/lib/libvirt/images/data.qcow2'}]
+        self.vm.save()
+
+        xml = VMService._generate_domain_xml(self.vm)
+        self.assertIn('<name>test-vm</name>', xml)
+        self.assertIn('<vcpu>4</vcpu>', xml)
+        self.assertIn('<memory unit=\'GiB\'>8</memory>', xml)
+        self.assertIn('test.qcow2', xml)
+        self.assertIn('<source bridge=\'mgmt\'/>', xml)
+        self.assertIn('data.qcow2', xml)
