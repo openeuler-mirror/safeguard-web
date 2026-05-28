@@ -74,6 +74,8 @@
               <button v-if="vm.status !== 'running'" class="btn-action btn-start" @click="handleStart(vm)" title="启动">启动</button>
               <button v-if="vm.status === 'running'" class="btn-action btn-stop" @click="handleStop(vm)" title="停止">停止</button>
               <button v-if="vm.status === 'running'" class="btn-action btn-reboot" @click="handleReboot(vm)" title="重启">重启</button>
+              <button v-if="vm.status === 'running'" class="btn-action btn-pause" @click="handlePause(vm)" title="暂停">暂停</button>
+              <button v-if="vm.status === 'paused'" class="btn-action btn-resume" @click="handleResume(vm)" title="恢复">恢复</button>
               <button class="btn-edit" @click="openEditDialog(vm)">编辑</button>
               <button class="btn-delete" @click="confirmDelete(vm)">删除</button>
             </td>
@@ -195,7 +197,7 @@
 </template>
 
 <script>
-import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, getClusterTree, getHosts } from '@/api/host'
+import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, pauseVM, resumeVM, getClusterTree, getHosts } from '@/api/host'
 
 export default {
   name: 'VMs',
