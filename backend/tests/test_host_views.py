@@ -397,3 +397,146 @@ class HostPermissionDeniedTest(APITestCase):
         }
         response = self.client.post('/api/vms/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class HostActionViewSetTest(APITestCase):
+    """Host Action ViewSet 测试（采集硬件、LLDP、密码更新等）"""
+
+    def setUp(self):
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        self.user = Users.objects.create(
+            user='adminuser',
+            password='testpass123',
+            nickname='管理员'
+        )
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        self.cluster = Cluster.objects.create(name='TestCluster')
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='password',
+            cluster=self.cluster
+        )
+
+    def test_collect_hardware_success(self):
+        """测试采集硬件信息成功"""
+        response = self.client.post(f'/api/hosts/{self.host.pk}/collect_hardware/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_collect_hardware_not_found(self):
+        """测试采集不存在的主机硬件信息"""
+        response = self.client.post('/api/hosts/9999/collect_hardware/')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_collect_lldp_success(self):
+        """测试采集LLDP信息成功"""
+        response = self.client.post(f'/api/hosts/{self.host.pk}/collect_lldp/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_collect_lldp_not_found(self):
+        """测试采集不存在的主机LLDP信息"""
+        response = self.client.post('/api/hosts/9999/collect_lldp/')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_collect_all_success(self):
+        """测试采集全部信息成功"""
+        response = self.client.post(f'/api/hosts/{self.host.pk}/collect_all/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_update_password_success(self):
+        """测试更新密码成功"""
+        response = self.client.post(
+            f'/api/hosts/{self.host.pk}/update_password/',
+            {'password': 'new_password'},
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('password', response.data['data'])
+
+    def test_update_password_auto_generate(self):
+        """测试自动生成密码"""
+        response = self.client.post(f'/api/hosts/{self.host.pk}/update_password/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('password', response.data['data'])
+
+    def test_update_password_with_key(self):
+        """测试使用自定义key更新密码"""
+        response = self.client.post(
+            f'/api/hosts/{self.host.pk}/update_password/',
+            {'password': 'custom_password', 'key': 'custom_key'},
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+
+class VMActionViewSetTest(APITestCase):
+    """VM Action ViewSet 测试（start/stop/reboot/pause/resume/status）"""
+
+    def setUp(self):
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        self.user = Users.objects.create(
+            user='adminuser2',
+            password='testpass123',
+            nickname='管理员2'
+        )
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        self.cluster = Cluster.objects.create(name='TestCluster')
+        self.host = Host.objects.create(
+            hostname='vm-host',
+            ip_address='192.168.1.50',
+            username='admin'
+        )
+        self.vm = VM.objects.create(
+            name='test-vm',
+            uuid='550e8400-e29b-41d4-a716-446655440001',
+            status='stopped',
+            host=self.host
+        )
+
+    def test_vm_start(self):
+        """测试启动VM"""
+        response = self.client.post(f'/api/vms/{self.vm.pk}/start/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_vm_stop(self):
+        """测试停止VM"""
+        response = self.client.post(f'/api/vms/{self.vm.pk}/stop/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_vm_reboot(self):
+        """测试重启VM"""
+        response = self.client.post(f'/api/vms/{self.vm.pk}/reboot/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_vm_pause(self):
+        """测试暂停VM"""
+        response = self.client.post(f'/api/vms/{self.vm.pk}/pause/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_vm_resume(self):
+        """测试恢复VM"""
+        response = self.client.post(f'/api/vms/{self.vm.pk}/resume/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_vm_status(self):
+        """测试获取VM状态"""
+        response = self.client.get(f'/api/vms/{self.vm.pk}/status/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('status', response.data['data'])
+
+    def test_vm_action_not_found(self):
+        """测试操作不存在VM"""
+        response = self.client.post('/api/vms/9999/start/')
+        self.assertNotEqual(response.data['errno'], 0)
