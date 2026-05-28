@@ -615,4 +615,30 @@ tr:hover td {
 .btn-danger:hover {
   background: #f78989;
 }
+
+.btn-collect, .btn-collect-lldp {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-right: 6px;
+  color: white;
+}
+
+.btn-collect {
+  background: #409eff;
+}
+
+.btn-collect:hover {
+  background: #66b1ff;
+}
+
+.btn-collect-lldp {
+  background: #67c23a;
+}
+
+.btn-collect-lldp:hover {
+  background: #85ce61;
+}
 </style>
