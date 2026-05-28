@@ -1,7 +1,4 @@
 """集群相关服务"""
-import random
-import string
-import hashlib
 import logging
 from typing import Optional, Dict, List
 from backend.models.host import Cluster, Host, VM
@@ -14,6 +11,18 @@ from backend.utils.hardware_collector import (
 )
 
 logger = logging.getLogger(__name__)
+
+# libvirt 状态映射
+LIBVIRT_STATE_MAP = {
+    0: 'nostate',      # VIR_DOMAIN_NOSTATE
+    1: 'running',      # VIR_DOMAIN_RUNNING
+    2: 'blocked',      # VIR_DOMAIN_BLOCKED
+    3: 'paused',        # VIR_DOMAIN_PAUSED
+    4: 'shutdown',      # VIR_DOMAIN_SHUTDOWN
+    5: 'shutoff',       # VIR_DOMAIN_SHUTOFF
+    6: 'crashed',       # VIR_DOMAIN_CRASHED
+    7: 'suspended',     # VIR_DOMAIN_PMSUSPENDED
+}
 
 
 class ClusterService:
