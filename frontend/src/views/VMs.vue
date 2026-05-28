@@ -45,8 +45,8 @@
             <th>内存</th>
             <th>磁盘</th>
             <th>IP地址</th>
-            <th>MAC地址</th>
             <th>操作系统</th>
+            <th>镜像</th>
             <th>创建时间</th>
             <th>操作</th>
           </tr>
@@ -67,8 +67,8 @@
             <td>{{ formatBytes(vm.memory) }}</td>
             <td>{{ formatBytes(vm.disk) }}</td>
             <td>{{ vm.ip_address || '-' }}</td>
-            <td>{{ vm.mac_address || '-' }}</td>
             <td>{{ vm.os_type || '-' }}</td>
+            <td>{{ vm.imageid || '-' }}</td>
             <td>{{ formatDate(vm.created_at) }}</td>
             <td>
               <button v-if="vm.status !== 'running'" class="btn-action btn-start" @click="handleStart(vm)" title="启动">启动</button>
@@ -312,6 +312,15 @@ export default {
       } catch (e) {
         console.error('加载镜像列表失败', e)
         this.imageList = []
+      }
+    },
+    handleImageChange() {
+      const selectedImage = this.imageList.find(img => img.id === this.form.imageid)
+      if (selectedImage) {
+        this.form.vm_image_path = selectedImage.path
+        if (!this.form.os_type && selectedImage.ostype) {
+          this.form.os_type = selectedImage.ostype
+        }
       }
     },
     handleSearch() {
