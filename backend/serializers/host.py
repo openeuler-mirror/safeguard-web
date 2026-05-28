@@ -142,6 +142,7 @@ class VMSerializer(serializers.ModelSerializer):
             'ip_address', 'management_ip', 'storage_ip',
             'os_type',
             'vm_image_path', 'vm_disk_path', 'vm_network_bridge',
+            'imageid', 'sysdisk', 'datadisk', 'status_message',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -155,7 +156,8 @@ class VMCreateSerializer(serializers.ModelSerializer):
             'name', 'uuid', 'mac_address', 'host', 'cluster',
             'status', 'vcpu', 'memory', 'disk',
             'ip_address', 'management_ip', 'storage_ip',
-            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge'
+            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge',
+            'imageid', 'sysdisk', 'datadisk'
         ]
 
 
@@ -167,7 +169,8 @@ class VMUpdateSerializer(serializers.ModelSerializer):
             'name', 'mac_address', 'host', 'cluster',
             'status', 'vcpu', 'memory', 'disk',
             'ip_address', 'management_ip', 'storage_ip',
-            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge'
+            'os_type', 'vm_image_path', 'vm_disk_path', 'vm_network_bridge',
+            'imageid', 'sysdisk', 'datadisk', 'status_message'
         ]
 
 
