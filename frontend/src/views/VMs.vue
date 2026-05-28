@@ -168,6 +168,23 @@
               <span v-if="errors.os_type" class="field-error">{{ errors.os_type }}</span>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-item">
+              <label>镜像</label>
+              <select v-model="form.imageid" @change="handleImageChange">
+                <option value="">请选择镜像</option>
+                <option v-for="img in imageList" :key="img.id" :value="img.id">{{ img.name }} ({{ img.ostype }})</option>
+              </select>
+            </div>
+            <div class="form-item">
+              <label>网桥</label>
+              <input v-model="form.vm_network_bridge" type="text" placeholder="如: mgmt" />
+            </div>
+          </div>
+          <div class="form-item">
+            <label>镜像路径</label>
+            <input v-model="form.vm_image_path" type="text" placeholder="如: /var/lib/libvirt/images/xxx.qcow2" />
+          </div>
         </div>
         <div class="dialog-footer">
           <button class="btn-cancel" @click="closeDialog">取消</button>
@@ -307,6 +324,7 @@ export default {
       this.isEdit = false
       this.formError = ''
       this.errors = {}
+      this.imageList = []
       this.form = {
         name: '',
         uuid: '',
@@ -318,7 +336,13 @@ export default {
         disk: 0,
         ip_address: '',
         mac_address: '',
-        os_type: ''
+        os_type: '',
+        imageid: '',
+        vm_image_path: '',
+        vm_disk_path: '',
+        vm_network_bridge: 'mgmt',
+        sysdisk: {},
+        datadisk: []
       }
       this.dialogVisible = true
     },
@@ -338,7 +362,16 @@ export default {
         disk: vm.disk,
         ip_address: vm.ip_address || '',
         mac_address: vm.mac_address || '',
-        os_type: vm.os_type || ''
+        os_type: vm.os_type || '',
+        imageid: vm.imageid || '',
+        vm_image_path: vm.vm_image_path || '',
+        vm_disk_path: vm.vm_disk_path || '',
+        vm_network_bridge: vm.vm_network_bridge || 'mgmt',
+        sysdisk: vm.sysdisk || {},
+        datadisk: vm.datadisk || []
+      }
+      if (vm.host) {
+        this.loadImagesByHost(vm.host)
       }
       this.dialogVisible = true
     },
