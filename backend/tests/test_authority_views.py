@@ -1,7 +1,8 @@
 from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status
-from backend.models import Users
+from rest_framework_simplejwt.tokens import RefreshToken
+from backend.models import Users, Authority, Menu
 from backend.serializers.authority import SetUserRoleSerializer
 
 
