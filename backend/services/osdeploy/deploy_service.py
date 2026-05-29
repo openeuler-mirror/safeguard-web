@@ -2,6 +2,7 @@
 import uuid
 from typing import Optional
 from backend.models.osdeploy import JobStatus, KickStartFileStatus, RepoStatus, PXEServerStatus
+from backend.services.task import TaskService
 
 
 class DeployService:
@@ -29,9 +30,6 @@ class DeployService:
     @staticmethod
     def start_auto_install(host_id: int, kickstart_id: int, repo_id: int) -> JobStatus:
         """启动自动安装任务"""
-        # 生成唯一job_id
-        job_id = f"install-{uuid.uuid4().hex[:12]}"
-
         # 获取相关信息
         try:
             kickstart = KickStartFileStatus.objects.get(pk=kickstart_id)
@@ -39,9 +37,8 @@ class DeployService:
         except (KickStartFileStatus.DoesNotExist, RepoStatus.DoesNotExist) as e:
             raise ValueError(f"资源不存在: {e}")
 
-        # 创建任务记录
-        job = JobStatus.objects.create(
-            job_id=job_id,
+        # 创建任务记录（使用新的 Task 服务）
+        job = TaskService.create_job(
             job_type="os_install",
             target=f"host_{host_id}",
             status="pending",
@@ -62,16 +59,21 @@ class DeployService:
 
     @staticmethod
     def query_job_status(job_id: str) -> Optional[JobStatus]:
-        """查询任务状态"""
+        """查询任务状态（兼容旧接口，优先查询 Task，回退到 JobStatus）"""
+        from backend.models.task import Task
         try:
-            return JobStatus.objects.get(job_id=job_id)
-        except JobStatus.DoesNotExist:
-            return None
+            return Task.objects.get(job_id=job_id)
+        except Task.DoesNotExist:
+            try:
+                return JobStatus.objects.get(job_id=job_id)
+            except JobStatus.DoesNotExist:
+                return None
 
     @staticmethod
     def list_jobs(filters: Optional[dict] = None, page: int = 1, page_size: int = 10):
-        """获取任务列表（支持分页和过滤）"""
-        queryset = JobStatus.objects.all()
+        """获取任务列表（支持分页和过滤，兼容旧接口优先查询 Task）"""
+        from backend.models.task import Task
+        queryset = Task.objects.all()
         if filters:
             queryset = queryset.filter(**filters)
 
@@ -88,18 +90,12 @@ class DeployService:
         }
 
     @staticmethod
-    def update_job_status(job_id: str, status: str, progress: int = None, result: dict = None, error_message: str = None) -> Optional[JobStatus]:
-        """更新任务状态"""
-        try:
-            job = JobStatus.objects.get(job_id=job_id)
-            job.status = status
-            if progress is not None:
-                job.progress = progress
-            if result is not None:
-                job.result = result
-            if error_message is not None:
-                job.error_message = error_message
-            job.save()
-            return job
-        except JobStatus.DoesNotExist:
-            return None
+    def update_job_status(job_id: str, status: str, progress: int = None, result: dict = None, error_message: str = None):
+        """更新任务状态（优先更新 Task）"""
+        return TaskService.update_job(
+            job_id=job_id,
+            status=status,
+            progress=progress,
+            result=result,
+            error_message=error_message,
+        )
