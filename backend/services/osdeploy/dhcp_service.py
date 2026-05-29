@@ -1,10 +1,126 @@
 """DHCP服务"""
+import subprocess
+import logging
 from typing import Optional
 from backend.models.osdeploy import PXEServerStatus, WhiteList
+
+logger = logging.getLogger(__name__)
 
 
 class DHCPService:
     """DHCP服务"""
+
+    _is_running = False
+
+    @staticmethod
+    def start_dhcp_service() -> dict:
+        """启动DHCP服务"""
+        try:
+            result = subprocess.run(
+                ["systemctl", "start", "dhcpd"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                DHCPService._is_running = True
+                return {"status": "success", "message": "DHCP服务启动成功"}
+            else:
+                logger.error(f"启动DHCP服务失败: {result.stderr}")
+                return {"status": "failed", "message": result.stderr or "启动失败"}
+        except FileNotFoundError:
+            logger.warning("systemctl 未找到，尝试使用 service 命令")
+            try:
+                result = subprocess.run(
+                    ["service", "dhcpd", "start"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    DHCPService._is_running = True
+                    return {"status": "success", "message": "DHCP服务启动成功"}
+                else:
+                    return {"status": "failed", "message": result.stderr or "启动失败"}
+            except Exception as e:
+                logger.error(f"启动DHCP服务异常: {e}")
+                return {"status": "failed", "message": str(e)}
+        except Exception as e:
+            logger.error(f"启动DHCP服务异常: {e}")
+            return {"status": "failed", "message": str(e)}
+
+    @staticmethod
+    def stop_dhcp_service() -> dict:
+        """停止DHCP服务"""
+        try:
+            result = subprocess.run(
+                ["systemctl", "stop", "dhcpd"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                DHCPService._is_running = False
+                return {"status": "success", "message": "DHCP服务停止成功"}
+            else:
+                logger.error(f"停止DHCP服务失败: {result.stderr}")
+                return {"status": "failed", "message": result.stderr or "停止失败"}
+        except FileNotFoundError:
+            try:
+                result = subprocess.run(
+                    ["service", "dhcpd", "stop"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    DHCPService._is_running = False
+                    return {"status": "success", "message": "DHCP服务停止成功"}
+                else:
+                    return {"status": "failed", "message": result.stderr or "停止失败"}
+            except Exception as e:
+                logger.error(f"停止DHCP服务异常: {e}")
+                return {"status": "failed", "message": str(e)}
+        except Exception as e:
+            logger.error(f"停止DHCP服务异常: {e}")
+            return {"status": "failed", "message": str(e)}
+
+    @staticmethod
+    def restart_dhcp_service() -> dict:
+        """重启DHCP服务"""
+        stop_result = DHCPService.stop_dhcp_service()
+        if stop_result["status"] == "failed":
+            return stop_result
+        return DHCPService.start_dhcp_service()
+
+    @staticmethod
+    def is_dhcp_running() -> bool:
+        """检查DHCP服务状态"""
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", "dhcpd"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            is_active = result.returncode == 0 and result.stdout.strip() == "active"
+            DHCPService._is_running = is_active
+            return is_active
+        except FileNotFoundError:
+            try:
+                result = subprocess.run(
+                    ["service", "dhcpd", "status"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                is_active = result.returncode == 0 and "running" in result.stdout.lower()
+                DHCPService._is_running = is_active
+                return is_active
+            except Exception:
+                return DHCPService._is_running
+        except Exception:
+            return DHCPService._is_running
 
     @staticmethod
     def setup_dhcp(server_ip: str, interface: str, range_start: str, range_end: str, subnet: str = None, gateway: str = None) -> PXEServerStatus:

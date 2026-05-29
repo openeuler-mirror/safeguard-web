@@ -33,6 +33,12 @@ class TaskViewSet(UnifiedModelViewSet):
             return TaskListSerializer
         return TaskSerializer
 
+    def _serialize_task_result(self, result):
+        """序列化任务查询结果中的模型对象"""
+        result = dict(result)
+        result["results"] = TaskListSerializer(result["results"], many=True).data
+        return result
+
     @action(["post"], False)
     def query(self, request):
         """按条件查询任务"""
@@ -48,7 +54,7 @@ class TaskViewSet(UnifiedModelViewSet):
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
-        return SuccessResponse(result)
+        return SuccessResponse(self._serialize_task_result(result))
 
     @action(["post"], False)
     def page(self, request):
@@ -65,4 +71,4 @@ class TaskViewSet(UnifiedModelViewSet):
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
-        return SuccessResponse(result)
+        return SuccessResponse(self._serialize_task_result(result))

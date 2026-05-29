@@ -112,16 +112,18 @@ class TaskViewSetTestCase(TestCase):
         self.assertEqual(data["results"][0]["status"], "running")
 
     def test_filter_by_job_type(self):
-        """测试按任务类型过滤"""
-        response = self.client.get("/api/tasks/?job_type=os_install")
+        """测试按任务类型过滤（通过query action）"""
+        payload = {"job_type": "os_install"}
+        response = self.client.post("/api/tasks/query/?page=1&page_size=10", payload, format="json")
         self.assertEqual(response.status_code, 200)
         data = response.json()["data"]
-        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["total"], 1)
         self.assertEqual(data["results"][0]["job_type"], "os_install")
 
     def test_search_by_target(self):
-        """测试按target搜索"""
-        response = self.client.get("/api/tasks/?search=host_1")
+        """测试按target搜索（通过query action）"""
+        payload = {"target": "host_1"}
+        response = self.client.post("/api/tasks/query/?page=1&page_size=10", payload, format="json")
         self.assertEqual(response.status_code, 200)
         data = response.json()["data"]
-        self.assertEqual(len(data["results"]), 1)
+        self.assertEqual(data["total"], 1)
