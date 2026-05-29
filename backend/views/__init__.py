@@ -11,6 +11,7 @@ from backend.views.auth import (
 )
 from backend.views.authority import AuthorityViewSet, MenuViewSet
 from backend.views.host import ClusterViewSet, HostViewSet, VMViewSet
+from backend.views.task import TaskViewSet
 
 __all__ = [
     # User views
@@ -30,4 +31,6 @@ __all__ = [
     'ClusterViewSet',
     'HostViewSet',
     'VMViewSet',
+    # Task views
+    'TaskViewSet',
 ]
