@@ -6,6 +6,7 @@ from backend.views.osdeploy import (
     RepoViewSet,
     PXEServerStatusViewSet,
     KickStartViewSet,
+    AutoInstallViewSet,
 )
 
 router = DefaultRouter()
@@ -13,6 +14,7 @@ router.register(r'jobs', JobViewSet, basename='job')
 router.register(r'repos', RepoViewSet, basename='repo')
 router.register(r'pxe-servers', PXEServerStatusViewSet, basename='pxe-server')
 router.register(r'kickstarts', KickStartViewSet, basename='kickstart')
+router.register(r'autoinstall', AutoInstallViewSet, basename='autoinstall')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -3,7 +3,8 @@ import threading
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from backend.models.osdeploy import Host, KickStartFileStatus, RepoStatus, WhiteList
+from backend.models.host import Host
+from backend.models.osdeploy import KickStartFileStatus, RepoStatus, WhiteList
 from backend.models.task import Task
 from backend.services.osdeploy.deploy_service import DeployService
 from backend.services.osdeploy.pxe_service import PXEService
