@@ -323,7 +323,7 @@ class VMViewSetTest(APITestCase):
         )
         response = self.client.post(f'/api/vms/{vm.pk}/start/')
         self.assertEqual(response.data['errno'], 0)
-        self.assertIn('VM启动功能待实现', response.data['errmsg'])
+        self.assertIn('模拟模式', response.data['errmsg'])
 
     def test_vm_stop_action(self):
         """测试VM停止操作"""
@@ -334,7 +334,7 @@ class VMViewSetTest(APITestCase):
         )
         response = self.client.post(f'/api/vms/{vm.pk}/stop/')
         self.assertEqual(response.data['errno'], 0)
-        self.assertIn('VM停止功能待实现', response.data['errmsg'])
+        self.assertIn('模拟模式', response.data['errmsg'])
 
     def test_vm_reboot_action(self):
         """测试VM重启操作"""
@@ -345,7 +345,7 @@ class VMViewSetTest(APITestCase):
         )
         response = self.client.post(f'/api/vms/{vm.pk}/reboot/')
         self.assertEqual(response.data['errno'], 0)
-        self.assertIn('VM重启功能待实现', response.data['errmsg'])
+        self.assertIn('模拟模式', response.data['errmsg'])
 
 
 class HostPermissionDeniedTest(APITestCase):

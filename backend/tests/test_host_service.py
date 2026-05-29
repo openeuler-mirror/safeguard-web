@@ -320,7 +320,7 @@ class TestVMService(TestCase):
         self.assertFalse(result['success'])
         self.assertEqual(result['message'], 'VM不存在')
 
-    @patch('backend.services.host.LibvirtClient')
+    @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_delete_vm_from_libvirt_success(self, mock_client_class):
         mock_client = MagicMock()
         mock_client.stop_domain.return_value = (True, 'stopped')
@@ -331,13 +331,13 @@ class TestVMService(TestCase):
         self.assertTrue(result['success'])
         self.assertEqual(result['message'], 'undefined')
 
-    @patch('backend.services.host.LibvirtClient')
+    @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_not_found(self, mock_client_class):
         result = VMService.create_vm_in_libvirt(9999)
         self.assertFalse(result['success'])
         self.assertEqual(result['message'], 'VM不存在')
 
-    @patch('backend.services.host.LibvirtClient')
+    @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_success(self, mock_client_class):
         mock_client = MagicMock()
         mock_client.create_domain.return_value = (True, 'created')
@@ -363,7 +363,7 @@ class TestVMService(TestCase):
 
         xml = VMService._generate_domain_xml(self.vm)
         self.assertIn('<name>test-vm</name>', xml)
-        self.assertIn('<vcpu>4</vcpu>', xml)
+        self.assertIn('placement=\'static\'>4</vcpu>', xml)
         self.assertIn('<memory unit=\'GiB\'>8</memory>', xml)
         self.assertIn('test.qcow2', xml)
         self.assertIn('<source bridge=\'mgmt\'/>', xml)
