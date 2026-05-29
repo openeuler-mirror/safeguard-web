@@ -145,3 +145,40 @@ export function resumeVM(id) {
 export function getVMStatus(id) {
   return api.get(`/vms/${id}/status/`)
 }
+
+// ========== Image ==========
+
+// 获取镜像列表
+export function getImages(params) {
+  return api.get('/images/', { params })
+}
+
+// 获取镜像详情
+export function getImage(id) {
+  return api.get(`/images/${id}/`)
+}
+
+// 创建镜像
+export function createImage(data) {
+  return api.post('/images/', data)
+}
+
+// 更新镜像
+export function updateImage(id, data) {
+  return api.put(`/images/${id}/`, data)
+}
+
+// 删除镜像
+export function deleteImage(id) {
+  return api.delete(`/images/${id}/`)
+}
+
+// 根据主机获取镜像列表
+export function getImagesByHost(hostId) {
+  return api.get('/images/list_by_host/', { params: { host_id: hostId } })
+}
+
+// 刷新镜像列表
+export function refreshImages(id) {
+  return api.post(`/images/${id}/refresh/`)
+}
