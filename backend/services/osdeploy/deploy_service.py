@@ -90,31 +90,53 @@ class DeployService:
 
     @staticmethod
     def list_jobs(filters: Optional[dict] = None, page: int = 1, page_size: int = 10):
-        """获取任务列表（支持分页和过滤，兼容旧接口优先查询 Task）"""
+        """获取任务列表（支持分页和过滤，同时查询 JobStatus 和 Task）"""
         from backend.models.task import Task
-        queryset = Task.objects.all()
+        # 合并 JobStatus 和 Task 的查询结果
+        jobstatus_qs = JobStatus.objects.all()
+        task_qs = Task.objects.all()
         if filters:
-            queryset = queryset.filter(**filters)
+            jobstatus_qs = jobstatus_qs.filter(**filters)
+            task_qs = task_qs.filter(**filters)
 
-        total = queryset.count()
+        # 合并结果（去重：优先 Task）
+        task_job_ids = set(task_qs.values_list('job_id', flat=True))
+        jobstatus_results = [j for j in jobstatus_qs if j.job_id not in task_job_ids]
+        results = list(task_qs) + jobstatus_results
+        total = len(results)
         start = (page - 1) * page_size
         end = start + page_size
-        results = list(queryset[start:end])
-
         return {
             'total': total,
             'page': page,
             'page_size': page_size,
-            'results': results
+            'results': results[start:end]
         }
 
     @staticmethod
     def update_job_status(job_id: str, status: str, progress: int = None, result: dict = None, error_message: str = None):
-        """更新任务状态（优先更新 Task）"""
-        return TaskService.update_job(
+        """更新任务状态（同时更新 Task 和 JobStatus）"""
+        # 优先更新 Task
+        updated = TaskService.update_job(
             job_id=job_id,
             status=status,
             progress=progress,
             result=result,
             error_message=error_message,
         )
+        # 同时更新 JobStatus 保持兼容
+        try:
+            job = JobStatus.objects.get(job_id=job_id)
+            job.status = status
+            if progress is not None:
+                job.progress = progress
+            if result is not None:
+                job.result = result
+            if error_message is not None:
+                job.error_message = error_message
+            job.save()
+            if updated is None:
+                updated = job
+        except JobStatus.DoesNotExist:
+            pass
+        return updated
