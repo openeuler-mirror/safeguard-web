@@ -129,6 +129,7 @@ export default {
         '/clusters': '🗄️',
         '/hosts': '🖥️',
         '/vms': '💻',
+        '/images': '💿',
         '/profile': '👤',
         '/change-password': '🔑',
         '/osdeploy/jobs': '📦',
