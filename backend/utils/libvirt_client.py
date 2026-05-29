@@ -48,16 +48,19 @@ class LibvirtClient:
         获取或创建 libvirt 连接
 
         Returns:
-            libvirt connection
+            libvirt connection or None
         """
         try:
             import libvirt
             if self._conn is None or not self._conn.is_alive():
                 self._conn = libvirt.open(self._uri)
             return self._conn
+        except ImportError:
+            logger.error(f"libvirt module not installed")
+            return None
         except Exception as e:
             logger.error(f"Failed to connect to libvirt at {self._uri}: {e}")
-            raise
+            return None
 
     def close(self):
         """关闭 libvirt 连接"""
@@ -80,6 +83,8 @@ class LibvirtClient:
         """
         try:
             conn = self._get_conn()
+            if conn is None:
+                return None
             return conn.lookupByName(name)
         except Exception as e:
             logger.error(f"Failed to lookup domain {name}: {e}")
@@ -97,6 +102,8 @@ class LibvirtClient:
         """
         try:
             conn = self._get_conn()
+            if conn is None:
+                return None
             return conn.lookupByUUIDString(uuid)
         except Exception as e:
             logger.error(f"Failed to lookup domain by UUID {uuid}: {e}")
