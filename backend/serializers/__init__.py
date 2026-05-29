@@ -30,6 +30,13 @@ from backend.serializers.host import (
     VMUpdateSerializer,
     VMListSerializer,
 )
+from backend.serializers.task import (
+    TaskSerializer,
+    TaskListSerializer,
+    TaskCreateSerializer,
+    TaskUpdateSerializer,
+    TaskQuerySerializer,
+)
 
 __all__ = [
     # User serializers
@@ -61,4 +68,10 @@ __all__ = [
     'VMCreateSerializer',
     'VMUpdateSerializer',
     'VMListSerializer',
+    # Task serializers
+    'TaskSerializer',
+    'TaskListSerializer',
+    'TaskCreateSerializer',
+    'TaskUpdateSerializer',
+    'TaskQuerySerializer',
 ]
