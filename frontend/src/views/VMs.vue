@@ -197,7 +197,7 @@
 </template>
 
 <script>
-import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, pauseVM, resumeVM, getClusterTree, getHosts } from '@/api/host'
+import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, pauseVM, resumeVM, getClusterTree, getHosts, getImagesByHost } from '@/api/host'
 
 export default {
   name: 'VMs',
@@ -206,6 +206,7 @@ export default {
       vms: [],
       clusterTree: [],
       hostList: [],
+      imageList: [],
       loading: false,
       error: '',
       searchName: '',
@@ -229,7 +230,13 @@ export default {
         disk: 0,
         ip_address: '',
         mac_address: '',
-        os_type: ''
+        os_type: '',
+        imageid: '',
+        vm_image_path: '',
+        vm_disk_path: '',
+        vm_network_bridge: 'mgmt',
+        sysdisk: {},
+        datadisk: []
       }
     }
   },
@@ -237,6 +244,15 @@ export default {
     this.loadVMs()
     this.loadClusterTree()
     this.loadHostList()
+  },
+  watch: {
+    'form.host': function(newHost) {
+      if (newHost) {
+        this.loadImagesByHost(newHost)
+      } else {
+        this.imageList = []
+      }
+    }
   },
   methods: {
     async loadVMs() {
@@ -270,6 +286,15 @@ export default {
         this.hostList = res.results || res || []
       } catch (e) {
         console.error('加载宿主机列表失败', e)
+      }
+    },
+    async loadImagesByHost(hostId) {
+      try {
+        const res = await getImagesByHost(hostId)
+        this.imageList = res || []
+      } catch (e) {
+        console.error('加载镜像列表失败', e)
+        this.imageList = []
       }
     },
     handleSearch() {
