@@ -59,6 +59,9 @@
             <td>
               <button class="btn-edit" @click="openEditDialog(repo)">编辑</button>
               <button class="btn-sync" @click="handleSync(repo)">同步</button>
+              <button v-if="repo.status === 'inactive'" class="btn-enable" @click="handleEnable(repo)">启用</button>
+              <button v-else class="btn-disable" @click="handleDisable(repo)">禁用</button>
+              <button class="btn-check" @click="handleCheck(repo)">检查</button>
               <button class="btn-danger" @click="confirmDelete(repo)">删除</button>
             </td>
           </tr>
@@ -143,7 +146,7 @@
 </template>
 
 <script>
-import { getRepos, createRepo, updateRepo, deleteRepo, syncRepo } from '@/api/osdeploy/repo'
+import { getRepos, createRepo, updateRepo, deleteRepo, syncRepo, enableRepo, disableRepo, checkRepo } from '@/api/osdeploy/repo'
 
 export default {
   name: 'Repos',
@@ -296,6 +299,32 @@ export default {
         alert(e.message || '同步失败')
       }
     },
+    async handleEnable(repo) {
+      try {
+        await enableRepo(repo.id)
+        alert('启用成功')
+        this.loadRepos()
+      } catch (e) {
+        alert(e.message || '启用失败')
+      }
+    },
+    async handleDisable(repo) {
+      try {
+        await disableRepo(repo.id)
+        alert('禁用成功')
+        this.loadRepos()
+      } catch (e) {
+        alert(e.message || '禁用失败')
+      }
+    },
+    async handleCheck(repo) {
+      try {
+        const res = await checkRepo(repo.id)
+        alert(res.available ? '仓库可访问' : `仓库不可访问: ${res.message}`)
+      } catch (e) {
+        alert(e.message || '检查失败')
+      }
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
@@ -440,7 +469,7 @@ tr:hover td {
 .type-iso { color: #f56c6c; }
 .type-http { color: #909399; }
 
-.btn-edit, .btn-sync, .btn-danger {
+.btn-edit, .btn-sync, .btn-enable, .btn-disable, .btn-check, .btn-danger {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
@@ -449,32 +478,18 @@ tr:hover td {
   margin-right: 6px;
 }
 
-.btn-edit {
-  background: #67c23a;
-  color: white;
-}
-
-.btn-edit:hover {
-  background: #85ce61;
-}
-
-.btn-sync {
-  background: #e6a23c;
-  color: white;
-}
-
-.btn-sync:hover {
-  background: #ebb563;
-}
-
-.btn-danger {
-  background: #f56c6c;
-  color: white;
-}
-
-.btn-danger:hover {
-  background: #f78989;
-}
+.btn-edit { background: #67c23a; color: white; }
+.btn-edit:hover { background: #85ce61; }
+.btn-sync { background: #e6a23c; color: white; }
+.btn-sync:hover { background: #ebb563; }
+.btn-enable { background: #409eff; color: white; }
+.btn-enable:hover { background: #66b1ff; }
+.btn-disable { background: #909399; color: white; }
+.btn-disable:hover { background: #a6a9ad; }
+.btn-check { background: #13c2c2; color: white; }
+.btn-check:hover { background: #36cfc9; }
+.btn-danger { background: #f56c6c; color: white; }
+.btn-danger:hover { background: #f78989; }
 
 .pagination {
   display: flex;
