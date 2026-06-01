@@ -3,8 +3,15 @@
     <div class="pxe-config-header">
       <h2>PXE 服务器配置</h2>
       <div class="header-actions">
+        <button class="btn-primary" @click="loadDhcpStatus">DHCP状态</button>
+        <button class="btn-success" @click="handleStartDhcp">启动DHCP</button>
+        <button class="btn-warning" @click="handleStopDhcp">停止DHCP</button>
+        <button class="btn-primary" @click="handleRestartDhcp">重启DHCP</button>
         <button class="btn-primary" @click="openCreateDialog">添加服务器</button>
       </div>
+    </div>
+    <div v-if="dhcpStatus !== null" class="dhcp-status-bar">
+      DHCP服务状态: <span :class="dhcpStatus ? 'status-active' : 'status-inactive'">{{ dhcpStatus ? '运行中' : '已停止' }}</span>
     </div>
 
     <div v-if="loading" class="loading">加载中...</div>
@@ -120,7 +127,7 @@
 </template>
 
 <script>
-import { getPXEServers, createPXEServer, updatePXEServer, deletePXEServer } from '@/api/osdeploy/pxe'
+import { getPXEServers, createPXEServer, updatePXEServer, deletePXEServer, startDhcp, stopDhcp, restartDhcp, getDhcpStatus } from '@/api/osdeploy/pxe'
 
 export default {
   name: 'PXEConfig',
@@ -129,6 +136,8 @@ export default {
       servers: [],
       loading: false,
       error: '',
+      dhcpLoading: false,
+      dhcpStatus: null,
       page: 1,
       pageSize: 20,
       totalCount: 0,
@@ -258,6 +267,50 @@ export default {
         alert(e.message || '删除失败')
       }
     },
+    async loadDhcpStatus() {
+      try {
+        const res = await getDhcpStatus()
+        this.dhcpStatus = res.is_running
+      } catch (e) {
+        alert(e.message || '获取DHCP状态失败')
+      }
+    },
+    async handleStartDhcp() {
+      this.dhcpLoading = true
+      try {
+        await startDhcp()
+        alert('DHCP服务启动成功')
+        this.loadDhcpStatus()
+      } catch (e) {
+        alert(e.message || '启动DHCP失败')
+      } finally {
+        this.dhcpLoading = false
+      }
+    },
+    async handleStopDhcp() {
+      this.dhcpLoading = true
+      try {
+        await stopDhcp()
+        alert('DHCP服务停止成功')
+        this.loadDhcpStatus()
+      } catch (e) {
+        alert(e.message || '停止DHCP失败')
+      } finally {
+        this.dhcpLoading = false
+      }
+    },
+    async handleRestartDhcp() {
+      this.dhcpLoading = true
+      try {
+        await restartDhcp()
+        alert('DHCP服务重启成功')
+        this.loadDhcpStatus()
+      } catch (e) {
+        alert(e.message || '重启DHCP失败')
+      } finally {
+        this.dhcpLoading = false
+      }
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
@@ -306,17 +359,29 @@ export default {
   gap: 10px;
 }
 
-.btn-primary {
+.btn-primary, .btn-success, .btn-warning {
   padding: 8px 16px;
-  background: #409eff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  margin-right: 6px;
 }
 
-.btn-primary:hover {
-  background: #66b1ff;
+.btn-primary { background: #409eff; }
+.btn-primary:hover { background: #66b1ff; }
+.btn-success { background: #67c23a; }
+.btn-success:hover { background: #85ce61; }
+.btn-warning { background: #e6a23c; }
+.btn-warning:hover { background: #ebb563; }
+
+.dhcp-status-bar {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  font-size: 14px;
 }
 
 .loading, .error {
