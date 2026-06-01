@@ -145,7 +145,8 @@ export default {
         '/network/pools': '📊',
         '/network/members': '👥',
         '/network/health-monitors': '❤',
-        '/security/safeguards': '🛡️'
+        '/security/safeguards': '🛡️',
+        '/tasks': '📋'
       }
       return icons[path] || '📄'
     }
