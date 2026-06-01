@@ -134,4 +134,6 @@ class RepoViewSetTest(APITestCase):
         )
         response = self.client.post(f'/api/repos/{repo.pk}/sync/')
         self.assertEqual(response.data['errno'], 0)
-        self.assertIn('同步', response.data['errmsg'])
+        data = response.data['data']
+        self.assertEqual(data['repo_id'], repo.pk)
+        self.assertEqual(data['status'], 'synced')
