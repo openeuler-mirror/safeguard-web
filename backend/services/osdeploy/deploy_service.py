@@ -29,7 +29,7 @@ class DeployService:
 
     @staticmethod
     def start_auto_install(host_id: int, kickstart_id: int, repo_id: int) -> JobStatus:
-        """启动自动安装任务"""
+        """启动自动安装任务（保持JobStatus兼容，同时创建Task）"""
         # 获取相关信息
         try:
             kickstart = KickStartFileStatus.objects.get(pk=kickstart_id)
@@ -37,10 +37,29 @@ class DeployService:
         except (KickStartFileStatus.DoesNotExist, RepoStatus.DoesNotExist) as e:
             raise ValueError(f"资源不存在: {e}")
 
-        # 创建任务记录（使用新的 Task 服务）
-        job = TaskService.create_job(
+        job_id = f"install-{uuid.uuid4().hex[:12]}"
+
+        # 创建 JobStatus 保持兼容
+        job = JobStatus.objects.create(
+            job_id=job_id,
             job_type="os_install",
             target=f"host_{host_id}",
+            status="pending",
+            progress=0,
+            result={
+                "host_id": host_id,
+                "kickstart_id": kickstart_id,
+                "repo_id": repo_id,
+                "kickstart_name": kickstart.name,
+                "repo_name": repo.name,
+            }
+        )
+
+        # 同时创建 Task 用于新追踪
+        TaskService.create_job(
+            job_type="os_install",
+            target=f"host_{host_id}",
+            job_id=job_id,
             status="pending",
             progress=0,
             result={

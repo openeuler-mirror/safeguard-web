@@ -41,6 +41,7 @@ from backend.schemas.osdeploy.out_ip_sn import (
     OutIpSNUpdateRequest,
     OutIpSNResponse,
 )
+from backend.schemas.osdeploy.auto_install import AutoInstallRequestSchema
 
 __all__ = [
     'JobStatusBase',
@@ -71,4 +72,5 @@ __all__ = [
     'OutIpSNCreateRequest',
     'OutIpSNUpdateRequest',
     'OutIpSNResponse',
+    'AutoInstallRequestSchema',
 ]
