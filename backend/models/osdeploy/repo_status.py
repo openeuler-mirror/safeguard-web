@@ -14,6 +14,7 @@ class RepoStatus(models.Model):
     repo_type = models.CharField(max_length=20, choices=REPO_TYPE_CHOICES, verbose_name="仓库类型")
     base_url = models.URLField(verbose_name="仓库地址")
     is_default = models.BooleanField(default=False, verbose_name="是否默认")
+    status = models.CharField(max_length=20, choices=[("active", "启用"), ("inactive", "禁用")], default="active", verbose_name="状态")
     description = models.TextField(blank=True, verbose_name="描述")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

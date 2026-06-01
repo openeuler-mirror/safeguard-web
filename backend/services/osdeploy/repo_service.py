@@ -89,3 +89,60 @@ class RepoService:
             return RepoStatus.objects.get(is_default=True)
         except RepoStatus.DoesNotExist:
             return None
+
+    @staticmethod
+    def enable_repo(repo_id: int) -> dict:
+        """启用仓库"""
+        try:
+            repo = RepoStatus.objects.get(pk=repo_id)
+            repo.status = 'active'
+            repo.save()
+            return {"repo_id": repo_id, "repo_name": repo.name, "status": "enabled", "message": "仓库已启用"}
+        except RepoStatus.DoesNotExist:
+            raise ValueError(f"仓库不存在: {repo_id}")
+
+    @staticmethod
+    def disable_repo(repo_id: int) -> dict:
+        """禁用仓库"""
+        try:
+            repo = RepoStatus.objects.get(pk=repo_id)
+            repo.status = 'inactive'
+            repo.save()
+            return {"repo_id": repo_id, "repo_name": repo.name, "status": "disabled", "message": "仓库已禁用"}
+        except RepoStatus.DoesNotExist:
+            raise ValueError(f"仓库不存在: {repo_id}")
+
+    @staticmethod
+    def check_repo(repo_id: int) -> dict:
+        """检查仓库可用性"""
+        import urllib.request
+        import urllib.error
+        try:
+            repo = RepoStatus.objects.get(pk=repo_id)
+            url = repo.base_url
+            req = urllib.request.Request(url, method='HEAD')
+            try:
+                urllib.request.urlopen(req, timeout=5)
+                return {"repo_id": repo_id, "repo_name": repo.name, "available": True, "message": "仓库可访问"}
+            except urllib.error.URLError as e:
+                return {"repo_id": repo_id, "repo_name": repo.name, "available": False, "message": f"仓库不可访问: {e}"}
+            except urllib.error.HTTPError as e:
+                return {"repo_id": repo_id, "repo_name": repo.name, "available": False, "message": f"HTTP错误: {e.code}"}
+        except RepoStatus.DoesNotExist:
+            raise ValueError(f"仓库不存在: {repo_id}")
+
+    @staticmethod
+    def create_repo_iso(data: dict) -> RepoStatus:
+        """创建ISO仓库"""
+        if data.get('is_default', False):
+            RepoStatus.objects.filter(is_default=True).update(is_default=False)
+        data['repo_type'] = 'iso'
+        return RepoStatus.objects.create(**data)
+
+    @staticmethod
+    def create_repo_file(data: dict) -> RepoStatus:
+        """创建文件仓库"""
+        if data.get('is_default', False):
+            RepoStatus.objects.filter(is_default=True).update(is_default=False)
+        data['repo_type'] = 'http'
+        return RepoStatus.objects.create(**data)

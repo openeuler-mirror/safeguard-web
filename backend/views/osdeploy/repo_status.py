@@ -14,6 +14,7 @@ from backend.serializers.osdeploy import (
 from backend.schemas.osdeploy import RepoStatusResponse
 from backend.common import SuccessResponse, ErrorResponse, ErrCode
 from backend.common.viewsets import UnifiedModelViewSet
+from backend.services.osdeploy.repo_service import RepoService
 
 
 class RepoViewSet(UnifiedModelViewSet):
@@ -51,13 +52,47 @@ class RepoViewSet(UnifiedModelViewSet):
     @extend_schema(
         summary="同步仓库",
         description="同步仓库内容",
-        responses={
-            200: OpenApiResponse(description="同步功能待实现"),
-        }
+        responses={200: OpenApiResponse(description="同步结果")}
     )
     @action(detail=True, methods=['post'], url_path='sync')
     def sync(self, request, pk=None):
         """同步仓库"""
         repo = self.get_object()
-        # TODO: 调用 RepoService.sync_repo()
-        return SuccessResponse(errmsg='仓库同步功能待实现')
+        result = RepoService.sync_repo(repo.id)
+        return SuccessResponse(result)
+
+    @extend_schema(
+        summary="启用仓库",
+        description="启用指定仓库",
+        responses={200: OpenApiResponse(description="启用结果")}
+    )
+    @action(detail=True, methods=['post'], url_path='enable')
+    def enable(self, request, pk=None):
+        """启用仓库"""
+        repo = self.get_object()
+        result = RepoService.enable_repo(repo.id)
+        return SuccessResponse(result)
+
+    @extend_schema(
+        summary="禁用仓库",
+        description="禁用指定仓库",
+        responses={200: OpenApiResponse(description="禁用结果")}
+    )
+    @action(detail=True, methods=['post'], url_path='disable')
+    def disable(self, request, pk=None):
+        """禁用仓库"""
+        repo = self.get_object()
+        result = RepoService.disable_repo(repo.id)
+        return SuccessResponse(result)
+
+    @extend_schema(
+        summary="检查仓库",
+        description="检查仓库可用性",
+        responses={200: OpenApiResponse(description="检查结果")}
+    )
+    @action(detail=True, methods=['get'], url_path='check')
+    def check(self, request, pk=None):
+        """检查仓库"""
+        repo = self.get_object()
+        result = RepoService.check_repo(repo.id)
+        return SuccessResponse(result)
