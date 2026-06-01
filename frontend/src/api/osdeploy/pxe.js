@@ -25,10 +25,30 @@ export function deletePXEServer(id) {
   return api.delete(`/pxe-servers/${id}/`)
 }
 
+export function startDhcp() {
+  return api.post('/pxe-servers/start_dhcp/')
+}
+
+export function stopDhcp() {
+  return api.post('/pxe-servers/stop_dhcp/')
+}
+
+export function restartDhcp() {
+  return api.post('/pxe-servers/restart_dhcp/')
+}
+
+export function getDhcpStatus() {
+  return api.get('/pxe-servers/dhcp_status/')
+}
+
 export default {
   getPXEServers,
   getPXEServerDetail,
   createPXEServer,
   updatePXEServer,
   deletePXEServer,
+  startDhcp,
+  stopDhcp,
+  restartDhcp,
+  getDhcpStatus,
 }
