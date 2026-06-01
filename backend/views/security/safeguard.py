@@ -47,3 +47,12 @@ class SafeguardViewSet(UnifiedModelViewSet):
         if success:
             return self.success_response(data={'message': '回滚任务已启动'})
         return self.error_response(code=7002, message='启动回滚失败')
+
+    @action(['get'], True)
+    def status(self, request, pk=None):
+        """获取部署状态（含 Task 进度）"""
+        safeguard = self.get_object()
+        status_info = SafeguardService.get_deploy_status(safeguard.id)
+        if status_info:
+            return self.success_response(data=status_info)
+        return self.error_response(code=7003, message='获取状态失败')
