@@ -57,9 +57,40 @@ class KickStartViewSet(UnifiedModelViewSet):
         """预览生成的Kickstart文件内容"""
         kickstart = self.get_object()
         vars = request.data.get('vars', {})
-        # TODO: 调用 DeployService.generate_kickstart()
-        content = kickstart.content
-        # 简单的变量替换预览
-        for key, value in vars.items():
-            content = content.replace(f"{{{{{key}}}}}", str(value))
+        content = KickstartService.render_template(kickstart.content, vars)
+        return SuccessResponse({'content': content})
+
+    @extend_schema(
+        summary="基于模板生成Kickstart",
+        description="基于现有模板进行变量替换生成Kickstart内容",
+        responses={200: OpenApiResponse(description="生成的Kickstart内容")}
+    )
+    @action(detail=True, methods=['post'], url_path='generate')
+    def generate(self, request, pk=None):
+        """基于模板生成Kickstart"""
+        kickstart = self.get_object()
+        variables = request.data.get('variables', {})
+        try:
+            content = KickstartService.generate_kickstart(kickstart.id, variables)
+        except ValueError as e:
+            return ErrorResponse(code=ErrCode.NOT_FOUND, errmsg=str(e))
+        return SuccessResponse({'content': content})
+
+    @extend_schema(
+        summary="自动全量生成Kickstart",
+        description="根据主机信息自动全量生成Kickstart文件",
+        responses={200: OpenApiResponse(description="自动生成的Kickstart内容")}
+    )
+    @action(detail=False, methods=['post'], url_path='auto_generate')
+    def auto_generate(self, request):
+        """自动全量生成Kickstart"""
+        host_id = request.data.get('host_id')
+        repo_id = request.data.get('repo_id')
+        os_type = request.data.get('os_type', 'culinux')
+        if not host_id or not repo_id:
+            return ErrorResponse(code=ErrCode.PARAMS_ERROR, errmsg='缺少 host_id 或 repo_id 参数')
+        try:
+            content = KickstartService.auto_generate_kickstart(host_id, repo_id, os_type)
+        except ValueError as e:
+            return ErrorResponse(code=ErrCode.NOT_FOUND, errmsg=str(e))
         return SuccessResponse({'content': content})
