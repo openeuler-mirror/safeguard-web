@@ -79,6 +79,29 @@
         </div>
       </div>
     </div>
+
+    <!-- 任务追踪弹窗 -->
+    <div v-if="taskDialogVisible" class="dialog-overlay" @click.self="closeTaskDialog">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>装机进度追踪</h3>
+          <button class="dialog-close" @click="closeTaskDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div class="task-info">
+            <p><strong>任务ID:</strong> {{ activeJobId }}</p>
+            <p><strong>状态:</strong> <span :class="getStatusClass(activeJobStatus)">{{ formatStatus(activeJobStatus) }}</span></p>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" :style="{ width: activeJobProgress + '%' }" :class="getProgressClass(activeJobStatus)"></div>
+          </div>
+          <p class="progress-text">{{ activeJobProgress }}%</p>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeTaskDialog">关闭</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -437,4 +460,25 @@ export default {
 .status-running { color: #409eff; }
 .status-success { color: #67c23a; }
 .status-failed { color: #f56c6c; }
+
+.dialog-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); display: flex; align-items: center;
+  justify-content: center; z-index: 1000;
+}
+.dialog { background: white; border-radius: 8px; width: 480px; max-width: 90%; }
+.dialog-header { display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid #eee; }
+.dialog-header h3 { margin: 0; color: #333; }
+.dialog-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.dialog-body { padding: 20px; }
+.dialog-footer { display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 20px; border-top: 1px solid #eee; }
+.task-info { margin-bottom: 16px; }
+.task-info p { margin: 4px 0; }
+.progress-bar-container { height: 20px; background: #ebeef5; border-radius: 10px; overflow: hidden; }
+.progress-bar { height: 100%; background: #409eff; transition: width 0.3s; }
+.progress-bar.success { background: #67c23a; }
+.progress-bar.failed { background: #f56c6c; }
+.progress-text { text-align: center; margin-top: 8px; color: #666; }
 </style>
