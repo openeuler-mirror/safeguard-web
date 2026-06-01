@@ -30,6 +30,18 @@ export function syncRepo(id) {
   return api.post(`/repos/${id}/sync/`)
 }
 
+export function enableRepo(id) {
+  return api.post(`/repos/${id}/enable/`)
+}
+
+export function disableRepo(id) {
+  return api.post(`/repos/${id}/disable/`)
+}
+
+export function checkRepo(id) {
+  return api.get(`/repos/${id}/check/`)
+}
+
 export default {
   getRepos,
   getRepoDetail,
@@ -37,4 +49,7 @@ export default {
   updateRepo,
   deleteRepo,
   syncRepo,
+  enableRepo,
+  disableRepo,
+  checkRepo,
 }

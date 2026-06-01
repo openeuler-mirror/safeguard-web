@@ -35,6 +35,14 @@ export function previewKickstart(id, vars) {
   return api.post(`/kickstarts/${id}/preview/`, { vars })
 }
 
+export function generateKickstart(id, variables) {
+  return api.post(`/kickstarts/${id}/generate/`, { variables })
+}
+
+export function autoGenerateKickstart(data) {
+  return api.post('/kickstarts/auto_generate/', data)
+}
+
 export default {
   getKickstarts,
   getKickstartDetail,
@@ -43,4 +51,6 @@ export default {
   deleteKickstart,
   validateKickstart,
   previewKickstart,
+  generateKickstart,
+  autoGenerateKickstart,
 }

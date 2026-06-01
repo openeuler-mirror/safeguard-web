@@ -29,6 +29,10 @@ export function rollbackSafeguard(id) {
   return api.post(`/safeguards/${id}/rollback/`)
 }
 
+export function getSafeguardStatus(id) {
+  return api.get(`/safeguards/${id}/status/`)
+}
+
 export default {
   getSafeguards,
   getSafeguard,
@@ -37,4 +41,5 @@ export default {
   deleteSafeguard,
   deploySafeguard,
   rollbackSafeguard,
+  getSafeguardStatus,
 }
