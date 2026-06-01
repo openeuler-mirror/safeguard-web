@@ -88,6 +88,7 @@ import { getPXEServers } from '@/api/osdeploy/pxe'
 import { getKickstarts } from '@/api/osdeploy/kickstart'
 import { getRepos } from '@/api/osdeploy/repo'
 import { getJobs } from '@/api/osdeploy/job'
+import { autoInstall } from '@/api/osdeploy/auto_install'
 
 export default {
   name: 'AutoInstall',
@@ -107,7 +108,12 @@ export default {
         pxe_server_id: '',
         kickstart_id: '',
         repo_id: ''
-      }
+      },
+      taskDialogVisible: false,
+      activeJobId: null,
+      activeJobStatus: null,
+      activeJobProgress: 0,
+      pollTimer: null
     }
   },
   mounted() {
@@ -184,14 +190,48 @@ export default {
 
       this.submitting = true
       try {
-        // TODO: 调用自动装机API
-        // await autoInstallOS(this.form)
-        alert('自动装机功能后端待实现')
+        const res = await autoInstall({
+          host_id: this.form.host_id,
+          kickstart_id: this.form.kickstart_id,
+          repo_id: this.form.repo_id,
+        })
+        this.activeJobId = res.job_id
+        this.activeJobStatus = 'running'
+        this.activeJobProgress = 0
+        this.taskDialogVisible = true
+        this.startPolling()
         this.loadRecentJobs()
       } catch (e) {
         this.formError = e.message || '提交失败，请稍后重试'
       } finally {
         this.submitting = false
+      }
+    },
+    startPolling() {
+      if (this.pollTimer) clearInterval(this.pollTimer)
+      this.pollTimer = setInterval(async () => {
+        if (!this.activeJobId || this.activeJobStatus === 'success' || this.activeJobStatus === 'failed') {
+          clearInterval(this.pollTimer)
+          this.pollTimer = null
+          return
+        }
+        try {
+          const res = await getJobs({ job_id: this.activeJobId })
+          const job = (res.results || res || []).find(j => j.job_id === this.activeJobId)
+          if (job) {
+            this.activeJobStatus = job.status
+            this.activeJobProgress = job.progress
+          }
+        } catch (e) {
+          console.error('轮询任务状态失败', e)
+        }
+      }, 3000)
+    },
+    closeTaskDialog() {
+      this.taskDialogVisible = false
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer)
+        this.pollTimer = null
       }
     },
     formatStatus(status) {
