@@ -77,20 +77,92 @@ class AutoInstallViewSet(viewsets.ViewSet):
                 raise ValueError("未配置PXE服务器")
             ks_url = PXEService.get_ks_url(pxe_server.server_ip, kickstart.name)
             repo_url = PXEService.get_repo_url(pxe_server.server_ip, repo.name)
+            mac_address = host.mac_address or "00:00:00:00:00:00"
             # 4. 写入PXE启动文件
-            PXEService.write_pxe_boot_file(host.mac_address or "00:00:00:00:00:00",
-                PXEService.generate_pxe_boot_file(host.mac_address or "00:00:00:00:00:00", ks_url, repo_url))
+            pxe_content = PXEService.generate_pxe_boot_file(mac_address, ks_url, repo_url)
+            PXEService.write_pxe_boot_file(mac_address, pxe_content)
             TaskService.update_job(job_id, progress=30)
             # 5. 添加DHCP静态条目
-            DHCPService.add_static_entry(host.mac_address or "00:00:00:00:00:00", host.ip_address or "")
+            DHCPService.add_static_entry(mac_address, host.ip_address or "", host.hostname)
             TaskService.update_job(job_id, progress=50)
-            # 6. 重启目标主机（通过IPMI或SSH）
-            # TODO: 实现远程重启
+            # 6. 重启目标主机（优先SSH，其次IPMI）
+            self._reboot_host(host)
             TaskService.update_job(job_id, progress=70)
             # 7. 轮询安装状态
-            # TODO: 实现状态轮询
-            TaskService.update_job(job_id, status="success", progress=100,
-                result={"message": "装机任务已完成"})
+            install_success = self._poll_install_status(host, timeout=3600)
+            if install_success:
+                TaskService.update_job(job_id, status="success", progress=100,
+                    result={"message": "装机任务已完成"})
+            else:
+                raise TimeoutError("装机状态轮询超时")
         except Exception as e:
             TaskService.update_job(job_id, status="failed", progress=0,
                 error_message=str(e))
+        finally:
+            # 清理PXE配置和DHCP白名单
+            try:
+                host = Host.objects.get(pk=host_id)
+                PXEService.remove_pxe_boot_file(host.mac_address or "00:00:00:00:00:00")
+                DHCPService.remove_static_entry(host.mac_address or "00:00:00:00:00:00")
+            except Exception:
+                pass
+
+    def _reboot_host(self, host: Host):
+        """重启目标主机，优先SSH，其次IPMI"""
+        # 尝试SSH重启
+        if host.ip_address and host.username and host.password:
+            try:
+                ssh = SSHClient(
+                    host=str(host.ip_address),
+                    port=host.port or 22,
+                    username=host.username,
+                    password=host.password,
+                    timeout=10,
+                )
+                stdout, stderr, exit_code = ssh.execute_command("reboot")
+                ssh.close()
+                if exit_code in (0, -1):  # reboot 通常会断开连接
+                    return
+            except Exception:
+                pass
+        # 尝试IPMI重启
+        if host.ipmi_address and host.ipmi_user and host.ipmi_password:
+            import subprocess
+            try:
+                subprocess.run(
+                    [
+                        "ipmitool", "-I", "lanplus",
+                        "-H", str(host.ipmi_address),
+                        "-U", host.ipmi_user,
+                        "-P", host.ipmi_password,
+                        "chassis", "power", "reset",
+                    ],
+                    capture_output=True, timeout=15,
+                )
+                return
+            except Exception:
+                pass
+        raise RuntimeError("无法重启目标主机：SSH和IPMI均不可用")
+
+    def _poll_install_status(self, host: Host, timeout: int = 3600, interval: int = 30) -> bool:
+        """轮询安装状态，通过SSH连接判断主机是否恢复"""
+        import time
+        elapsed = 0
+        while elapsed < timeout:
+            time.sleep(interval)
+            elapsed += interval
+            try:
+                ssh = SSHClient(
+                    host=str(host.ip_address),
+                    port=host.port or 22,
+                    username=host.username,
+                    password=host.password,
+                    timeout=10,
+                )
+                stdout, stderr, exit_code = ssh.execute_command("echo 'install-check'")
+                ssh.close()
+                if exit_code == 0 and "install-check" in stdout:
+                    return True
+            except Exception:
+                pass
+        return False
