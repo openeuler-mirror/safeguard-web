@@ -52,6 +52,7 @@
               <button class="btn-edit" @click="openEditDialog(sg)">编辑</button>
               <button v-if="sg.status === 'pending' || sg.status === 'failed'" class="btn-primary" @click="handleDeploy(sg)">部署</button>
               <button v-if="sg.status === 'success'" class="btn-warning" @click="handleRollback(sg)">回滚</button>
+              <button class="btn-info" @click="openStatusDialog(sg)">状态</button>
               <button class="btn-danger" @click="confirmDelete(sg)">删除</button>
             </td>
           </tr>
@@ -124,6 +125,33 @@
       </div>
     </div>
 
+    <!-- 状态弹窗 -->
+    <div v-if="statusDialogVisible" class="dialog-overlay" @click.self="closeStatusDialog">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>部署状态 - {{ selectedSafeguard?.name }}</h3>
+          <button class="dialog-close" @click="closeStatusDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div v-if="statusInfo">
+            <p><strong>状态:</strong> <span :class="getStatusClass(statusInfo.status)">{{ formatStatus(statusInfo.status) }}</span></p>
+            <p v-if="statusInfo.result"><strong>结果:</strong> {{ JSON.stringify(statusInfo.result) }}</p>
+            <p v-if="statusInfo.error_message"><strong>错误:</strong> <span style="color:#ff4d4f">{{ statusInfo.error_message }}</span></p>
+            <div v-if="statusInfo.task">
+              <hr/>
+              <p><strong>任务进度:</strong> {{ statusInfo.task.progress }}%</p>
+              <p><strong>任务状态:</strong> {{ formatStatus(statusInfo.task.status) }}</p>
+            </div>
+          </div>
+          <div v-else class="empty-text">加载中...</div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeStatusDialog">关闭</button>
+          <button class="btn-primary" @click="refreshStatus">刷新</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 删除确认弹窗 -->
     <div v-if="deleteDialogVisible" class="dialog-overlay" @click.self="closeDeleteDialog">
       <div class="dialog">
@@ -145,7 +173,7 @@
 </template>
 
 <script>
-import { getSafeguards, createSafeguard, updateSafeguard, deleteSafeguard, deploySafeguard, rollbackSafeguard } from '@/api/security'
+import { getSafeguards, createSafeguard, updateSafeguard, deleteSafeguard, deploySafeguard, rollbackSafeguard, getSafeguardStatus } from '@/api/security'
 
 export default {
   name: 'Safeguards',
@@ -161,8 +189,10 @@ export default {
       totalCount: 0,
       dialogVisible: false,
       deleteDialogVisible: false,
+      statusDialogVisible: false,
       isEdit: false,
       selectedSafeguard: null,
+      statusInfo: null,
       formError: '',
       errors: {},
       form: {
