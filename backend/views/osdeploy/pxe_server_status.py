@@ -1,5 +1,5 @@
 """PXEServerStatus 视图集"""
-from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
@@ -11,6 +11,8 @@ from backend.serializers.osdeploy import (
     PXEServerStatusUpdateSerializer,
 )
 from backend.common.viewsets import UnifiedModelViewSet
+from backend.services.osdeploy.dhcp_service import DHCPService
+from backend.common import SuccessResponse, ErrorResponse, ErrCode
 
 
 class PXEServerStatusViewSet(UnifiedModelViewSet):
@@ -30,3 +32,33 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
         if self.action == 'list':
             return PXEServerStatusListSerializer
         return PXEServerStatusSerializer
+
+    @action(['post'], False)
+    def start_dhcp(self, request):
+        """启动DHCP服务"""
+        result = DHCPService.start_dhcp_service()
+        if result["status"] == "success":
+            return SuccessResponse(result)
+        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+
+    @action(['post'], False)
+    def stop_dhcp(self, request):
+        """停止DHCP服务"""
+        result = DHCPService.stop_dhcp_service()
+        if result["status"] == "success":
+            return SuccessResponse(result)
+        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+
+    @action(['post'], False)
+    def restart_dhcp(self, request):
+        """重启DHCP服务"""
+        result = DHCPService.restart_dhcp_service()
+        if result["status"] == "success":
+            return SuccessResponse(result)
+        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+
+    @action(['get'], False)
+    def dhcp_status(self, request):
+        """获取DHCP服务状态"""
+        is_running = DHCPService.is_dhcp_running()
+        return SuccessResponse({"is_running": is_running})

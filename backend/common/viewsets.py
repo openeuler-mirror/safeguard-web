@@ -22,7 +22,7 @@ class UnifiedModelViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return SuccessResponse({'results': serializer.data, 'count': self.paginator.count})
         serializer = self.get_serializer(queryset, many=True)
-        return SuccessResponse(serializer.data)
+        return SuccessResponse({'results': serializer.data, 'count': len(serializer.data)})
 
     def retrieve(self, request, *args, **kwargs):
         """详情操作"""
