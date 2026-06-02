@@ -128,7 +128,7 @@ class AuthorityViewSetTest(APITestCase):
         AuthorityMenu.objects.create(authority=auth, menu=menu)
         response = self.client.get(f'/api/authority/authorities/{auth.pk}/menus/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['data']['count'], 1)
+        self.assertEqual(len(response.data['data']), 1)
 
     def test_bind_authority_menus(self):
         """测试绑定角色菜单"""
@@ -165,7 +165,7 @@ class AuthorityViewSetTest(APITestCase):
         AuthorityButton.objects.create(authority=auth, menu=menu, button=btn)
         response = self.client.get(f'/api/authority/authorities/{auth.pk}/btns/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['data']['count'], 1)
+        self.assertEqual(len(response.data['data']), 1)
 
     def test_bind_authority_buttons(self):
         """测试绑定角色按钮权限"""
