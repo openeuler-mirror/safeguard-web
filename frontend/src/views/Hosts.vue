@@ -20,6 +20,9 @@
           @keyup.enter="handleSearch"
         />
         <button class="btn-primary" @click="openCreateDialog">创建主机</button>
+        <button class="btn-success" @click="openImportDialog">导入主机</button>
+        <button class="btn-info" @click="handleExport">导出主机</button>
+        <button class="btn-warning" @click="openBatchPasswordDialog">批量改密</button>
       </div>
     </div>
 
@@ -59,6 +62,7 @@
             <td>
               <button class="btn-action btn-collect" @click="handleCollectHardware(host)" title="采集硬件信息">采集硬件</button>
               <button class="btn-action btn-collect-lldp" @click="handleCollectLLDP(host)" title="采集LLDP信息">LLDP</button>
+              <button class="btn-action btn-remote" @click="openRemoteCommandDialog(host)" title="远程命令">远程命令</button>
               <button class="btn-edit" @click="openEditDialog(host)">编辑</button>
               <button class="btn-danger" @click="confirmDelete(host)">删除</button>
             </td>
@@ -147,6 +151,87 @@
         <div class="dialog-footer">
           <button class="btn-cancel" @click="closeDeleteDialog">取消</button>
           <button class="btn-danger" @click="handleDelete">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 导入主机弹窗 -->
+    <div v-if="importDialogVisible" class="dialog-overlay" @click.self="closeImportDialog">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>导入主机</h3>
+          <button class="dialog-close" @click="closeImportDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div v-if="importError" class="form-error-summary">{{ importError }}</div>
+          <div class="form-item">
+            <label>Excel文件 <span class="required">*</span></label>
+            <input type="file" accept=".xlsx,.xls" @change="handleFileChange" />
+          </div>
+          <p class="hint-text">支持 .xlsx 格式，第一行为表头</p>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeImportDialog">取消</button>
+          <button class="btn-primary" :disabled="!importFile || importSubmitting" @click="submitImport">{{ importSubmitting ? '导入中...' : '导入' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 远程命令弹窗 -->
+    <div v-if="remoteCommandDialogVisible" class="dialog-overlay" @click.self="closeRemoteCommandDialog">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>远程命令 - {{ selectedHost?.hostname }}</h3>
+          <button class="dialog-close" @click="closeRemoteCommandDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div v-if="remoteError" class="form-error-summary">{{ remoteError }}</div>
+          <div class="form-item">
+            <label>命令 <span class="required">*</span></label>
+            <input v-model="remoteCommandForm.command" type="text" placeholder="例如: uname -a" />
+          </div>
+          <div v-if="remoteResult" class="remote-result">
+            <label>执行结果</label>
+            <pre>{{ remoteResult }}</pre>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeRemoteCommandDialog">关闭</button>
+          <button class="btn-primary" :disabled="remoteSubmitting" @click="submitRemoteCommand">{{ remoteSubmitting ? '执行中...' : '执行' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 批量改密弹窗 -->
+    <div v-if="batchPasswordDialogVisible" class="dialog-overlay" @click.self="closeBatchPasswordDialog">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>批量修改密码</h3>
+          <button class="dialog-close" @click="closeBatchPasswordDialog">&times;</button>
+        </div>
+        <div class="dialog-body">
+          <div v-if="batchPasswordError" class="form-error-summary">{{ batchPasswordError }}</div>
+          <div class="form-item">
+            <label>选择主机 <span class="required">*</span></label>
+            <div class="host-checkbox-list">
+              <label v-for="host in hosts" :key="host.id" class="checkbox-label">
+                <input type="checkbox" :value="host.id" v-model="batchPasswordForm.host_ids" />
+                {{ host.hostname }} ({{ host.ip_address }})
+              </label>
+            </div>
+          </div>
+          <div class="form-item">
+            <label>新密码 <span class="required">*</span></label>
+            <input v-model="batchPasswordForm.password" type="password" placeholder="请输入新密码" />
+          </div>
+          <div class="form-item">
+            <label>密钥</label>
+            <input v-model="batchPasswordForm.key" type="text" placeholder="默认 culinux" />
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn-cancel" @click="closeBatchPasswordDialog">取消</button>
+          <button class="btn-primary" :disabled="batchPasswordSubmitting" @click="submitBatchPassword">{{ batchPasswordSubmitting ? '提交中...' : '确定' }}</button>
         </div>
       </div>
     </div>
