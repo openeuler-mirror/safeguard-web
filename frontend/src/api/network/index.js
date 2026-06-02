@@ -27,6 +27,21 @@ export function deleteLB(id) {
   return api.delete(`/lbs/${id}/`)
 }
 
+// 按项目查询LB
+export function getLBsByProject(projectId) {
+  return api.get('/lbs/by_project/', { params: { project_id: projectId } })
+}
+
+// 按K8s集群查询LB
+export function getLBsByK8s(k8sCluster) {
+  return api.get('/lbs/by_k8s/', { params: { k8s_cluster: k8sCluster } })
+}
+
+// 获取可用区名称列表
+export function getLBAzNames() {
+  return api.get('/lbs/az_names/')
+}
+
 // ========== Listener ==========
 
 // 获取监听器列表

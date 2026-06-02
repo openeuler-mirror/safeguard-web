@@ -429,6 +429,115 @@ export default {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
       return date.toLocaleString()
+    },
+    // ---------- Import / Export ----------
+    openImportDialog() {
+      this.importDialogVisible = true
+      this.importFile = null
+      this.importError = ''
+      this.importSubmitting = false
+    },
+    closeImportDialog() {
+      this.importDialogVisible = false
+      this.importFile = null
+      this.importError = ''
+    },
+    handleFileChange(e) {
+      this.importFile = e.target.files[0]
+    },
+    async submitImport() {
+      if (!this.importFile) {
+        this.importError = '请选择文件'
+        return
+      }
+      this.importSubmitting = true
+      try {
+        await importHosts(this.importFile)
+        this.closeImportDialog()
+        this.loadHosts()
+        alert('导入成功')
+      } catch (e) {
+        this.importError = e.message || '导入失败'
+      } finally {
+        this.importSubmitting = false
+      }
+    },
+    async handleExport() {
+      try {
+        const params = {}
+        if (this.filterStatus) params.status = this.filterStatus
+        if (this.filterCluster) params.cluster = this.filterCluster
+        const blob = await exportHosts(params)
+        const url = window.URL.createObjectURL(new Blob([blob]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', 'hosts.xlsx')
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        window.URL.revokeObjectURL(url)
+      } catch (e) {
+        alert(e.message || '导出失败')
+      }
+    },
+    // ---------- Remote Command ----------
+    openRemoteCommandDialog(host) {
+      this.selectedHost = host
+      this.remoteCommandForm = { command: '' }
+      this.remoteError = ''
+      this.remoteResult = null
+      this.remoteSubmitting = false
+      this.remoteCommandDialogVisible = true
+    },
+    closeRemoteCommandDialog() {
+      this.remoteCommandDialogVisible = false
+      this.remoteResult = null
+    },
+    async submitRemoteCommand() {
+      if (!this.remoteCommandForm.command.trim()) {
+        this.remoteError = '请输入命令'
+        return
+      }
+      this.remoteSubmitting = true
+      this.remoteError = ''
+      try {
+        const res = await remoteCommand(this.selectedHost.id, this.remoteCommandForm)
+        this.remoteResult = JSON.stringify(res, null, 2)
+      } catch (e) {
+        this.remoteError = e.message || '执行失败'
+      } finally {
+        this.remoteSubmitting = false
+      }
+    },
+    // ---------- Batch Password ----------
+    openBatchPasswordDialog() {
+      this.batchPasswordDialogVisible = true
+      this.batchPasswordForm = { host_ids: [], password: '', key: 'culinux' }
+      this.batchPasswordError = ''
+      this.batchPasswordSubmitting = false
+    },
+    closeBatchPasswordDialog() {
+      this.batchPasswordDialogVisible = false
+    },
+    async submitBatchPassword() {
+      if (this.batchPasswordForm.host_ids.length === 0) {
+        this.batchPasswordError = '请选择主机'
+        return
+      }
+      if (!this.batchPasswordForm.password) {
+        this.batchPasswordError = '请输入新密码'
+        return
+      }
+      this.batchPasswordSubmitting = true
+      try {
+        await batchUpdatePassword(this.batchPasswordForm)
+        this.closeBatchPasswordDialog()
+        alert('批量改密任务已提交')
+      } catch (e) {
+        this.batchPasswordError = e.message || '提交失败'
+      } finally {
+        this.batchPasswordSubmitting = false
+      }
     }
   }
 }
@@ -714,7 +823,39 @@ tr:hover td {
   background: #f78989;
 }
 
-.btn-collect, .btn-collect-lldp {
+.btn-success, .btn-info, .btn-warning {
+  padding: 8px 16px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-success {
+  background: #67c23a;
+}
+
+.btn-success:hover {
+  background: #85ce61;
+}
+
+.btn-info {
+  background: #909399;
+}
+
+.btn-info:hover {
+  background: #a6a9ad;
+}
+
+.btn-warning {
+  background: #e6a23c;
+}
+
+.btn-warning:hover {
+  background: #ebb563;
+}
+
+.btn-collect, .btn-collect-lldp, .btn-remote {
   padding: 6px 12px;
   border: none;
   border-radius: 4px;
@@ -738,5 +879,42 @@ tr:hover td {
 
 .btn-collect-lldp:hover {
   background: #85ce61;
+}
+
+.btn-remote {
+  background: #e6a23c;
+}
+
+.btn-remote:hover {
+  background: #ebb563;
+}
+
+.hint-text {
+  color: #909399;
+  font-size: 12px;
+}
+
+.host-checkbox-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.checkbox-label {
+  display: block;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.remote-result pre {
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>
