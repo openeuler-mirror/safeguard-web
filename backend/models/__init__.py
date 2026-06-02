@@ -27,6 +27,7 @@ from backend.models.network import (
 )
 from backend.models.security import SafeguardDeploy
 from backend.models.task import Task
+from backend.models.osmigrate import MigrateJob
 
 __all__ = [
     'Users',
@@ -55,4 +56,5 @@ __all__ = [
     'LBHealthMonitor',
     'SafeguardDeploy',
     'Task',
+    'MigrateJob',
 ]

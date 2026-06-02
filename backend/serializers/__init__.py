@@ -37,6 +37,13 @@ from backend.serializers.task import (
     TaskUpdateSerializer,
     TaskQuerySerializer,
 )
+from backend.serializers.osmigrate import (
+    MigrateJobSerializer,
+    MigrateJobListSerializer,
+    MigrateInitSerializer,
+    MigrateSerializer,
+    MigrateBackSerializer,
+)
 
 __all__ = [
     # User serializers
@@ -74,4 +81,10 @@ __all__ = [
     'TaskCreateSerializer',
     'TaskUpdateSerializer',
     'TaskQuerySerializer',
+    # OSmigrate serializers
+    'MigrateJobSerializer',
+    'MigrateJobListSerializer',
+    'MigrateInitSerializer',
+    'MigrateSerializer',
+    'MigrateBackSerializer',
 ]
