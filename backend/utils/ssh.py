@@ -275,3 +275,57 @@ class SSHClient:
     def __del__(self):
         """析构函数确保连接关闭"""
         self.close()
+
+def remote_host_command(host, port, username, password, command, timeout=60):
+    """在远程主机上执行命令（便捷函数）"""
+    with SSHClient(host, port, username, password, timeout=timeout) as client:
+        stdout, stderr, exit_code = client.execute_command(command)
+        output = stdout if stdout else stderr
+        return output, exit_code
+
+
+def remote_package_install(host, port, username, password, package, timeout=300):
+    """在远程主机上安装软件包（便捷函数）"""
+    return remote_host_command(host, port, username, password, f"yum install -y {package}", timeout=timeout)
+
+
+def file_copy(srcfile, destfile, host, port, username, password):
+    """将本地文件复制到远程主机（便捷函数）"""
+    with SSHClient(host, port, username, password) as client:
+        return client.upload_file(srcfile, destfile)
+
+
+def remote_file_exist(host, port, username, password, dirname, filename):
+    """检查远程主机上的文件是否存在"""
+    with SSHClient(host, port, username, password) as client:
+        try:
+            import os as _os
+            path = _os.path.join(dirname, filename)
+            exists = client.file_exists(path)
+            return exists, ""
+        except Exception as e:
+            return False, str(e)
+
+
+def remote_ping_host(host, port, username, password, target, timeout=10):
+    """通过远程主机 ping 目标地址"""
+    with SSHClient(host, port, username, password, timeout=timeout) as client:
+        stdout, stderr, exit_code = client.execute_command(f"ping -c 1 -W 3 {target}")
+        output = stdout if stdout else stderr
+        return exit_code == 0, output
+
+
+def local_ping_host(host, timeout=5):
+    """本地 ping 目标地址"""
+    try:
+        import subprocess as _subprocess
+        result = _subprocess.run(
+            ["ping", "-c", "1", "-W", str(timeout), host],
+            capture_output=True,
+            text=True,
+            timeout=timeout + 2,
+        )
+        output = result.stdout if result.stdout else result.stderr
+        return result.returncode == 0, output
+    except Exception as e:
+        return False, str(e)
