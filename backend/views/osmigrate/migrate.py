@@ -1,5 +1,4 @@
 """OSmigrate 迁移视图集"""
-from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from backend.models.osmigrate.migrate_job import MigrateJob
@@ -12,9 +11,10 @@ from backend.serializers.osmigrate.migrate import (
 )
 from backend.services.osmigrate.x2cu_service import X2cuService
 from backend.common import SuccessResponse, ErrorResponse
+from backend.common.viewsets import UnifiedModelViewSet
 
 
-class MigrateViewSet(viewsets.ModelViewSet):
+class MigrateViewSet(UnifiedModelViewSet):
     """系统迁移视图集"""
 
     queryset = MigrateJob.objects.all().order_by("-id")
