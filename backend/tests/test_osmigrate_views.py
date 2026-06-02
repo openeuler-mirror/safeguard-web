@@ -2,21 +2,28 @@
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 from backend.models.user import Users
 from backend.models.osmigrate.migrate_job import MigrateJob
 from unittest.mock import patch
 
 
-class MigrateViewSetTest(APITestCase):
+class MigrateViewSetTest(TestCase):
     def setUp(self):
-        self.user = Users.objects.create_user(
+        self.client = APIClient()
+        self.user = Users.objects.create(
             user="testuser",
-            password="testpass123",
+            nickname="Test User",
             email="test@example.com",
-            nickname="Test",
+            enable=1,
         )
-        self.client.force_authenticate(user=self.user)
+        self.user.set_password("testpass123")
+        self.user.save()
+
+        refresh = RefreshToken.for_user(self.user)
+        self.access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
 
     def test_list_migrate_jobs(self):
         MigrateJob.objects.create(
