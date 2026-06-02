@@ -167,6 +167,13 @@ const routes = [
     component: () => import('@/views/security/Safeguards.vue'),
     meta: { requiresAuth: true }
   },
+  // Task 模块
+  {
+    path: '/tasks',
+    name: 'Tasks',
+    component: () => import('@/views/Tasks.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     redirect: '/dashboard'
