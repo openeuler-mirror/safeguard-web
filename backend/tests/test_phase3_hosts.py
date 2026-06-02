@@ -6,6 +6,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 from backend.models.user import Users
 from backend.models.host import Host, Cluster
+from backend.models.authority import Authority, UserAuthority
 from backend.services.host import HostService
 from unittest.mock import patch, MagicMock
 import io
@@ -35,7 +36,7 @@ class HostServiceAdvancedTest(TestCase):
         self.assertFalse(result["success"])
         self.assertEqual(result["updated"], 0)
 
-    @patch("backend.services.host.SSHClient")
+    @patch("backend.utils.ssh.SSHClient")
     def test_remote_command(self, mock_ssh_class):
         mock_client = MagicMock()
         mock_client.__enter__ = MagicMock(return_value=mock_client)
@@ -84,6 +85,8 @@ class HostViewAdvancedTest(TestCase):
         )
         self.user.set_password("testpass123")
         self.user.save()
+        self.admin_auth = Authority.objects.create(authority_id=888, authority_name="超级管理员")
+        UserAuthority.objects.create(user=self.user, authority=self.admin_auth)
         refresh = RefreshToken.for_user(self.user)
         self.access_token = str(refresh.access_token)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
