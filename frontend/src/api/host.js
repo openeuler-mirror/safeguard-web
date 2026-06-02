@@ -182,3 +182,29 @@ export function getImagesByHost(hostId) {
 export function refreshImages(id) {
   return api.post(`/images/${id}/refresh/`)
 }
+
+// ========== Host Advanced (Phase 3) ==========
+
+// 导入主机 (Excel)
+export function importHosts(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/hosts/import/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+// 导出主机
+export function exportHosts(params) {
+  return api.get('/hosts/export/', { params, responseType: 'blob' })
+}
+
+// 远程命令执行
+export function remoteCommand(id, data) {
+  return api.post(`/hosts/${id}/remote_command/`, data)
+}
+
+// 批量修改密码
+export function batchUpdatePassword(data) {
+  return api.post('/hosts/batch_update_password/', data)
+}
