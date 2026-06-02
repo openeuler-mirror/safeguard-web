@@ -340,6 +340,49 @@ export default {
     },
     getStatusClass(status) {
       return status === 'active' ? 'status-active' : 'status-inactive'
+    },
+    toggleExtension() {
+      this.showExtension = !this.showExtension
+    },
+    async handleByProject() {
+      if (!this.extProjectId.trim()) {
+        alert('请输入项目ID')
+        return
+      }
+      this.loading = true
+      try {
+        const res = await getLBsByProject(this.extProjectId)
+        this.lbs = res.data || res.results || res || []
+        this.totalCount = this.lbs.length
+      } catch (e) {
+        this.error = e.message || '按项目查询失败'
+      } finally {
+        this.loading = false
+      }
+    },
+    async handleByK8s() {
+      if (!this.extK8sCluster.trim()) {
+        alert('请输入K8s集群名')
+        return
+      }
+      this.loading = true
+      try {
+        const res = await getLBsByK8s(this.extK8sCluster)
+        this.lbs = res.data || res.results || res || []
+        this.totalCount = this.lbs.length
+      } catch (e) {
+        this.error = e.message || '按K8s查询失败'
+      } finally {
+        this.loading = false
+      }
+    },
+    async handleLoadAzNames() {
+      try {
+        const res = await getLBAzNames()
+        this.azNames = res.data || res || []
+      } catch (e) {
+        alert(e.message || '加载AZ列表失败')
+      }
     }
   }
 }
@@ -638,5 +681,72 @@ tr:hover td {
 
 .btn-cancel:hover {
   background: #f5f5f5;
+}
+
+.btn-info {
+  padding: 8px 16px;
+  background: #909399;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-info:hover {
+  background: #a6a9ad;
+}
+
+.extension-panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.extension-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.extension-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  flex: 1;
+}
+
+.extension-item label {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.extension-item input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  align-self: flex-start;
+}
+
+.az-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.az-tag {
+  padding: 4px 10px;
+  background: #ecf5ff;
+  color: #409eff;
+  border-radius: 4px;
+  font-size: 12px;
 }
 </style>
