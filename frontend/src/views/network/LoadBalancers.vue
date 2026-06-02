@@ -16,6 +16,32 @@
           <option value="inactive">未激活</option>
         </select>
         <button class="btn-primary" @click="openCreateDialog">创建负载均衡器</button>
+        <button class="btn-info" @click="toggleExtension"
+          >{{ showExtension ? '收起扩展' : '扩展视图' }}</button
+        >
+      </div>
+    </div>
+
+    <!-- 扩展视图 -->
+    <div v-if="showExtension" class="extension-panel">
+      <div class="extension-row">
+        <div class="extension-item">
+          <label>项目ID</label>
+          <input v-model="extProjectId" type="text" placeholder="输入项目ID" />
+          <button class="btn-primary btn-small" @click="handleByProject">按项目查询</button>
+        </div>
+        <div class="extension-item">
+          <label>K8s集群</label>
+          <input v-model="extK8sCluster" type="text" placeholder="输入K8s集群名" />
+          <button class="btn-primary btn-small" @click="handleByK8s">按K8s查询</button>
+        </div>
+        <div class="extension-item">
+          <label>可用区</label>
+          <button class="btn-primary btn-small" @click="handleLoadAzNames">加载AZ列表</button>
+          <div v-if="azNames.length" class="az-tags">
+            <span v-for="az in azNames" :key="az" class="az-tag">{{ az }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -139,7 +165,7 @@
 </template>
 
 <script>
-import { getLBs, createLB, updateLB, deleteLB } from '@/api/network'
+import { getLBs, createLB, updateLB, deleteLB, getLBsByProject, getLBsByK8s, getLBAzNames } from '@/api/network'
 
 export default {
   name: 'LoadBalancers',
@@ -166,7 +192,11 @@ export default {
         algorithm: 'round_robin',
         status: 'active',
         description: ''
-      }
+      },
+      showExtension: false,
+      extProjectId: '',
+      extK8sCluster: '',
+      azNames: []
     }
   },
   computed: {
