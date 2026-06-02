@@ -340,6 +340,24 @@ export default {
         alert(e.message || '回滚启动失败')
       }
     },
+    async openStatusDialog(sg) {
+      this.selectedSafeguard = sg
+      this.statusDialogVisible = true
+      await this.refreshStatus()
+    },
+    closeStatusDialog() {
+      this.statusDialogVisible = false
+      this.statusInfo = null
+    },
+    async refreshStatus() {
+      if (!this.selectedSafeguard) return
+      try {
+        const res = await getSafeguardStatus(this.selectedSafeguard.id)
+        this.statusInfo = res
+      } catch (e) {
+        console.error('获取状态失败', e)
+      }
+    },
     formatDate(dateStr) {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
@@ -432,6 +450,16 @@ export default {
 .btn-warning {
   padding: 4px 12px;
   background-color: #faad14;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.btn-info {
+  padding: 4px 12px;
+  background-color: #1890ff;
   color: white;
   border: none;
   border-radius: 4px;
