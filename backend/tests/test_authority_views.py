@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from backend.models import Users, Authority, Menu
+from backend.models import Users, Authority, Menu, MenuButton, AuthorityMenu, AuthorityButton
 from backend.serializers.authority import SetUserRoleSerializer
 
 
@@ -71,7 +71,7 @@ class AuthorityViewSetTest(APITestCase):
         Authority.objects.create(authority_id=2, authority_name='普通用户')
         response = self.client.get('/api/authority/authorities/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data['data']['count'], 2)
 
     def test_create_authority(self):
         """测试创建角色"""
@@ -81,8 +81,8 @@ class AuthorityViewSetTest(APITestCase):
             'default_router': '/home'
         }
         response = self.client.post('/api/authority/authorities/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['authority_name'], '新角色')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['data']['authority_name'], '新角色')
 
     def test_create_authority_duplicate_id(self):
         """测试创建角色ID重复"""
@@ -96,7 +96,7 @@ class AuthorityViewSetTest(APITestCase):
         auth = Authority.objects.create(authority_id=1, authority_name='管理员')
         response = self.client.get(f'/api/authority/authorities/{auth.pk}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['authority_name'], '管理员')
+        self.assertEqual(response.data['data']['authority_name'], '管理员')
 
     def test_update_authority(self):
         """测试更新角色"""
@@ -104,7 +104,7 @@ class AuthorityViewSetTest(APITestCase):
         data = {'authority_name': '超级管理员'}
         response = self.client.put(f'/api/authority/authorities/{auth.pk}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['authority_name'], '超级管理员')
+        self.assertEqual(response.data['data']['authority_name'], '超级管理员')
 
     def test_partial_update_authority(self):
         """测试部分更新角色"""
@@ -112,13 +112,13 @@ class AuthorityViewSetTest(APITestCase):
         data = {'default_router': '/dashboard'}
         response = self.client.patch(f'/api/authority/authorities/{auth.pk}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['default_router'], '/dashboard')
+        self.assertEqual(response.data['data']['default_router'], '/dashboard')
 
     def test_delete_authority(self):
         """测试删除角色"""
         auth = Authority.objects.create(authority_id=1, authority_name='管理员')
         response = self.client.delete(f'/api/authority/authorities/{auth.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Authority.objects.filter(pk=auth.pk).exists())
 
     def test_get_authority_menus(self):
@@ -128,7 +128,7 @@ class AuthorityViewSetTest(APITestCase):
         AuthorityMenu.objects.create(authority=auth, menu=menu)
         response = self.client.get(f'/api/authority/authorities/{auth.pk}/menus/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['data']['count'], 1)
 
     def test_bind_authority_menus(self):
         """测试绑定角色菜单"""
@@ -165,7 +165,7 @@ class AuthorityViewSetTest(APITestCase):
         AuthorityButton.objects.create(authority=auth, menu=menu, button=btn)
         response = self.client.get(f'/api/authority/authorities/{auth.pk}/btns/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['data']['count'], 1)
 
     def test_bind_authority_buttons(self):
         """测试绑定角色按钮权限"""
@@ -206,8 +206,8 @@ class AuthorityViewSetTest(APITestCase):
         menu = Menu.objects.create(path='/users', name='Users', sort=1)
         AuthorityMenu.objects.create(authority=auth, menu=menu)
         response = self.client.post(f'/api/authority/authorities/{auth.pk}/copy/')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn('id', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('id', response.data['data'])
         self.assertEqual(Authority.objects.count(), 2)
 
     def test_authority_unauthorized(self):

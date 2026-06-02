@@ -24,7 +24,7 @@ class MenuViewSetTest(APITestCase):
         Menu.objects.create(path='/roles', name='Roles', sort=2)
         response = self.client.get('/api/authority/menus/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data['data']['count'], 2)
 
     def test_create_menu(self):
         """测试创建菜单"""
@@ -36,15 +36,15 @@ class MenuViewSetTest(APITestCase):
             'meta': {'title': '新菜单'}
         }
         response = self.client.post('/api/authority/menus/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], 'NewMenu')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['data']['name'], 'NewMenu')
 
     def test_retrieve_menu(self):
         """测试获取单个菜单"""
         menu = Menu.objects.create(path='/users', name='Users', sort=1)
         response = self.client.get(f'/api/authority/menus/{menu.pk}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'Users')
+        self.assertEqual(response.data['data']['name'], 'Users')
 
     def test_update_menu(self):
         """测试更新菜单"""
@@ -52,13 +52,13 @@ class MenuViewSetTest(APITestCase):
         data = {'name': 'UpdatedUsers'}
         response = self.client.put(f'/api/authority/menus/{menu.pk}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'UpdatedUsers')
+        self.assertEqual(response.data['data']['name'], 'UpdatedUsers')
 
     def test_delete_menu(self):
         """测试删除菜单"""
         menu = Menu.objects.create(path='/users', name='Users', sort=1)
         response = self.client.delete(f'/api/authority/menus/{menu.pk}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Menu.objects.filter(pk=menu.pk).exists())
 
     def test_get_menu_tree(self):
@@ -67,9 +67,9 @@ class MenuViewSetTest(APITestCase):
         child = Menu.objects.create(path='/admin/users', name='Users', parent=parent, sort=1)
         response = self.client.get('/api/authority/menus/tree/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], 'Admin')
-        self.assertEqual(len(response.data[0]['children']), 1)
+        self.assertEqual(len(response.data['data']), 1)
+        self.assertEqual(response.data['data'][0]['name'], 'Admin')
+        self.assertEqual(len(response.data['data'][0]['children']), 1)
 
     def test_menu_unauthorized(self):
         """测试未授权访问"""
