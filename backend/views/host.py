@@ -127,6 +127,51 @@ class HostViewSet(UnifiedModelViewSet):
         return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
 
 
+
+    @action(detail=False, methods=['post'], url_path='import')
+    def import_hosts(self, request):
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='please upload Excel file')
+        result = HostService.import_hosts_from_excel(file_obj)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_hosts(self, request):
+        from django.http import HttpResponse
+        filters = {}
+        if request.query_params.get('status'):
+            filters['status'] = request.query_params.get('status')
+        if request.query_params.get('cluster'):
+            filters['cluster'] = request.query_params.get('cluster')
+        data = HostService.export_hosts_to_excel(filters)
+        response = HttpResponse(data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="hosts.xlsx"'
+        return response
+
+    @action(detail=True, methods=['post'], url_path='remote_command')
+    def remote_command(self, request, pk=None):
+        command = request.data.get('command')
+        if not command:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='command is required')
+        result = HostService.remote_command(pk, command)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg=result['message'])
+
+    @action(detail=False, methods=['post'], url_path='batch_update_password')
+    def batch_update_password(self, request):
+        host_ids = request.data.get('host_ids', [])
+        new_password = request.data.get('password')
+        key = request.data.get('key', 'culinux')
+        if not host_ids:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_ids is required')
+        result = HostService.batch_update_password(host_ids, new_password, key)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
 class VMViewSet(UnifiedModelViewSet):
     """虚拟机管理视图集"""
     queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
@@ -309,66 +354,3 @@ class ImageViewSet(UnifiedModelViewSet):
             logger.error(f"Failed to refresh images: {e}")
             return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=str(e))
 
-# ---------- Phase 3 新增：主机高级功能 ----------
-
-class HostAdvancedMixin:
-    """主机高级功能 Mixin"""
-
-    @action(detail=False, methods=['post'], url_path='import')
-    def import_hosts(self, request):
-        """Excel 导入主机"""
-        file_obj = request.FILES.get('file')
-        if not file_obj:
-            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='请上传 Excel 文件')
-        result = HostService.import_hosts_from_excel(file_obj)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
-
-    @action(detail=False, methods=['get'], url_path='export')
-    def export_hosts(self, request):
-        """Excel 导出主机"""
-        from django.http import HttpResponse
-        filters = {}
-        if request.query_params.get('status'):
-            filters['status'] = request.query_params.get('status')
-        if request.query_params.get('cluster'):
-            filters['cluster'] = request.query_params.get('cluster')
-        data = HostService.export_hosts_to_excel(filters)
-        response = HttpResponse(data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="hosts.xlsx"'
-        return response
-
-    @action(detail=True, methods=['post'], url_path='remote_command')
-    def remote_command(self, request, pk=None):
-        """远程命令执行"""
-        command = request.data.get('command')
-        if not command:
-            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='command is required')
-        result = HostService.remote_command(pk, command)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg=result['message'])
-
-    @action(detail=False, methods=['post'], url_path='batch_update_password')
-    def batch_update_password(self, request):
-        """批量修改主机密码"""
-        host_ids = request.data.get('host_ids', [])
-        new_password = request.data.get('password')
-        key = request.data.get('key', 'culinux')
-        if not host_ids:
-            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_ids is required')
-        result = HostService.batch_update_password(host_ids, new_password, key)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
-
-
-# 将 mixin 混入 HostViewSet
-# 由于 Python 的 MRO，我们在模块级别重新创建 HostViewSet 类
-# 但为了不破坏现有导入，直接在原类上添加方法更简单
-# 这里通过 monkey-patch 方式添加
-HostViewSet.import_hosts = HostAdvancedMixin.import_hosts
-HostViewSet.export_hosts = HostAdvancedMixin.export_hosts
-HostViewSet.remote_command = HostAdvancedMixin.remote_command
-HostViewSet.batch_update_password = HostAdvancedMixin.batch_update_password
