@@ -174,6 +174,13 @@ const routes = [
     component: () => import('@/views/Tasks.vue'),
     meta: { requiresAuth: true }
   },
+  // OSmigrate 模块
+  {
+    path: '/osmigrate/migrations',
+    name: 'Migrations',
+    component: () => import('@/views/osmigrate/Migrations.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     redirect: '/dashboard'
