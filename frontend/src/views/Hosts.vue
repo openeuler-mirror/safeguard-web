@@ -239,7 +239,7 @@
 </template>
 
 <script>
-import { getHosts, createHost, updateHost, deleteHost, getClusterTree, collectHardware, collectLLDP, collectAll } from '@/api/host'
+import { getHosts, createHost, updateHost, deleteHost, getClusterTree, collectHardware, collectLLDP, collectAll, importHosts, exportHosts, remoteCommand, batchUpdatePassword } from '@/api/host'
 
 export default {
   name: 'Hosts',
@@ -267,7 +267,20 @@ export default {
         cluster: null,
         status: 'offline',
         os_type: ''
-      }
+      },
+      importDialogVisible: false,
+      importFile: null,
+      importError: '',
+      importSubmitting: false,
+      remoteCommandDialogVisible: false,
+      remoteCommandForm: { command: '' },
+      remoteError: '',
+      remoteSubmitting: false,
+      remoteResult: null,
+      batchPasswordDialogVisible: false,
+      batchPasswordForm: { host_ids: [], password: '', key: 'culinux' },
+      batchPasswordError: '',
+      batchPasswordSubmitting: false,
     }
   },
   mounted() {
