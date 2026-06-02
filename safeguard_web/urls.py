@@ -31,6 +31,9 @@ urlpatterns = [
     # Task routes
     path('api/', include('backend.urls.task')),
 
+    # OSmigrate routes
+    path('api/', include('backend.urls.osmigrate')),
+
     # DRF auth
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
