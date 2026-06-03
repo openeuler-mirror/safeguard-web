@@ -26,6 +26,7 @@ from backend.serializers.host import (
     ImageUpdateSerializer,
 )
 from backend.permissions.authority import IsAdmin
+from backend.permissions.base import DataScopePermission
 from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
 from backend.services.host import ClusterService, HostService, VMService
 
@@ -35,6 +36,13 @@ class ClusterViewSet(UnifiedModelViewSet):
     queryset = Cluster.objects.all().order_by('id')
     serializer_class = ClusterSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        queryset = Cluster.objects.all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
