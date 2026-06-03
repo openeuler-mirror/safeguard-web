@@ -22,6 +22,10 @@ class LoadBalancer(models.Model):
     algorithm = models.CharField(max_length=20, choices=ALGORITHM_CHOICES, default="round_robin", verbose_name="负载算法")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active", verbose_name="状态")
     description = models.TextField(blank=True, verbose_name="描述")
+    created_by = models.ForeignKey(
+        'backend.Users', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="创建者"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
