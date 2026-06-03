@@ -1,5 +1,4 @@
 """自动装机视图集"""
-import threading
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -28,12 +27,9 @@ class AutoInstallViewSet(viewsets.ViewSet):
             kickstart_id=schema.kickstart_id,
             repo_id=schema.repo_id,
         )
-        # 异步执行装机
-        thread = threading.Thread(
-            target=self._do_auto_install,
-            args=(job.job_id, schema.host_id, schema.kickstart_id, schema.repo_id),
-        )
-        thread.start()
+        # Celery 异步执行装机（替代 threading.Thread）
+        from backend.tasks.osdeploy import auto_install_os
+        auto_install_os.delay(job.job_id, schema.host_id, schema.kickstart_id, schema.repo_id)
         return SuccessResponse({"job_id": job.job_id, "status": "started"})
 
     @action(['post'], False)
@@ -55,11 +51,8 @@ class AutoInstallViewSet(viewsets.ViewSet):
                 repo_id=repo_id,
             )
             job_ids.append(job.job_id)
-            thread = threading.Thread(
-                target=self._do_auto_install,
-                args=(job.job_id, host_id, kickstart_id, repo_id),
-            )
-            thread.start()
+            from backend.tasks.osdeploy import auto_install_os
+            auto_install_os.delay(job.job_id, host_id, kickstart_id, repo_id)
         return SuccessResponse({"job_ids": job_ids, "status": "started"})
 
     def _do_auto_install(self, job_id: str, host_id: int, kickstart_id: int, repo_id: int):
