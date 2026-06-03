@@ -1,7 +1,6 @@
 """Safeguard 部署服务"""
 import logging
 import subprocess
-import threading
 import os
 from typing import Optional, List
 from backend.models.security import SafeguardDeploy
@@ -116,12 +115,9 @@ class SafeguardService:
         safeguard.result = {'task_id': task.job_id}
         safeguard.save()
 
-        # 异步执行部署
-        thread = threading.Thread(
-            target=SafeguardService._deploy_async,
-            args=(safeguard_id, task.job_id),
-        )
-        thread.start()
+        # Celery 异步执行部署（替代 threading.Thread）
+        from backend.tasks.security import deploy_safeguard
+        deploy_safeguard.delay(safeguard_id, task.job_id)
         return True
 
     @staticmethod
@@ -269,11 +265,9 @@ class SafeguardService:
         safeguard.result = {'task_id': task.job_id, 'action': 'rollback'}
         safeguard.save()
 
-        thread = threading.Thread(
-            target=SafeguardService._rollback_async,
-            args=(safeguard_id, task.job_id),
-        )
-        thread.start()
+        # Celery 异步执行回滚（替代 threading.Thread）
+        from backend.tasks.security import rollback_safeguard
+        rollback_safeguard.delay(safeguard_id, task.job_id)
         return True
 
     @staticmethod
