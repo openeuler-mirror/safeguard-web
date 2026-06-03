@@ -26,7 +26,7 @@ class LoadBalancerViewSet(UnifiedModelViewSet):
         return DataScopePermission.filter_queryset(queryset, self.request.user.id)
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(created_by_id=self.request.user.id)
 
     def get_serializer_class(self):
         if self.action == 'create':
