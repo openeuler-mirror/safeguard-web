@@ -91,6 +91,13 @@ class HostViewSet(UnifiedModelViewSet):
     search_fields = ['hostname', 'ip_address', 'serial_number']
     ordering_fields = ['created_at', 'id']
 
+    def get_queryset(self):
+        queryset = Host.objects.select_related('cluster').all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
     def get_serializer_class(self):
         if self.action == 'create':
             return HostCreateSerializer
