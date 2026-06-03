@@ -196,6 +196,13 @@ class VMViewSet(UnifiedModelViewSet):
     search_fields = ['name', 'uuid', 'ip_address']
     ordering_fields = ['created_at', 'id']
 
+    def get_queryset(self):
+        queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
     def get_serializer_class(self):
         if self.action == 'create':
             return VMCreateSerializer

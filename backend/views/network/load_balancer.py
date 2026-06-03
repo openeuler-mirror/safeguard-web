@@ -8,6 +8,7 @@ from backend.serializers.network import (
     LoadBalancerCreateSerializer,
     LoadBalancerUpdateSerializer,
 )
+from backend.permissions.base import DataScopePermission
 from backend.common.viewsets import UnifiedModelViewSet
 
 
@@ -19,6 +20,13 @@ class LoadBalancerViewSet(UnifiedModelViewSet):
     filterset_fields = ['name', 'status', 'algorithm']
     search_fields = ['name', 'vip_address']
     ordering_fields = ['created_at', 'id']
+
+    def get_queryset(self):
+        queryset = LoadBalancer.objects.all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
