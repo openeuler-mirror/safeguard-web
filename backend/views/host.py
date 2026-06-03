@@ -26,6 +26,7 @@ from backend.serializers.host import (
     ImageUpdateSerializer,
 )
 from backend.permissions.authority import IsAdmin
+from backend.permissions.base import DataScopePermission
 from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
 from backend.services.host import ClusterService, HostService, VMService
 
@@ -35,6 +36,13 @@ class ClusterViewSet(UnifiedModelViewSet):
     queryset = Cluster.objects.all().order_by('id')
     serializer_class = ClusterSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        queryset = Cluster.objects.all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -82,6 +90,13 @@ class HostViewSet(UnifiedModelViewSet):
     filterset_fields = ['hostname', 'ip_address', 'status', 'cluster', 'host_type']
     search_fields = ['hostname', 'ip_address', 'serial_number']
     ordering_fields = ['created_at', 'id']
+
+    def get_queryset(self):
+        queryset = Host.objects.select_related('cluster').all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -180,6 +195,13 @@ class VMViewSet(UnifiedModelViewSet):
     filterset_fields = ['name', 'uuid', 'status', 'host', 'cluster']
     search_fields = ['name', 'uuid', 'ip_address']
     ordering_fields = ['created_at', 'id']
+
+    def get_queryset(self):
+        queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':
