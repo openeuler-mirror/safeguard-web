@@ -2,7 +2,6 @@
 import os
 import re
 import json
-import threading
 import time
 from typing import List, Dict, Optional
 from backend.utils.ssh import (
@@ -474,8 +473,8 @@ class X2cuService:
                 logger.error(f"Migrate init failed: {e}")
                 X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
 
-        thread = threading.Thread(target=_do_init, name=f"migrate-init-{job_id}")
-        thread.start()
+        from backend.tasks.osmigrate import migrate_init_task
+        migrate_init_task.delay(job_id, host, port, username, password, hosts, migrate_type, redis_passwd)
         return job_id
 
     @staticmethod
@@ -606,8 +605,8 @@ class X2cuService:
                 logger.error(f"Migrate failed: {e}")
                 X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
 
-        thread = threading.Thread(target=_do_migrate, name=f"migrate-{job_id}")
-        thread.start()
+        from backend.tasks.osmigrate import migrate_task
+        migrate_task.delay(job_id, host, port, username, password, hosts, migrate_type)
         return job_id
 
     @staticmethod
@@ -654,8 +653,8 @@ class X2cuService:
                 logger.error(f"Migrate back failed: {e}")
                 X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
 
-        thread = threading.Thread(target=_do_migrate_back, name=f"migrate-back-{job_id}")
-        thread.start()
+        from backend.tasks.osmigrate import migrate_back_task
+        migrate_back_task.delay(job_id, host, port, username, password)
         return job_id
 
     @staticmethod
