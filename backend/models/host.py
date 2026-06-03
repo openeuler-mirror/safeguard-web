@@ -6,6 +6,10 @@ class Cluster(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="集群名称")
     description = models.TextField(blank=True, verbose_name="描述")
     vcenter_id = models.CharField(max_length=100, blank=True, verbose_name="vCenter ID")
+    created_by = models.ForeignKey(
+        'backend.Users', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="创建者"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -121,6 +125,16 @@ class Host(models.Model):
     mac_address = models.CharField(max_length=17, blank=True, verbose_name="MAC地址")
     region = models.CharField(max_length=100, blank=True, verbose_name="区域")
 
+    # 其他信息
+    mac_address = models.CharField(max_length=17, blank=True, verbose_name="MAC地址")
+    region = models.CharField(max_length=100, blank=True, verbose_name="区域")
+
+    # 创建者
+    created_by = models.ForeignKey(
+        'backend.Users', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="创建者"
+    )
+
     # 时间戳
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -178,6 +192,12 @@ class VM(models.Model):
     sysdisk = models.JSONField(default=dict, blank=True, verbose_name="系统盘信息")
     datadisk = models.JSONField(default=list, blank=True, verbose_name="数据盘信息")
     status_message = models.CharField(max_length=255, blank=True, verbose_name="状态消息")
+
+    # 创建者
+    created_by = models.ForeignKey(
+        'backend.Users', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="创建者"
+    )
 
     # 时间戳
     created_at = models.DateTimeField(auto_now_add=True)
