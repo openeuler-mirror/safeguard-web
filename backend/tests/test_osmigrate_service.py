@@ -99,7 +99,7 @@ class X2cuServiceTest(TestCase):
         args = mock_cmd.call_args
         self.assertIn("cu2x", args[0][4])
 
-    @patch("backend.services.osmigrate.x2cu_service.migrate_init_task")
+    @patch("backend.tasks.osmigrate.migrate_init_task")
     def test_start_migrate_init(self, mock_task):
         mock_task.delay = MagicMock()
 
@@ -112,7 +112,7 @@ class X2cuServiceTest(TestCase):
         self.assertTrue(job_id.startswith("migrate-init-"))
         mock_task.delay.assert_called_once()
 
-    @patch("backend.services.osmigrate.x2cu_service.migrate_task")
+    @patch("backend.tasks.osmigrate.migrate_task")
     def test_start_migrate(self, mock_task):
         mock_task.delay = MagicMock()
 
@@ -126,7 +126,7 @@ class X2cuServiceTest(TestCase):
         self.assertEqual(job_id, "test-job")
         mock_task.delay.assert_called_once()
 
-    @patch("backend.services.osmigrate.x2cu_service.migrate_back_task")
+    @patch("backend.tasks.osmigrate.migrate_back_task")
     def test_start_migrate_back(self, mock_task):
         mock_task.delay = MagicMock()
 
