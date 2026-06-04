@@ -42,6 +42,12 @@ from backend.schemas.osdeploy.out_ip_sn import (
     OutIpSNResponse,
 )
 from backend.schemas.osdeploy.auto_install import AutoInstallRequestSchema
+from backend.schemas.osdeploy.sensor import (
+    SensorDeploymentConfig,
+    SensorOperateRequest,
+    SensorConfigUpdateRequest,
+    SensorInstallResponse,
+)
 
 __all__ = [
     'JobStatusBase',
@@ -73,4 +79,8 @@ __all__ = [
     'OutIpSNUpdateRequest',
     'OutIpSNResponse',
     'AutoInstallRequestSchema',
+    'SensorDeploymentConfig',
+    'SensorOperateRequest',
+    'SensorConfigUpdateRequest',
+    'SensorInstallResponse',
 ]
