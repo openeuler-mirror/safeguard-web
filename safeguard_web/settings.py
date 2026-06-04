@@ -234,3 +234,19 @@ KICKSTART_PATH = str(BASE_DIR / "data" / "kickstart")
 # Repo 配置
 REPO_SAFEGUARDX86 = os.getenv("REPO_SAFEGUARDX86", "http://repo.example.com/safeguardx86.rpm")
 REPO_SAFEGUARDARM = os.getenv("REPO_SAFEGUARDARM", "http://repo.example.com/safeguardarm.rpm")
+
+# Celery 配置
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+)
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 3600  # 单个任务最大执行时间 1 小时
