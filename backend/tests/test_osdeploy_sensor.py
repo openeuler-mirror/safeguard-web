@@ -24,7 +24,7 @@ class SensorServiceTest(TestCase):
     @patch("backend.services.osdeploy.sensor_service.SSHClient")
     def test_install_sensor_success(self, mock_ssh_cls):
         mock_ssh = self._mock_ssh(connect_return=True, cmd_results=[
-            ('PRETTY_NAME="CentOS Linux 7"', '', 0),   # cat /etc/os-release
+            ('PRETTY_NAME="CentOS Linux 7"\nVERSION_ID="7"', '', 0),   # cat /etc/os-release
             ('x86_64', '', 0),                          # uname -m
             ('/opt/sensor/rpms/sensor-1.0.0-1.el7.x86_64.rpm', '', 0),  # find rpm
             ('Installed successfully', '', 0),           # yum install
@@ -156,7 +156,7 @@ class SensorViewSetTest(APITestCase):
         mock_ssh = MagicMock()
         mock_ssh.connect.return_value = True
         mock_ssh.execute_command.side_effect = [
-            ('PRETTY_NAME="CentOS Linux 7"', '', 0),
+            ('PRETTY_NAME="CentOS Linux 7"\nVERSION_ID="7"', '', 0),
             ('x86_64', '', 0),
             ('/opt/sensor/rpms/sensor-1.0.0-1.el7.x86_64.rpm', '', 0),
             ('Installed', '', 0),
@@ -196,7 +196,7 @@ class SensorViewSetTest(APITestCase):
             "operate": "invalid",
         }, format="json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["errno"], 0)
+        self.assertEqual(response.data["errno"], 7201)
 
     @patch("backend.services.osdeploy.sensor_service.SSHClient")
     def test_update_config_api(self, mock_ssh_cls):
