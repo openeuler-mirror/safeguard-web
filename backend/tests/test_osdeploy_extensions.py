@@ -82,10 +82,13 @@ class NoVNCServiceTest(TestCase):
         mock_ssh.execute_command.side_effect = [
             ("online", "", 0),          # ping check
             ("", "", 0),                # rpm -qa tigervnc-server
-            ("", "", 0),                # yum install
+            ("", "", 0),                # yum install tigervnc-server
             ("", "", 0),                # rpm -qa python3
+            ("", "", 0),                # yum install python3
             ("", "", 0),                # rpm -qa numpy
+            ("", "", 0),                # yum install numpy
             ("", "", 0),                # rpm -qa expect
+            ("", "", 0),                # yum install expect
             ("", "", 0),                # tar
             ("", "", 0),                # mkdir
             ("", "", 0),                # cp generatePem
