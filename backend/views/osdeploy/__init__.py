@@ -4,6 +4,7 @@ from backend.views.osdeploy.repo_status import RepoViewSet
 from backend.views.osdeploy.pxe_server_status import PXEServerStatusViewSet
 from backend.views.osdeploy.kickstart_file_status import KickStartViewSet
 from backend.views.osdeploy.auto_install import AutoInstallViewSet
+from backend.views.osdeploy.sensor import SensorViewSet
 
 __all__ = [
     'JobViewSet',
@@ -11,4 +12,5 @@ __all__ = [
     'PXEServerStatusViewSet',
     'KickStartViewSet',
     'AutoInstallViewSet',
+    'SensorViewSet',
 ]
