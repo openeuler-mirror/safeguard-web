@@ -27,7 +27,7 @@ def migrate_init_task(self, job_id: str, host: str, port: str, username: str, pa
                 if len(host_infos) == 2:
                     h1, h2 = host_infos[0], host_infos[1]
                     X2cuService.migrate_init4_yunguan_portal1(h1.host, h1.port, h1.username, h1.password)
-                    X2cuService.migrate_init(h1.host, hport, h1.username, h1.password)
+                    X2cuService.migrate_init(h1.host, h1.port, h1.username, h1.password)
                     X2cuService.migrate_init4_yunguan_portal2(h2.host, h2.port, h2.username, h2.password)
                     X2cuService.migrate_init(h2.host, h2.port, h2.username, h2.password)
                 elif len(host_infos) == 3:
