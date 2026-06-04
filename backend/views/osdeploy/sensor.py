@@ -27,7 +27,7 @@ class SensorViewSet(viewsets.ViewSet):
 
         result = SensorService.install_sensor(config.model_dump())
         if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+            return ErrorResponse(ErrCode.DEPLOY_FAILED, errmsg=result['message'])
         return SuccessResponse({
             'job_id': result['job_id'],
             'status': result['status'],
@@ -57,7 +57,7 @@ class SensorViewSet(viewsets.ViewSet):
             host_info,
         )
         if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+            return ErrorResponse(ErrCode.DEPLOY_FAILED, errmsg=result['message'])
         return SuccessResponse({
             'config': result['config'],
         }, errmsg=result['message'])
@@ -80,7 +80,7 @@ class SensorViewSet(viewsets.ViewSet):
             req.operate,
         )
         if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+            return ErrorResponse(ErrCode.DEPLOY_FAILED, errmsg=result['message'])
         return SuccessResponse({
             'output': result.get('output', ''),
         }, errmsg=result['message'])
