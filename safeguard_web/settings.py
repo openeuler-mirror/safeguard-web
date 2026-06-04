@@ -236,14 +236,21 @@ REPO_SAFEGUARDX86 = os.getenv("REPO_SAFEGUARDX86", "http://repo.example.com/safe
 REPO_SAFEGUARDARM = os.getenv("REPO_SAFEGUARDARM", "http://repo.example.com/safeguardarm.rpm")
 
 # Celery 配置
-CELERY_BROKER_URL = os.getenv(
-    "CELERY_BROKER_URL",
-    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-)
-CELERY_RESULT_BACKEND = os.getenv(
-    "CELERY_RESULT_BACKEND",
-    f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-)
+if IS_LOCAL:
+    # 本地开发：同步执行 Celery 任务，无需 Redis broker
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_BROKER_URL = "memory://"
+    CELERY_RESULT_BACKEND = "cache+memory://"
+else:
+    CELERY_BROKER_URL = os.getenv(
+        "CELERY_BROKER_URL",
+        f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    )
+    CELERY_RESULT_BACKEND = os.getenv(
+        "CELERY_RESULT_BACKEND",
+        f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+    )
+
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"

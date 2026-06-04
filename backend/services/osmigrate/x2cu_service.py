@@ -440,39 +440,6 @@ class X2cuService:
         """
         job_id = X2cuService._create_migrate_job("init", host, migrate_type, hosts)
 
-        def _do_init():
-            try:
-                X2cuService._update_migrate_job(job_id, status="running", progress=10)
-
-                if not hosts:
-                    # 单主机初始化
-                    X2cuService.migrate_init(host, port or "22", username, password)
-                    X2cuService._update_migrate_job(job_id, status="success", progress=100, result={"host": host})
-                else:
-                    # 多主机初始化（云管）
-                    host_infos = [HostInfo.from_dict(h) for h in hosts]
-                    if migrate_type == "yunguan":
-                        if len(host_infos) == 2:
-                            h1, h2 = host_infos[0], host_infos[1]
-                            X2cuService.migrate_init4_yunguan_portal1(h1.host, h1.port, h1.username, h1.password, redis_passwd)
-                            X2cuService.migrate_init(h1.host, h1.port, h1.username, h1.password)
-                            X2cuService.migrate_init4_yunguan_portal2(h2.host, h2.port, h2.username, h2.password)
-                            X2cuService.migrate_init(h2.host, h2.port, h2.username, h2.password)
-                        elif len(host_infos) == 3:
-                            X2cuService.migrate_init4_yunguan_monitor(host_infos[0], host_infos[1], host_infos[2])
-                            for h in host_infos:
-                                X2cuService.migrate_init(h.host, h.port, h.username, h.password)
-                        else:
-                            raise Exception(f"yunguan node num error: {len(host_infos)}")
-                    else:
-                        for h in host_infos:
-                            X2cuService.migrate_init(h.host, h.port, h.username, h.password)
-
-                    X2cuService._update_migrate_job(job_id, status="success", progress=100, result={"hosts_count": len(host_infos)})
-            except Exception as e:
-                logger.error(f"Migrate init failed: {e}")
-                X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
-
         from backend.tasks.osmigrate import migrate_init_task
         migrate_init_task.delay(job_id, host, port, username, password, hosts, migrate_type, redis_passwd)
         return job_id
@@ -507,104 +474,6 @@ class X2cuService:
         else:
             X2cuService._update_migrate_job(job_id, status="running", progress=0)
 
-        def _do_migrate():
-            try:
-                if not hosts:
-                    # 单主机迁移
-                    _port = port or "22"
-                    X2cuService.migrate_core(host, _port, username, password, "")
-                    X2cuService._update_migrate_job(job_id, status="rebooting", progress=80)
-
-                    hostport = f"{host}:{_port}"
-                    remote_host_command(host, int(_port), username, password, "reboot")
-
-                    for i in range(20):
-                        res, _ = local_ping_host(host, timeout=5)
-                        if not res:
-                            time.sleep(10)  # 测试环境缩短等待时间
-                            continue
-                        X2cuService._update_migrate_job(job_id, status="success", progress=100)
-                        return
-                    X2cuService._update_migrate_job(job_id, status="failed", error_message="ping timeout after reboot")
-                else:
-                    # 多主机迁移（云管）
-                    host_infos = [HostInfo.from_dict(h) for h in hosts]
-                    job_names = []
-                    for index, h in enumerate(host_infos):
-                        job_name_tmp = f"{job_id}-{index}"
-                        job_names.append(job_name_tmp)
-                        MigrateJob.objects.create(
-                            job_id=job_name_tmp,
-                            job_type="migrate",
-                            target_host=h.host,
-                            migrate_type=migrate_type,
-                            status="running",
-                            progress=0,
-                        )
-
-                        def _do_single_migrate(h_info, j_name):
-                            try:
-                                X2cuService.migrate_core(h_info.host, h_info.port, h_info.username, h_info.password, "")
-                                X2cuService._update_migrate_job(j_name, status="rebooting", progress=80)
-                                remote_host_command(h_info.host, int(h_info.port), h_info.username, h_info.password, "reboot")
-                                for _i in range(20):
-                                    res, _ = local_ping_host(h_info.host, timeout=5)
-                                    if res:
-                                        X2cuService._update_migrate_job(j_name, status="success", progress=100)
-                                        return
-                                    time.sleep(10)
-                                X2cuService._update_migrate_job(j_name, status="failed", error_message="ping timeout")
-                            except Exception as e:
-                                X2cuService._update_migrate_job(j_name, status="failed", error_message=str(e))
-
-                        t = threading.Thread(target=_do_single_migrate, args=(h, job_name_tmp))
-                        t.start()
-
-                    # 云管后置处理
-                    if migrate_type == "yunguan":
-                        def _post_process():
-                            for _i in range(30):
-                                all_success = True
-                                job_fail = False
-                                for j_name in job_names:
-                                    try:
-                                        j = MigrateJob.objects.get(job_id=j_name)
-                                        if j.status == "failed":
-                                            job_fail = True
-                                            break
-                                        elif j.status != "success":
-                                            all_success = False
-                                            break
-                                    except MigrateJob.DoesNotExist:
-                                        all_success = False
-                                        break
-                                if job_fail:
-                                    break
-                                if all_success:
-                                    if len(host_infos) == 2:
-                                        h1, h2 = host_infos[0], host_infos[1]
-                                        try:
-                                            X2cuService.migrate_post4_yunguan_portal1(h1.host, h1.port, h1.username, h1.password)
-                                        except Exception as e:
-                                            X2cuService._update_migrate_job(job_names[0], status="failed", error_message=str(e))
-                                        try:
-                                            X2cuService.migrate_post4_yunguan_portal1(h2.host, h2.port, h2.username, h2.password)
-                                        except Exception as e:
-                                            X2cuService._update_migrate_job(job_names[1], status="failed", error_message=str(e))
-                                    elif len(host_infos) == 3:
-                                        try:
-                                            X2cuService.migrate_post4_yunguan_monitor(host_infos[0], host_infos[1], host_infos[2])
-                                        except Exception as e:
-                                            X2cuService._update_migrate_job(job_id, status="post fail", error_message=str(e))
-                                    break
-                                time.sleep(30)
-
-                        t_post = threading.Thread(target=_post_process)
-                        t_post.start()
-            except Exception as e:
-                logger.error(f"Migrate failed: {e}")
-                X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
-
         from backend.tasks.osmigrate import migrate_task
         migrate_task.delay(job_id, host, port, username, password, hosts, migrate_type)
         return job_id
@@ -633,25 +502,6 @@ class X2cuService:
             )
         else:
             X2cuService._update_migrate_job(job_id, status="running", progress=0)
-
-        def _do_migrate_back():
-            try:
-                _port = port or "22"
-                X2cuService.migrate_back(host, _port, username, password)
-                X2cuService._update_migrate_job(job_id, status="rebooting", progress=80)
-
-                remote_host_command(host, int(_port), username, password, "reboot")
-
-                for i in range(20):
-                    res, _ = local_ping_host(host, timeout=5)
-                    if res:
-                        X2cuService._update_migrate_job(job_id, status="success", progress=100)
-                        return
-                    time.sleep(10)
-                X2cuService._update_migrate_job(job_id, status="failed", error_message="ping timeout after reboot")
-            except Exception as e:
-                logger.error(f"Migrate back failed: {e}")
-                X2cuService._update_migrate_job(job_id, status="failed", error_message=str(e))
 
         from backend.tasks.osmigrate import migrate_back_task
         migrate_back_task.delay(job_id, host, port, username, password)
