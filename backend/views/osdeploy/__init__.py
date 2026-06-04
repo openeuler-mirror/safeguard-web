@@ -5,6 +5,9 @@ from backend.views.osdeploy.pxe_server_status import PXEServerStatusViewSet
 from backend.views.osdeploy.kickstart_file_status import KickStartViewSet
 from backend.views.osdeploy.auto_install import AutoInstallViewSet
 from backend.views.osdeploy.sensor import SensorViewSet
+from backend.views.osdeploy.novnc import NoVNCViewSet
+from backend.views.osdeploy.disk_partition import DiskPartitionViewSet
+from backend.views.osdeploy.package import PackageViewSet
 
 __all__ = [
     'JobViewSet',
@@ -13,4 +16,7 @@ __all__ = [
     'KickStartViewSet',
     'AutoInstallViewSet',
     'SensorViewSet',
+    'NoVNCViewSet',
+    'DiskPartitionViewSet',
+    'PackageViewSet',
 ]
