@@ -268,6 +268,13 @@ class ImageViewSet(UnifiedModelViewSet):
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'id'
 
+    def get_queryset(self):
+        queryset = Image.objects.select_related('host').all().order_by('id')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by_id=self.request.user.id)
+
     def get_serializer_class(self):
         if self.action == 'create':
             return ImageCreateSerializer
