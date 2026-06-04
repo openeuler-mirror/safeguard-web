@@ -99,10 +99,9 @@ class X2cuServiceTest(TestCase):
         args = mock_cmd.call_args
         self.assertIn("cu2x", args[0][4])
 
-    @patch("backend.services.osmigrate.x2cu_service.threading.Thread")
-    def test_start_migrate_init(self, mock_thread):
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
+    @patch("backend.services.osmigrate.x2cu_service.migrate_init_task")
+    def test_start_migrate_init(self, mock_task):
+        mock_task.delay = MagicMock()
 
         job_id = X2cuService.start_migrate_init(
             host="192.168.1.1",
@@ -111,13 +110,11 @@ class X2cuServiceTest(TestCase):
             password="pass",
         )
         self.assertTrue(job_id.startswith("migrate-init-"))
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_task.delay.assert_called_once()
 
-    @patch("backend.services.osmigrate.x2cu_service.threading.Thread")
-    def test_start_migrate(self, mock_thread):
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
+    @patch("backend.services.osmigrate.x2cu_service.migrate_task")
+    def test_start_migrate(self, mock_task):
+        mock_task.delay = MagicMock()
 
         job_id = X2cuService.start_migrate(
             job_name="test-job",
@@ -127,13 +124,11 @@ class X2cuServiceTest(TestCase):
             password="pass",
         )
         self.assertEqual(job_id, "test-job")
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_task.delay.assert_called_once()
 
-    @patch("backend.services.osmigrate.x2cu_service.threading.Thread")
-    def test_start_migrate_back(self, mock_thread):
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
+    @patch("backend.services.osmigrate.x2cu_service.migrate_back_task")
+    def test_start_migrate_back(self, mock_task):
+        mock_task.delay = MagicMock()
 
         job_id = X2cuService.start_migrate_back(
             job_name="test-back",
@@ -143,5 +138,4 @@ class X2cuServiceTest(TestCase):
             password="pass",
         )
         self.assertEqual(job_id, "test-back")
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
+        mock_task.delay.assert_called_once()
