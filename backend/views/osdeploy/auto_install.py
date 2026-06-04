@@ -160,3 +160,26 @@ class AutoInstallViewSet(viewsets.ViewSet):
             except Exception:
                 pass
         return False
+
+    @action(['post'], False, url_path='download-static')
+    def download_static(self, request):
+        """下载 ISO 静态文件"""
+        iso = request.data.get('iso')
+        if iso == 'culinux_x86':
+            command = (
+                "wget -O /usr/local/oskit/static/pxe/CULinux-3.0-latest.x86_64.iso "
+                "https://mirrors.cucloud.cn/culinux/3.0/isos/x86_64/CULinux-3.0-latest.x86_64.iso"
+            )
+        elif iso == 'culinux_arm':
+            command = (
+                "wget -O /usr/local/oskit/static/pxe/CULinux-3.0-latest.aarch64.iso "
+                "https://mirrors.cucloud.cn/culinux/3.0/isos/aarch64/CULinux-3.0-latest.aarch64.iso"
+            )
+        else:
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='iso must be culinux_x86 or culinux_arm')
+
+        try:
+            subprocess.Popen(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return SuccessResponse(errmsg='ISO 下载已在后台启动')
+        except Exception as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=str(e))
