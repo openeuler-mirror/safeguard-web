@@ -154,6 +154,6 @@ class X2cuServiceTest(TestCase):
         )
         self.assertTrue(job_id.startswith("migrate-init-"))
         mock_task.delay.assert_called_once()
-        # 验证传入的 migrate_type 为 iaas
+        # 验证传入的 migrate_type 为 iaas (第7个位置参数)
         call_args = mock_task.delay.call_args
-        self.assertEqual(call_args[1]["migrate_type"], "iaas")
+        self.assertEqual(call_args[0][6], "iaas")
