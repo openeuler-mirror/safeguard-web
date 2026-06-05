@@ -164,3 +164,141 @@ class UsersViewSetTest(APITestCase):
 from backend.authentication import redis_client
 
 
+class UsersViewSetAvatarThemeTest(APITestCase):
+    """头像和主题相关测试"""
+
+    def setUp(self):
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_upload_avatar_success(self):
+        """测试上传头像"""
+        from io import BytesIO
+        file_data = BytesIO(b'fake image data')
+        file_data.name = 'test.png'
+        response = self.client.post(
+            '/api/users/me/avatar/',
+            {'file': file_data},
+            format='multipart'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('avatar', response.data['data'])
+        self.user.refresh_from_db()
+        self.assertIn('avatars', self.user.avatar)
+
+    def test_upload_avatar_no_file(self):
+        """测试不上传文件应报错"""
+        response = self.client.post('/api/users/me/avatar/', {}, format='multipart')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_set_theme_success(self):
+        """测试设置主题"""
+        response = self.client.put('/api/users/me/theme/', {'theme': 'dark'}, format='json')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['theme'], 'dark')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.theme, 'dark')
+
+    def test_set_theme_invalid(self):
+        """测试设置无效主题应报错"""
+        response = self.client.put('/api/users/me/theme/', {'theme': 'invalid'}, format='json')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_set_theme_auto(self):
+        """测试设置 auto 主题"""
+        response = self.client.put('/api/users/me/theme/', {'theme': 'auto'}, format='json')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['theme'], 'auto')
+
+
+class UsersViewSetImportExportTest(APITestCase):
+    """批量导入导出测试"""
+
+    def setUp(self):
+        self.admin_auth = Authority.objects.create(
+            authority_id=888,
+            authority_name='超级管理员'
+        )
+        self.admin_user = Users.objects.create(
+            user='admin',
+            password='adminpass123',
+            nickname='管理员'
+        )
+        UserAuthority.objects.create(user=self.admin_user, authority=self.admin_auth)
+
+        refresh = RefreshToken.for_user(self.admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_import_users_success(self):
+        """测试批量导入用户"""
+        import openpyxl
+        from io import BytesIO
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname', 'phone', 'email', 'enable', 'theme', 'password'])
+        ws.append(['importuser1', '导入用户1', '13800138001', 'import1@test.com', 1, 'light', 'pass123'])
+        ws.append(['importuser2', '导入用户2', '13800138002', 'import2@test.com', 1, 'dark', 'pass456'])
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = self.client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('created', response.data['data'])
+        self.assertEqual(response.data['data']['created'], 2)
+        self.assertTrue(Users.objects.filter(user='importuser1').exists())
+        self.assertTrue(Users.objects.filter(user='importuser2').exists())
+
+    def test_import_users_update_existing(self):
+        """测试导入已存在用户时应更新"""
+        import openpyxl
+        from io import BytesIO
+
+        Users.objects.create(user='existing', password='oldpass', nickname='旧昵称')
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname'])
+        ws.append(['existing', '新昵称'])
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = self.client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['updated'], 1)
+        user = Users.objects.get(user='existing')
+        self.assertEqual(user.nickname, '新昵称')
+
+    def test_import_users_no_file(self):
+        """测试不上传文件应报错"""
+        response = self.client.post('/api/users/import/', {}, format='multipart')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_export_users(self):
+        """测试导出用户"""
+        Users.objects.create(user='u1', password='p1', nickname='用户1')
+        Users.objects.create(user='u2', password='p2', nickname='用户2')
+
+        response = self.client.get('/api/users/export/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        self.assertIn('attachment', response['Content-Disposition'])
+
