@@ -15,6 +15,8 @@ from backend.schemas.osdeploy import RepoStatusResponse
 from backend.common import SuccessResponse, ErrorResponse, ErrCode
 from backend.common.viewsets import UnifiedModelViewSet
 from backend.services.osdeploy.repo_service import RepoService
+from backend.services.task import TaskService
+from backend.utils.ssh import SSHClient
 
 
 class RepoViewSet(UnifiedModelViewSet):
