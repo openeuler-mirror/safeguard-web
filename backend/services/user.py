@@ -61,6 +61,80 @@ class UserService:
             'results': results
         }
 
+    @staticmethod
+    def import_users_from_excel(file_obj):
+        """从 Excel 批量导入用户"""
+        import openpyxl
+        from io import BytesIO
+        try:
+            wb = openpyxl.load_workbook(BytesIO(file_obj.read()))
+            ws = wb.active
+            headers = [cell.value for cell in ws[1]]
+            created_count = 0
+            updated_count = 0
+            errors = []
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                try:
+                    data = dict(zip(headers, row))
+                    username = data.get("user") or data.get("username")
+                    if not username:
+                        continue
+                    user, created = Users.objects.update_or_create(
+                        user=username,
+                        defaults={
+                            "nickname": data.get("nickname", username),
+                            "phone": str(data.get("phone", "")),
+                            "email": data.get("email", ""),
+                            "enable": int(data.get("enable", 1)),
+                            "theme": data.get("theme", "light"),
+                        }
+                    )
+                    # 如果有密码则设置
+                    password = data.get("password")
+                    if password:
+                        user.set_password(str(password))
+                        user.save()
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                except Exception as e:
+                    errors.append(str(e))
+            return {
+                "success": True,
+                "created": created_count,
+                "updated": updated_count,
+                "errors": errors,
+                "message": f"导入完成：新建 {created_count} 条，更新 {updated_count} 条，错误 {len(errors)} 条",
+            }
+        except Exception as e:
+            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+
+    @staticmethod
+    def export_users_to_excel():
+        """导出用户到 Excel"""
+        import openpyxl
+        from io import BytesIO
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Users"
+        headers = ["user", "nickname", "phone", "email", "enable", "theme", "avatar"]
+        ws.append(headers)
+        for user in Users.objects.all():
+            ws.append([
+                user.user,
+                user.nickname,
+                user.phone,
+                user.email,
+                user.enable,
+                user.theme,
+                user.avatar,
+            ])
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer.getvalue()
+
 
 class UserAuthorityService:
     """用户角色关联服务"""
