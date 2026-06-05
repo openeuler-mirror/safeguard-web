@@ -12,6 +12,8 @@ from backend.serializers.osdeploy import (
 )
 from backend.common.viewsets import UnifiedModelViewSet
 from backend.services.osdeploy.dhcp_service import DHCPService
+from backend.services.osdeploy.dhcp_relay_service import DHCPRelayService
+from backend.schemas.osdeploy.dhcp_relay import DHCPRelayParams
 from backend.common import SuccessResponse, ErrorResponse, ErrCode
 
 
