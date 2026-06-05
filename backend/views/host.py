@@ -153,6 +153,16 @@ class HostViewSet(UnifiedModelViewSet):
             return SuccessResponse(result, errmsg=result['message'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
 
+    @action(detail=False, methods=['post'], url_path='import_key_cloud')
+    def import_key_cloud(self, request):
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='please upload Excel file')
+        result = HostService.import_key_cloud(file_obj)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+
     @action(detail=False, methods=['get'], url_path='export')
     def export_hosts(self, request):
         from django.http import HttpResponse
