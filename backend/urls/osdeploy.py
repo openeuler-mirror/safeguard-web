@@ -8,6 +8,9 @@ from backend.views.osdeploy import (
     KickStartViewSet,
     AutoInstallViewSet,
     SensorViewSet,
+    NoVNCViewSet,
+    DiskPartitionViewSet,
+    PackageViewSet,
 )
 
 router = DefaultRouter()
@@ -17,6 +20,9 @@ router.register(r'pxe-servers', PXEServerStatusViewSet, basename='pxe-server')
 router.register(r'kickstarts', KickStartViewSet, basename='kickstart')
 router.register(r'autoinstall', AutoInstallViewSet, basename='autoinstall')
 router.register(r'sensors', SensorViewSet, basename='sensor')
+router.register(r'novnc', NoVNCViewSet, basename='novnc')
+router.register(r'disk-partition', DiskPartitionViewSet, basename='disk-partition')
+router.register(r'packages', PackageViewSet, basename='package')
 
 urlpatterns = [
     path('', include(router.urls)),

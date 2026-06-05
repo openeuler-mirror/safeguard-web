@@ -48,6 +48,10 @@ from backend.schemas.osdeploy.sensor import (
     SensorConfigUpdateRequest,
     SensorInstallResponse,
 )
+from backend.schemas.osdeploy.dhcp_relay import DHCPRelayParams
+from backend.schemas.osdeploy.novnc import NoVNCClient
+from backend.schemas.osdeploy.disk_partition import DiskPartitionRequest
+from backend.schemas.osdeploy.package import SpecParams
 
 __all__ = [
     'JobStatusBase',
@@ -83,4 +87,8 @@ __all__ = [
     'SensorOperateRequest',
     'SensorConfigUpdateRequest',
     'SensorInstallResponse',
+    'DHCPRelayParams',
+    'NoVNCClient',
+    'DiskPartitionRequest',
+    'SpecParams',
 ]
