@@ -137,3 +137,24 @@ class RepoViewSetTest(APITestCase):
         data = response.data['data']
         self.assertEqual(data['repo_id'], repo.pk)
         self.assertEqual(data['status'], 'synced')
+
+    def test_query_job_status_action_found(self):
+        """测试查询仓库任务状态 - 任务存在"""
+        from backend.models.task import Task
+        task = Task.objects.create(
+            job_id='repo-job-001',
+            job_type='createrepo',
+            target='192.168.1.1',
+            status='success',
+            progress=100,
+        )
+        response = self.client.post('/api/repos/query-job-status/', {'job_id': 'repo-job-001'}, format='json')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['job_id'], 'repo-job-001')
+        self.assertEqual(response.data['data']['status'], 'success')
+
+    def test_query_job_status_action_not_found(self):
+        """测试查询仓库任务状态 - 任务不存在"""
+        response = self.client.post('/api/repos/query-job-status/', {'job_id': 'not-exist'}, format='json')
+        self.assertNotEqual(response.data['errno'], 0)
+        self.assertIn('不存在', response.data['errmsg'])
