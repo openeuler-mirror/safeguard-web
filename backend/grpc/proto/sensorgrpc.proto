@@ -1,0 +1,34 @@
+syntax = "proto3";
+package sensorgrpc;
+
+service Oskit {
+    // Push agent datas
+    rpc PushData (DataRequest) returns (DataReply);
+    // Detect server heart
+    rpc CheckHeart (HeartRequest) returns (HeartReply);
+    // Client file saved to storage
+    rpc Upload (stream MinioFileChunk) returns (MinioUploadResponse);
+}
+
+// Detail message for one plugin
+message DataRequest {
+    // Push data
+    string function = 1;
+    string data = 2;
+    string time = 3;
+}
+message DataReply {}
+
+// Check heart for server
+message HeartRequest {}
+message HeartReply {}
+
+// file upload
+message MinioFileChunk {
+    bytes data = 1;
+    string filename = 2;
+}
+
+message MinioUploadResponse {
+    string message = 1;
+}
