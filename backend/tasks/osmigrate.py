@@ -23,7 +23,11 @@ def migrate_init_task(self, job_id: str, host: str, port: str, username: str, pa
             X2cuService._update_migrate_job(job_id, status="success", progress=100, result={"host": host})
         else:
             host_infos = [X2cuService.HostInfo.from_dict(h) for h in hosts]
-            if migrate_type == "yunguan":
+            if migrate_type == "iaas":
+                # IaaS 类型迁移：走标准基础迁移流程，无特殊初始化
+                for h in host_infos:
+                    X2cuService.migrate_init(h.host, h.port, h.username, h.password)
+            elif migrate_type == "yunguan":
                 if len(host_infos) == 2:
                     h1, h2 = host_infos[0], host_infos[1]
                     X2cuService.migrate_init4_yunguan_portal1(h1.host, h1.port, h1.username, h1.password)
@@ -83,8 +87,11 @@ def migrate_task(self, job_id: str, host: str, port: str, username: str, passwor
                 # 直接同步执行单主机迁移（Celery worker 中已是异步）
                 _do_single_migrate(h, job_name_tmp)
 
-            # 云管后置处理
-            if migrate_type == "yunguan":
+            # 类型后置处理
+            if migrate_type == "iaas":
+                # IaaS 类型迁移：标准流程，无需额外后置处理
+                pass
+            elif migrate_type == "yunguan":
                 _post_process_yunguan(job_id, job_names, host_infos)
     except Exception as e:
         logger.error(f"Migrate failed: {e}")
