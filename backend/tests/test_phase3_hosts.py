@@ -73,6 +73,89 @@ class HostServiceAdvancedTest(TestCase):
         self.assertEqual(result["created"], 1)
         self.assertTrue(Host.objects.filter(ip_address="1.1.1.1").exists())
 
+    def test_import_key_cloud(self):
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append([
+            "序列号", "IP地址", "主机名", "ntp地址", "密码", "设备分类",
+            "是否有集群属性", "是否有专区属性", "是否绑定cell",
+            "带外vlan", "带内管理vlan", "带内管理接口名称",
+            "存储vlan", "存储网络接口名称",
+            "业务网络vlan", "业务网络接口名称",
+            "其他网络vlan", "其他网络接口名称",
+            "RAID要求", "BIOS配置要求",
+            "双引擎系统盘分区要求(单位为M)", "单引擎系统盘分区要求(单位为M)",
+            "双引擎推荐操作系统版本", "单引擎操作系统",
+            "存储IP", "业务IP", "其他IP",
+        ])
+        ws.append([
+            "SN001", "10.0.0.1", "host-01", "ntp.example.com", "pass123", "server",
+            "是", "否", "是",
+            "100", "200", "eth0",
+            "300", "eth1",
+            "400", "eth2",
+            "500", "eth3",
+            "RAID1", "UEFI",
+            "1024", "512",
+            "CentOS8", "CentOS7",
+            "192.168.1.1", "192.168.2.1", "192.168.3.1",
+        ])
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        result = HostService.import_key_cloud(buffer)
+        self.assertTrue(result["success"])
+        self.assertEqual(result["created"], 1)
+        self.assertEqual(result["updated"], 0)
+
+        host = Host.objects.get(hostname="host-01")
+        self.assertEqual(host.serial_number, "SN001")
+        self.assertEqual(host.ip_address, "10.0.0.1")
+        self.assertEqual(host.ntp_address, "ntp.example.com")
+        self.assertEqual(host.password, "pass123")
+        self.assertEqual(host.host_type, "server")
+        self.assertTrue(host.is_cluster_type)
+        self.assertFalse(host.is_zone_type)
+        self.assertTrue(host.is_bind_cell_type)
+        self.assertEqual(host.ipmi_vlan, "100")
+        self.assertEqual(host.manage_vlan, "200")
+        self.assertEqual(host.manage_nic1, "eth0")
+        self.assertEqual(host.storage_vlan, "300")
+        self.assertEqual(host.storage_ifname, "eth1")
+        self.assertEqual(host.business_vlan, "400")
+        self.assertEqual(host.business_ifname, "eth2")
+        self.assertEqual(host.other_vlan, "500")
+        self.assertEqual(host.other_ifname, "eth3")
+        self.assertEqual(host.raid, "RAID1")
+        self.assertEqual(host.bios_config, "UEFI")
+        self.assertEqual(host.mount_info, "512")  # 单引擎覆盖双引擎
+        self.assertEqual(host.os_version, "CentOS7")  # 单引擎覆盖双引擎
+        self.assertEqual(str(host.storage_address), "192.168.1.1")
+        self.assertEqual(str(host.business_address), "192.168.2.1")
+        self.assertEqual(str(host.other_address), "192.168.3.1")
+
+    def test_import_key_cloud_update_existing(self):
+        import openpyxl
+        Host.objects.create(hostname="host-02", ip_address="10.0.0.2", username="root")
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["主机名", "IP地址", "密码"])
+        ws.append(["host-02", "10.0.0.2", "newpass"])
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        result = HostService.import_key_cloud(buffer)
+        self.assertTrue(result["success"])
+        self.assertEqual(result["created"], 0)
+        self.assertEqual(result["updated"], 1)
+
+        host = Host.objects.get(hostname="host-02")
+        self.assertEqual(host.password, "newpass")
+
 
 class HostViewAdvancedTest(TestCase):
     def setUp(self):
