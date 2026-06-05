@@ -9,4 +9,4 @@ class DHCPRelayParams(BaseModel):
     password: str
     port: str = "22"
     interface_name: str
-    dhcp_relay_ip: str
+    dhcp_relay_ip: str = ""
