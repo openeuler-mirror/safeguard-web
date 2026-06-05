@@ -259,6 +259,141 @@ systemctl enable sshd
         }
 
     @staticmethod
+    def _set_none_for_empty(value: Optional[str]) -> str:
+        """空值替换为 'none'"""
+        return value if value else "none"
+
+    @staticmethod
+    def generate_system_conf_file(output_path: str = "/var/www/html/pxe/conf/system.conf") -> dict:
+        """生成 system.conf 配置文件
+
+        读取 flag=True 的主机，每行格式：
+        serial_number ip_address hostname ntp_address password
+
+        Returns:
+            {"success": bool, "message": str, "path": str, "count": int}
+        """
+        import os
+        try:
+            hosts = Host.objects.filter(flag=True)
+            dir_path = os.path.dirname(output_path)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+
+            lines = []
+            for host in hosts:
+                line = "{} {} {} {} {}\n".format(
+                    KickstartService._set_none_for_empty(host.serial_number),
+                    KickstartService._set_none_for_empty(str(host.ip_address) if host.ip_address else ""),
+                    KickstartService._set_none_for_empty(host.hostname),
+                    KickstartService._set_none_for_empty(host.ntp_address),
+                    KickstartService._set_none_for_empty(host.password),
+                )
+                lines.append(line)
+
+            with open(output_path, "w") as f:
+                f.writelines(lines)
+
+            return {
+                "success": True,
+                "message": "system.conf 生成成功",
+                "path": output_path,
+                "count": len(lines),
+            }
+        except Exception as e:
+            logger.error(f"Generate system.conf failed: {e}")
+            return {"success": False, "message": str(e), "path": output_path, "count": 0}
+
+    @staticmethod
+    def generate_network_conf_file(output_path: str = "/var/www/html/pxe/conf/network.conf") -> dict:
+        """生成 network.conf 配置文件
+
+        读取 flag=True 的主机，包含管理/存储/业务/其他网络配置
+
+        Returns:
+            {"success": bool, "message": str, "path": str, "count": int}
+        """
+        import os
+        try:
+            hosts = Host.objects.filter(flag=True)
+            dir_path = os.path.dirname(output_path)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+
+            lines = []
+            for host in hosts:
+                # 管理网络
+                if host.manage_nic1:
+                    bond_type = host.bond_type or "4"
+                    netmask = host.netmask or "255.255.255.0"
+                    gateway = ""
+                    if host.ip_address:
+                        ip_parts = str(host.ip_address).split(".")
+                        if len(ip_parts) == 4:
+                            ip_parts[3] = "254"
+                            gateway = ".".join(ip_parts)
+                    line = "{} {} {} {} {} {} {}\n".format(
+                        host.serial_number or "none",
+                        host.manage_nic1,
+                        bond_type,
+                        KickstartService._set_none_for_empty(str(host.ip_address) if host.ip_address else ""),
+                        netmask,
+                        KickstartService._set_none_for_empty(host.manage_vlan),
+                        KickstartService._set_none_for_empty(gateway),
+                    )
+                    lines.append(line)
+
+                # 存储网络
+                if host.storage_ifname:
+                    storage_netmask = host.storage_netmask or "255.255.255.0"
+                    line = "{} {} none {} {} {} none\n".format(
+                        host.serial_number or "none",
+                        host.storage_ifname,
+                        KickstartService._set_none_for_empty(str(host.storage_address) if host.storage_address else ""),
+                        storage_netmask,
+                        KickstartService._set_none_for_empty(host.storage_vlan),
+                    )
+                    lines.append(line)
+
+                # 业务网络
+                if host.business_ifname:
+                    business_bond_type = host.business_bond_type or "4"
+                    business_netmask = host.business_netmask or "255.255.255.0"
+                    line = "{} {} {} {} {} 1 none\n".format(
+                        host.serial_number or "none",
+                        host.business_ifname,
+                        business_bond_type,
+                        KickstartService._set_none_for_empty(str(host.business_address) if host.business_address else ""),
+                        business_netmask,
+                    )
+                    lines.append(line)
+
+                # 其他网络
+                if host.other_ifname:
+                    other_netmask = host.other_netmask or "255.255.255.0"
+                    line = "{} {} none {} {} {} none\n".format(
+                        host.serial_number or "none",
+                        host.other_ifname,
+                        KickstartService._set_none_for_empty(str(host.other_address) if host.other_address else ""),
+                        other_netmask,
+                        KickstartService._set_none_for_empty(host.other_vlan),
+                    )
+                    lines.append(line)
+
+            with open(output_path, "w") as f:
+                f.writelines(lines)
+
+            return {
+                "success": True,
+                "message": "network.conf 生成成功",
+                "path": output_path,
+                "count": len(lines),
+            }
+        except Exception as e:
+            logger.error(f"Generate network.conf failed: {e}")
+            return {"success": False, "message": str(e), "path": output_path, "count": 0}
+
+    @staticmethod
     def generate_system_config(hostname: str, timezone: str = "Asia/Shanghai",
                                   root_password_hash: str = None) -> str:
         """生成系统配置段"""
