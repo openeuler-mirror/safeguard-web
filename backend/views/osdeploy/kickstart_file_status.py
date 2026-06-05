@@ -94,3 +94,31 @@ class KickStartViewSet(UnifiedModelViewSet):
         except ValueError as e:
             return ErrorResponse(code=ErrCode.NOT_FOUND, errmsg=str(e))
         return SuccessResponse({'content': content})
+
+    @extend_schema(
+        summary="生成系统配置文件",
+        description="为所有 flag=True 的主机生成 system.conf 配置文件",
+        responses={200: OpenApiResponse(description="生成结果")}
+    )
+    @action(detail=False, methods=['post'], url_path='system_conf')
+    def system_conf(self, request):
+        """生成 system.conf 配置文件"""
+        output_path = request.data.get('output_path', '/var/www/html/pxe/conf/system.conf')
+        result = KickstartService.generate_system_conf_file(output_path)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(code=ErrCode.OPERATION_FAILED, errmsg=result['message'])
+
+    @extend_schema(
+        summary="生成网络配置文件",
+        description="为所有 flag=True 的主机生成 network.conf 配置文件",
+        responses={200: OpenApiResponse(description="生成结果")}
+    )
+    @action(detail=False, methods=['post'], url_path='network_conf')
+    def network_conf(self, request):
+        """生成 network.conf 配置文件"""
+        output_path = request.data.get('output_path', '/var/www/html/pxe/conf/network.conf')
+        result = KickstartService.generate_network_conf_file(output_path)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(code=ErrCode.OPERATION_FAILED, errmsg=result['message'])
