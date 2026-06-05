@@ -13,6 +13,8 @@ class Users(models.Model):
     phone = models.CharField(max_length=20, blank=True, default="", verbose_name="手机号")
     email = models.EmailField(blank=True, default="", verbose_name="邮箱")
     enable = models.IntegerField(default=1, verbose_name="是否启用 1=正常 2=冻结")
+    avatar = models.CharField(max_length=255, blank=True, default="", verbose_name="头像URL")
+    theme = models.CharField(max_length=20, blank=True, default="light", verbose_name="主题偏好")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

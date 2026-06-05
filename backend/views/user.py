@@ -84,6 +84,66 @@ class UsersViewSet(UnifiedModelViewSet):
         user.save()
         return SuccessResponse(errmsg="密码重置成功")
 
+    @action(detail=False, methods=['post'], url_path='me/avatar')
+    def upload_avatar(self, request):
+        """上传当前用户头像"""
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='请上传图片文件')
+
+        import os
+        import uuid
+        from django.conf import settings
+
+        ext = os.path.splitext(file_obj.name)[1]
+        filename = f"avatar_{request.user.id}_{uuid.uuid4().hex}{ext}"
+        upload_dir = os.path.join(settings.MEDIA_ROOT or os.path.join(settings.BASE_DIR, 'media'), 'avatars')
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
+
+        with open(filepath, 'wb+') as f:
+            for chunk in file_obj.chunks():
+                f.write(chunk)
+
+        avatar_url = f"/media/avatars/{filename}"
+        request.user.avatar = avatar_url
+        request.user.save()
+        return SuccessResponse({'avatar': avatar_url}, errmsg='头像上传成功')
+
+    @action(detail=False, methods=['put'], url_path='me/theme')
+    def set_theme(self, request):
+        """设置当前用户主题偏好"""
+        theme = request.data.get('theme')
+        if theme not in ('light', 'dark', 'auto'):
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='theme 必须是 light/dark/auto 之一')
+        request.user.theme = theme
+        request.user.save()
+        return SuccessResponse({'theme': theme}, errmsg='主题设置成功')
+
+    @action(detail=False, methods=['post'], url_path='import')
+    def import_users(self, request):
+        """批量导入用户"""
+        file_obj = request.FILES.get('file')
+        if not file_obj:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='请上传 Excel 文件')
+
+        from backend.services.user import UserService
+        result = UserService.import_users_from_excel(file_obj)
+        if result['success']:
+            return SuccessResponse(result, errmsg=result['message'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_users(self, request):
+        """导出用户到 Excel"""
+        from django.http import HttpResponse
+        from backend.services.user import UserService
+
+        data = UserService.export_users_to_excel()
+        response = HttpResponse(data, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="users.xlsx"'
+        return response
+
     @action(detail=False, methods=['put'], url_path='me/password')
     def change_my_password(self, request):
         """用户修改自己的密码"""
