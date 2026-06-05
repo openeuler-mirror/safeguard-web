@@ -178,3 +178,19 @@ enabled=1
             return SuccessResponse({'repo_file': repo_file}, errmsg='创建 repo 文件成功')
         finally:
             ssh.close()
+
+    @extend_schema(
+        summary="查询仓库任务状态",
+        description="根据任务ID查询仓库相关任务的执行状态",
+        responses={200: OpenApiResponse(description="任务状态")}
+    )
+    @action(detail=False, methods=['post'], url_path='query-job-status')
+    def query_job_status(self, request):
+        """查询仓库任务状态"""
+        job_id = request.data.get('job_id')
+        if not job_id:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='job_id is required')
+        result = RepoService.query_repo_job_status(job_id)
+        if result['success']:
+            return SuccessResponse(result['job'], errmsg=result['message'])
+        return ErrorResponse(ErrCode.NOT_FOUND, errmsg=result['message'])
