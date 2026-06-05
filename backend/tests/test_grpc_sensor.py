@@ -2,6 +2,7 @@
 import os
 import tempfile
 from io import BytesIO
+from concurrent import futures
 
 import grpc
 from django.test import TestCase
@@ -17,7 +18,7 @@ class SensorGrpcServicerTest(TestCase):
 
     def setUp(self):
         """启动内存 gRPC 服务器"""
-        self.server = grpc.server(grpc.ThreadPoolExecutor(max_workers=1))
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
         add_OskitServicer_to_server(SensorGrpcServicer(), self.server)
         self.port = self.server.add_insecure_port("localhost:0")
         self.server.start()
