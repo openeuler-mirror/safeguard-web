@@ -5,6 +5,7 @@ from backend.models.osdeploy.kickstart_file_status import KickStartFileStatus
 from backend.models.osdeploy.iso_file_status import ISOFileStatus
 from backend.models.osdeploy.white_list import WhiteList
 from backend.models.osdeploy.out_ip_sn import OutIpSN
+from backend.models.osdeploy.sensor_data import SensorData
 
 __all__ = [
     'JobStatus',
@@ -14,4 +15,5 @@ __all__ = [
     'ISOFileStatus',
     'WhiteList',
     'OutIpSN',
+    'SensorData',
 ]
