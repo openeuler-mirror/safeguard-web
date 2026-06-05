@@ -137,3 +137,52 @@ class KickStartViewSetTest(APITestCase):
         self.assertEqual(response.data['errno'], 0)
         self.assertIn('192.168.1.1', response.data['data']['content'])
         self.assertIn('secret', response.data['data']['content'])
+
+    def test_system_conf_action(self):
+        """测试生成 system.conf action"""
+        from backend.models.host import Host
+        Host.objects.create(
+            hostname='sys-host', ip_address='10.0.0.1', username='root',
+            serial_number='SN001', ntp_address='ntp.example.com', password='pass123',
+            flag=True,
+        )
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.conf') as f:
+            tmp_path = f.name
+        response = self.client.post('/api/kickstarts/system_conf/', {'output_path': tmp_path}, format='json')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['count'], 1)
+        with open(tmp_path) as f:
+            content = f.read()
+        self.assertIn('SN001', content)
+        self.assertIn('10.0.0.1', content)
+        self.assertIn('sys-host', content)
+        import os
+        os.remove(tmp_path)
+
+    def test_network_conf_action(self):
+        """测试生成 network.conf action"""
+        from backend.models.host import Host
+        Host.objects.create(
+            hostname='net-host', ip_address='10.0.0.2', username='root',
+            serial_number='SN002', flag=True,
+            manage_nic1='eth0', bond_type='4', netmask='255.255.255.0', manage_vlan='100',
+            storage_ifname='eth1', storage_address='192.168.1.1', storage_netmask='255.255.255.0', storage_vlan='200',
+            business_ifname='eth2', business_address='192.168.2.1', business_netmask='255.255.255.0',
+            other_ifname='eth3', other_address='192.168.3.1', other_netmask='255.255.255.0', other_vlan='300',
+        )
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.conf') as f:
+            tmp_path = f.name
+        response = self.client.post('/api/kickstarts/network_conf/', {'output_path': tmp_path}, format='json')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertGreaterEqual(response.data['data']['count'], 4)
+        with open(tmp_path) as f:
+            content = f.read()
+        self.assertIn('SN002', content)
+        self.assertIn('eth0', content)
+        self.assertIn('eth1', content)
+        self.assertIn('eth2', content)
+        self.assertIn('eth3', content)
+        import os
+        os.remove(tmp_path)

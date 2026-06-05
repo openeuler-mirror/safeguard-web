@@ -146,3 +146,34 @@ class RepoService:
             RepoStatus.objects.filter(is_default=True).update(is_default=False)
         data['repo_type'] = 'http'
         return RepoStatus.objects.create(**data)
+
+    @staticmethod
+    def query_repo_job_status(job_id: str) -> dict:
+        """查询仓库相关任务状态
+
+        Args:
+            job_id: 任务ID
+
+        Returns:
+            {"success": bool, "job": dict / None, "message": str}
+        """
+        from backend.models.task import Task
+        try:
+            task = Task.objects.get(job_id=job_id)
+            return {
+                "success": True,
+                "job": {
+                    "job_id": task.job_id,
+                    "job_type": task.job_type,
+                    "target": task.target,
+                    "status": task.status,
+                    "progress": task.progress,
+                    "result": task.result,
+                    "error_message": task.error_message,
+                    "created_at": task.created_at.isoformat() if task.created_at else None,
+                    "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+                },
+                "message": "查询成功",
+            }
+        except Task.DoesNotExist:
+            return {"success": False, "job": None, "message": f"任务不存在: {job_id}"}
