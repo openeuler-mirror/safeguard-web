@@ -194,3 +194,19 @@ class HostViewAdvancedTest(TestCase):
         response = self.client.post(url, {"command": "ls -l"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["errno"], 0)
+
+    def test_import_key_cloud_action(self):
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["主机名", "IP地址", "密码"])
+        ws.append(["cloud-host", "10.0.0.99", "cloudpass"])
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        url = reverse("host-import-key-cloud")
+        response = self.client.post(url, {"file": buffer}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["errno"], 0)
+        self.assertTrue(Host.objects.filter(hostname="cloud-host").exists())
