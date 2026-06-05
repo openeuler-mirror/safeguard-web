@@ -8,7 +8,7 @@ class Users(models.Model):
     """用户模型"""
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, verbose_name="用户UUID")
     user = models.CharField(max_length=50, unique=True, verbose_name="用户名")
-    password = models.CharField(max_length=50)
+    password = models.CharField(max_length=128)
     nickname = models.CharField(max_length=50, default="系统用户", verbose_name="昵称")
     phone = models.CharField(max_length=20, blank=True, default="", verbose_name="手机号")
     email = models.EmailField(blank=True, default="", verbose_name="邮箱")

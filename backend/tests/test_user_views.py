@@ -34,6 +34,10 @@ class UsersViewSetTest(APITestCase):
         # 分配管理员角色
         UserAuthority.objects.create(user=self.admin_user, authority=self.admin_auth)
 
+        # 清除Redis缓存，避免测试间数据污染
+        _clear_user_redis(self.user.id)
+        _clear_user_redis(self.admin_user.id)
+
         # 获取JWT token
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
@@ -164,6 +168,11 @@ class UsersViewSetTest(APITestCase):
 from backend.authentication import redis_client
 
 
+def _clear_user_redis(user_id):
+    """清除 Redis 中缓存的用户数据"""
+    redis_client.delete(f'user:{user_id}')
+
+
 class UsersViewSetAvatarThemeTest(APITestCase):
     """头像和主题相关测试"""
 
@@ -173,6 +182,7 @@ class UsersViewSetAvatarThemeTest(APITestCase):
             password='testpass123',
             nickname='测试用户'
         )
+        _clear_user_redis(self.user.id)
         refresh = RefreshToken.for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
 
@@ -189,7 +199,7 @@ class UsersViewSetAvatarThemeTest(APITestCase):
         self.assertEqual(response.data['errno'], 0)
         self.assertIn('avatar', response.data['data'])
         self.user.refresh_from_db()
-        self.assertIn('avatars', self.user.avatar)
+        self.assertTrue(self.user.avatar.startswith('/media/avatars/'))
 
     def test_upload_avatar_no_file(self):
         """测试不上传文件应报错"""
@@ -231,6 +241,7 @@ class UsersViewSetImportExportTest(APITestCase):
         )
         UserAuthority.objects.create(user=self.admin_user, authority=self.admin_auth)
 
+        _clear_user_redis(self.admin_user.id)
         refresh = RefreshToken.for_user(self.admin_user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
 
