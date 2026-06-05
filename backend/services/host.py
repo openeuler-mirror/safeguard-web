@@ -442,6 +442,105 @@ class HostService:
             return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
 
     @staticmethod
+    def import_key_cloud(file_obj):
+        """从骨干云部署表 Excel 导入主机
+
+        支持的中文字段映射：
+        序列号、IP地址、主机名、ntp地址、密码、设备分类、
+        是否有集群属性、是否有专区属性、是否绑定cell、
+        带外vlan、带内管理vlan、带内管理接口名称、
+        存储vlan、存储网络接口名称、
+        业务网络vlan、业务网络接口名称、
+        其他网络vlan、其他网络接口名称、
+        RAID要求、BIOS配置要求、
+        双引擎系统盘分区要求(单位为M)、单引擎系统盘分区要求(单位为M)、
+        双引擎推荐操作系统版本、单引擎操作系统、
+        存储IP、业务IP、其他IP
+        """
+        import openpyxl
+        from io import BytesIO
+        try:
+            wb = openpyxl.load_workbook(BytesIO(file_obj.read()))
+            ws = wb.active
+            column_names = [cell.value for cell in ws[1]]
+
+            field_mappings = {
+                "序列号": "serial_number",
+                "IP地址": "ip_address",
+                "主机名": "hostname",
+                "ntp地址": "ntp_address",
+                "密码": "password",
+                "设备分类": "host_type",
+                "是否有集群属性": "is_cluster_type",
+                "是否有专区属性": "is_zone_type",
+                "是否绑定cell": "is_bind_cell_type",
+                "带外vlan": "ipmi_vlan",
+                "带内管理vlan": "manage_vlan",
+                "带内管理接口名称": "manage_nic1",
+                "存储vlan": "storage_vlan",
+                "存储网络接口名称": "storage_ifname",
+                "业务网络vlan": "business_vlan",
+                "业务网络接口名称": "business_ifname",
+                "其他网络vlan": "other_vlan",
+                "其他网络接口名称": "other_ifname",
+                "RAID要求": "raid",
+                "BIOS配置要求": "bios_config",
+                "双引擎系统盘分区要求(单位为M)": "mount_info",
+                "单引擎系统盘分区要求(单位为M)": "mount_info",
+                "双引擎推荐操作系统版本": "os_version",
+                "单引擎操作系统": "os_version",
+                "存储IP": "storage_address",
+                "业务IP": "business_address",
+                "其他IP": "other_address",
+            }
+            flag_map = {"是": True, "否": False}
+
+            created_count = 0
+            updated_count = 0
+            errors = []
+
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                try:
+                    row_data = dict(zip(column_names, row))
+                    host_data = {}
+                    for col_name, field_name in field_mappings.items():
+                        if col_name in row_data and row_data[col_name] is not None:
+                            value = str(row_data[col_name]).strip()
+                            if field_name in ("is_cluster_type", "is_zone_type", "is_bind_cell_type"):
+                                host_data[field_name] = flag_map.get(value, False)
+                            else:
+                                host_data[field_name] = value
+
+                    if not host_data.get("hostname") or not host_data.get("ip_address"):
+                        continue
+
+                    if not host_data.get("username"):
+                        host_data["username"] = "root"
+
+                    # 原始逻辑：同名主机先删除再创建
+                    existing = Host.objects.filter(hostname=host_data["hostname"]).first()
+                    if existing:
+                        existing.delete()
+                        updated_count += 1
+                    else:
+                        created_count += 1
+
+                    Host.objects.create(**host_data)
+                except Exception as e:
+                    errors.append(str(e))
+
+            return {
+                "success": True,
+                "created": created_count,
+                "updated": updated_count,
+                "errors": errors,
+                "message": f"导入完成：新建 {created_count} 条，覆盖 {updated_count} 条，错误 {len(errors)} 条",
+            }
+        except Exception as e:
+            logger.error(f"Import key cloud failed: {e}")
+            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+
+    @staticmethod
     def export_hosts_to_excel(filters=None):
         """导出主机到 Excel"""
         import openpyxl
