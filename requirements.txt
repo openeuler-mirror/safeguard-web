@@ -35,6 +35,8 @@ typing_extensions==4.15.0
 tzdata==2026.2
 tzlocal==5.3.1
 uritemplate==4.2.0
+grpcio==1.81.0
+grpcio-tools==1.81.0
 toml==0.10.2
 vine==5.1.0
 wcwidth==0.7.0
