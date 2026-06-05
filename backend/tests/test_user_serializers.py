@@ -131,3 +131,28 @@ class UserSerializerTest(TestCase):
         serializer2 = UserSerializer(user2)
         self.assertEqual(serializer1.data['enable'], 1)
         self.assertEqual(serializer2.data['enable'], 2)
+
+    def test_avatar_and_theme_fields(self):
+        """测试头像和主题字段序列化"""
+        user = Users.objects.create(
+            user='styleuser',
+            password='pass',
+            avatar='/media/avatars/test.png',
+            theme='dark'
+        )
+        serializer = UserSerializer(user)
+        self.assertEqual(serializer.data['avatar'], '/media/avatars/test.png')
+        self.assertEqual(serializer.data['theme'], 'dark')
+
+    def test_update_avatar_and_theme(self):
+        """测试更新头像和主题"""
+        user = Users.objects.create(user='updatestyle', password='pass')
+        data = {
+            'avatar': '/media/avatars/new.png',
+            'theme': 'auto'
+        }
+        serializer = UserSerializer(user, data=data, partial=True)
+        self.assertTrue(serializer.is_valid())
+        updated = serializer.save()
+        self.assertEqual(updated.avatar, '/media/avatars/new.png')
+        self.assertEqual(updated.theme, 'auto')
