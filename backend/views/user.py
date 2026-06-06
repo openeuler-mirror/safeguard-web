@@ -93,11 +93,11 @@ class UsersViewSet(UnifiedModelViewSet):
 
         import os
         import uuid
-        from django.conf import settings
+        from safeguard_web.settings import MEDIA_ROOT, BASE_DIR
 
         ext = os.path.splitext(file_obj.name)[1]
         filename = f"avatar_{request.user.id}_{uuid.uuid4().hex}{ext}"
-        upload_dir = os.path.join(settings.MEDIA_ROOT or os.path.join(settings.BASE_DIR, 'media'), 'avatars')
+        upload_dir = os.path.join(MEDIA_ROOT or os.path.join(BASE_DIR, 'media'), 'avatars')
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, filename)
 

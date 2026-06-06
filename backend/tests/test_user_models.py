@@ -107,3 +107,13 @@ class UsersModelTest(TestCase):
         user.save()
         user.refresh_from_db()
         self.assertGreater(user.updated_at, original_updated)
+
+    def test_user_avatar_default(self):
+        """测试头像默认值"""
+        user = Users.objects.create(user='avataruser', password='pass')
+        self.assertEqual(user.avatar, '')
+
+    def test_user_theme_default(self):
+        """测试主题默认值"""
+        user = Users.objects.create(user='themeuser', password='pass')
+        self.assertEqual(user.theme, 'light')
