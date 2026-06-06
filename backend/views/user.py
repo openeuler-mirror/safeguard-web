@@ -33,10 +33,14 @@ class UsersViewSet(UnifiedModelViewSet):
             return UserCreateSerializer
         return UserSerializer
 
+    def _get_db_user(self, request):
+        """从数据库获取当前用户的真实模型实例（RedisUser不支持持久化）"""
+        return Users.objects.get(pk=request.user.id)
+
     @action(detail=False, methods=['get', 'put'])
     def me(self, request):
         """获取/更新当前登录用户信息"""
-        user = request.user
+        user = self._get_db_user(request)
         if request.method == 'GET':
             return SuccessResponse(UserSerializer(user).data)
 
@@ -89,14 +93,15 @@ class UsersViewSet(UnifiedModelViewSet):
         """上传当前用户头像"""
         file_obj = request.FILES.get('file')
         if not file_obj:
-            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='请上传图片文件')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='请上传图片文件')
 
         import os
         import uuid
         from safeguard_web.settings import MEDIA_ROOT, BASE_DIR
 
+        user = self._get_db_user(request)
         ext = os.path.splitext(file_obj.name)[1]
-        filename = f"avatar_{request.user.id}_{uuid.uuid4().hex}{ext}"
+        filename = f"avatar_{user.id}_{uuid.uuid4().hex}{ext}"
         upload_dir = os.path.join(MEDIA_ROOT or os.path.join(BASE_DIR, 'media'), 'avatars')
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, filename)
@@ -106,8 +111,8 @@ class UsersViewSet(UnifiedModelViewSet):
                 f.write(chunk)
 
         avatar_url = f"/media/avatars/{filename}"
-        request.user.avatar = avatar_url
-        request.user.save()
+        user.avatar = avatar_url
+        user.save()
         return SuccessResponse({'avatar': avatar_url}, errmsg='头像上传成功')
 
     @action(detail=False, methods=['put'], url_path='me/theme')
@@ -116,8 +121,9 @@ class UsersViewSet(UnifiedModelViewSet):
         theme = request.data.get('theme')
         if theme not in ('light', 'dark', 'auto'):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='theme 必须是 light/dark/auto 之一')
-        request.user.theme = theme
-        request.user.save()
+        user = self._get_db_user(request)
+        user.theme = theme
+        user.save()
         return SuccessResponse({'theme': theme}, errmsg='主题设置成功')
 
     @action(detail=False, methods=['post'], url_path='import')
@@ -125,7 +131,7 @@ class UsersViewSet(UnifiedModelViewSet):
         """批量导入用户"""
         file_obj = request.FILES.get('file')
         if not file_obj:
-            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='请上传 Excel 文件')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='请上传 Excel 文件')
 
         from backend.services.user import UserService
         result = UserService.import_users_from_excel(file_obj)
@@ -155,11 +161,12 @@ class UsersViewSet(UnifiedModelViewSet):
         except ValidationError as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
-        if not check_password(data.old_password, request.user.password):
+        user = self._get_db_user(request)
+        if not check_password(data.old_password, user.password):
             return ErrorResponse(ErrCode.PASSWORD_ERROR)
 
-        request.user.set_password(data.new_password)
-        request.user.save()
+        user.set_password(data.new_password)
+        user.save()
         return SuccessResponse(errmsg="密码修改成功")
 
     @action(detail=True, methods=['get'], url_path='authorities')
