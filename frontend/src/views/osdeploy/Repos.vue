@@ -1,7 +1,6 @@
 <template>
   <div class="repos-container">
     <div class="repos-header">
-      <h2>仓库管理</h2>
       <div class="header-actions">
         <select v-model="filterRepoType" class="filter-select" @change="handleFilter">
           <option value="">全部类型</option>

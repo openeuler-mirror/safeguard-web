@@ -1,7 +1,6 @@
 <template>
   <div class="listeners-container">
     <div class="listeners-header">
-      <h2>监听器</h2>
       <div class="header-actions">
         <select v-model="filterLB" class="filter-select" @change="handleFilter">
           <option value="">全部负载均衡器</option>

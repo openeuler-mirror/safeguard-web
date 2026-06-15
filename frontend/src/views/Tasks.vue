@@ -1,7 +1,6 @@
 <template>
   <div class="tasks-container">
     <div class="tasks-header">
-      <h2>任务管理</h2>
       <div class="header-actions">
         <select v-model="filterType" class="filter-select" @change="handleFilter">
           <option value="">全部类型</option>

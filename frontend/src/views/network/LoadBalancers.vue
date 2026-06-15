@@ -1,7 +1,6 @@
 <template>
   <div class="lbs-container">
     <div class="lbs-header">
-      <h2>负载均衡器</h2>
       <div class="header-actions">
         <input
           v-model="searchName"

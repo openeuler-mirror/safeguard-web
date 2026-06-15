@@ -1,7 +1,6 @@
 <template>
   <div class="jobs-container">
     <div class="jobs-header">
-      <h2>任务管理</h2>
       <div class="header-actions">
         <select v-model="filterStatus" class="filter-select" @change="handleFilter">
           <option value="">全部状态</option>

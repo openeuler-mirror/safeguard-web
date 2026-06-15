@@ -1,7 +1,6 @@
 <template>
   <div class="migrations-container">
     <div class="migrations-header">
-      <h2>系统迁移</h2>
       <div class="header-actions">
         <select v-model="filterType" class="filter-select" @change="handleFilter">
           <option value="">全部类型</option>

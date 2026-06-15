@@ -1,7 +1,6 @@
 <template>
   <div class="safeguards-container">
     <div class="safeguards-header">
-      <h2>Safeguard 部署管理</h2>
       <div class="header-actions">
         <input
           v-model="searchName"

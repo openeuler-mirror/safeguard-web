@@ -1,7 +1,6 @@
 <template>
   <div class="menus-container">
     <div class="menus-header">
-      <h2>菜单管理</h2>
       <div class="header-actions">
         <button class="refresh-btn" @click="loadMenus">刷新</button>
         <button class="add-btn" @click="openCreateDialog(null)">新增菜单</button>

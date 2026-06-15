@@ -1,7 +1,6 @@
 <template>
   <div class="outipsn-container">
     <div class="outipsn-header">
-      <h2>出口IP序列号管理</h2>
       <div class="header-actions">
         <button class="btn-primary" @click="openCreateDialog">添加记录</button>
       </div>

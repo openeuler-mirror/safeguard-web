@@ -1,7 +1,6 @@
 <template>
   <div class="pxe-config-container">
     <div class="pxe-config-header">
-      <h2>PXE 服务器配置</h2>
       <div class="header-actions">
         <button class="btn-primary" @click="loadDhcpStatus">DHCP状态</button>
         <button class="btn-success" @click="handleStartDhcp">启动DHCP</button>

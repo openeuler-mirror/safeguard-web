@@ -1,7 +1,6 @@
 <template>
   <div class="iso-files-container">
     <div class="iso-files-header">
-      <h2>ISO 文件管理</h2>
       <div class="header-actions">
         <button class="btn-upload" @click="openUploadDialog">上传ISO文件</button>
         <button class="btn-primary" @click="openCreateDialog">添加记录</button>

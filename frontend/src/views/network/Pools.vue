@@ -1,7 +1,6 @@
 <template>
   <div class="pools-container">
     <div class="pools-header">
-      <h2>后端池</h2>
       <div class="header-actions">
         <select v-model="filterLB" class="filter-select" @change="handleFilter">
           <option value="">全部负载均衡器</option>

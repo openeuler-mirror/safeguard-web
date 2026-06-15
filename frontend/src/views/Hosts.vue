@@ -1,7 +1,6 @@
 <template>
   <div class="hosts-container">
     <div class="hosts-header">
-      <h2>主机管理</h2>
       <div class="header-actions">
         <select v-model="filterCluster" class="filter-select" @change="handleFilter">
           <option value="">全部集群</option>
