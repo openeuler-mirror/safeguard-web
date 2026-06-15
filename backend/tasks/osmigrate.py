@@ -24,7 +24,7 @@ def migrate_init_task(self, job_id: str, host: str, port: str, username: str, pa
         else:
             host_infos = [X2cuService.HostInfo.from_dict(h) for h in hosts]
             if migrate_type == "iaas":
-                # IaaS 类型迁移：走标准基础迁移流程，无特殊初始化
+                # IaaS 类型迁移：与原始 oskit 一致，走标准基础迁移流程，无额外特殊初始化
                 for h in host_infos:
                     X2cuService.migrate_init(h.host, h.port, h.username, h.password)
             elif migrate_type == "yunguan":
@@ -89,7 +89,7 @@ def migrate_task(self, job_id: str, host: str, port: str, username: str, passwor
 
             # 类型后置处理
             if migrate_type == "iaas":
-                # IaaS 类型迁移：标准流程，无需额外后置处理
+                # IaaS 类型迁移：与原始 oskit 一致，标准流程无需额外后置处理
                 pass
             elif migrate_type == "yunguan":
                 _post_process_yunguan(job_id, job_names, host_infos)
