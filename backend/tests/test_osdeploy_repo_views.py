@@ -1,4 +1,5 @@
 """RepoStatus 视图集测试"""
+from unittest.mock import patch, MagicMock
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -125,8 +126,10 @@ class RepoViewSetTest(APITestCase):
         self.assertNotEqual(response.data['errno'], 0)
         self.assertIn('Kickstart', response.data['errmsg'])
 
-    def test_sync_repo_action(self):
+    @patch("urllib.request.urlopen")
+    def test_sync_repo_action(self, mock_urlopen):
         """测试同步仓库action"""
+        mock_urlopen.return_value = MagicMock()
         repo = RepoStatus.objects.create(
             name='sync-test-repo',
             repo_type='yum',
