@@ -9,6 +9,7 @@ from backend.views.osdeploy.novnc import NoVNCViewSet
 from backend.views.osdeploy.disk_partition import DiskPartitionViewSet
 from backend.views.osdeploy.package import PackageViewSet
 from backend.views.osdeploy.iso_file_status import ISOFileStatusViewSet
+from backend.views.osdeploy.out_ip_sn import OutIpSNViewSet
 
 __all__ = [
     'JobViewSet',
@@ -21,4 +22,5 @@ __all__ = [
     'DiskPartitionViewSet',
     'PackageViewSet',
     'ISOFileStatusViewSet',
+    'OutIpSNViewSet',
 ]
