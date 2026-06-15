@@ -38,14 +38,14 @@ class KickStartViewSet(UnifiedModelViewSet):
     @extend_schema(
         summary="验证Kickstart模板",
         description="验证Kickstart模板语法是否正确",
-        responses={200: OpenApiResponse(description="验证功能待实现")}
+        responses={200: OpenApiResponse(description="验证结果")}
     )
     @action(detail=True, methods=['post'], url_path='validate')
     def validate(self, request, pk=None):
         """验证Kickstart模板语法"""
         kickstart = self.get_object()
-        # TODO: 调用 DeployService.validate_kickstart()
-        return SuccessResponse(errmsg='Kickstart模板验证功能待实现')
+        result = KickstartService.validate_kickstart(kickstart.content)
+        return SuccessResponse(result, errmsg='验证完成')
 
     @extend_schema(
         summary="预览Kickstart模板",
