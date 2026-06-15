@@ -46,23 +46,23 @@ class Command(BaseCommand):
         create_menu('镜像管理', '/images', 32, component='/images/index.vue')
         create_menu('虚拟机管理', '/vms', 33, component='/vms/index.vue')
 
-        # OS 部署
-        osdeploy = create_menu('OS 部署', '/osdeploy', 40)
-        create_menu('部署任务', '/osdeploy/jobs', 1, osdeploy, '/osdeploy/jobs/index.vue')
-        create_menu('仓库管理', '/osdeploy/repos', 2, osdeploy, '/osdeploy/repos/index.vue')
-        create_menu('Kickstart', '/osdeploy/kickstarts', 3, osdeploy, '/osdeploy/kickstarts/index.vue')
-        create_menu('PXE 配置', '/osdeploy/pxe', 4, osdeploy, '/osdeploy/pxe/index.vue')
+        # 系统安装
+        osdeploy = create_menu('系统安装', '/osdeploy', 40)
+        create_menu('安装任务', '/osdeploy/jobs', 1, osdeploy, '/osdeploy/jobs/index.vue')
+        create_menu('安装源仓库', '/osdeploy/repos', 2, osdeploy, '/osdeploy/repos/index.vue')
+        create_menu('自动应答配置', '/osdeploy/kickstarts', 3, osdeploy, '/osdeploy/kickstarts/index.vue')
+        create_menu('网络启动配置', '/osdeploy/pxe', 4, osdeploy, '/osdeploy/pxe/index.vue')
         create_menu('自动安装', '/osdeploy/auto-install', 5, osdeploy, '/osdeploy/auto-install/index.vue')
-        create_menu('白名单', '/osdeploy/whitelist', 6, osdeploy, '/osdeploy/whitelist/index.vue')
-        create_menu('ISO 文件', '/osdeploy/isos', 7, osdeploy, '/osdeploy/isos/index.vue')
-        create_menu('出口IP/SN', '/osdeploy/outipsn', 8, osdeploy, '/osdeploy/outipsn/index.vue')
+        create_menu('安装白名单', '/osdeploy/whitelist', 6, osdeploy, '/osdeploy/whitelist/index.vue')
+        create_menu('系统镜像', '/osdeploy/isos', 7, osdeploy, '/osdeploy/isos/index.vue')
+        create_menu('资产序列号绑定', '/osdeploy/outipsn', 8, osdeploy, '/osdeploy/outipsn/index.vue')
 
-        # 网络 LB
-        network = create_menu('网络 LB', '/network', 50)
-        create_menu('负载均衡', '/network/lbs', 1, network, '/network/lbs/index.vue')
+        # 网络负载均衡
+        network = create_menu('网络负载均衡', '/network', 50)
+        create_menu('负载均衡器', '/network/lbs', 1, network, '/network/lbs/index.vue')
         create_menu('监听器', '/network/listeners', 2, network, '/network/listeners/index.vue')
-        create_menu('资源池', '/network/pools', 3, network, '/network/pools/index.vue')
-        create_menu('成员', '/network/members', 4, network, '/network/members/index.vue')
+        create_menu('后端服务器组', '/network/pools', 3, network, '/network/pools/index.vue')
+        create_menu('服务器成员', '/network/members', 4, network, '/network/members/index.vue')
         create_menu('健康检查', '/network/health-monitors', 5, network, '/network/health-monitors/index.vue')
 
         # 安全部署
