@@ -123,6 +123,14 @@ class HostViewSet(UnifiedModelViewSet):
             return SuccessResponse(result['data'], errmsg=result['message'])
         return ErrorResponse(ErrCode.HOST_LLDP_COLLECT_FAILED, errmsg=result['message'])
 
+    @action(detail=True, methods=['get'], url_path='lldp')
+    def lldp(self, request, pk=None):
+        """获取主机已保存的 LLDP 信息"""
+        result = HostService.get_host_lldp(pk)
+        if result['success']:
+            return SuccessResponse(result['data'], errmsg=result['message'])
+        return ErrorResponse(ErrCode.HOST_NOT_FOUND, errmsg=result['message'])
+
     @action(detail=True, methods=['post'], url_path='collect_all')
     def collect_all(self, request, pk=None):
         """采集主机所有硬件信息（包括 LLDP）"""
