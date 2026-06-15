@@ -1,4 +1,5 @@
 """RepoService 测试"""
+from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from backend.models.osdeploy import RepoStatus
 from backend.services.osdeploy import RepoService
@@ -104,8 +105,10 @@ class RepoServiceTest(TestCase):
         result = RepoService.delete_repo(9999)
         self.assertFalse(result)
 
-    def test_sync_repo(self):
+    @patch("urllib.request.urlopen")
+    def test_sync_repo(self, mock_urlopen):
         """测试同步仓库"""
+        mock_urlopen.return_value = MagicMock()
         result = RepoService.sync_repo(self.repo.id)
         self.assertEqual(result['repo_id'], self.repo.id)
         self.assertEqual(result['repo_name'], 'TestRepo')
@@ -129,11 +132,6 @@ class RepoServiceTest(TestCase):
         self.assertEqual(result['repo_id'], repo.id)
         self.assertEqual(result['status'], 'failed')
         self.assertTrue(len(result['errors']) > 0)
-
-    def test_sync_repo_not_found(self):
-        """测试同步不存在的仓库"""
-        with self.assertRaises(ValueError):
-            RepoService.sync_repo(9999)
 
     def test_sync_repo_not_found(self):
         """测试同步不存在的仓库"""
