@@ -110,6 +110,30 @@ class RepoServiceTest(TestCase):
         self.assertEqual(result['repo_id'], self.repo.id)
         self.assertEqual(result['repo_name'], 'TestRepo')
         self.assertEqual(result['status'], 'synced')
+        self.assertIn('job_id', result)
+        self.assertIsNotNone(result['job_id'])
+
+        from backend.models.task import Task
+        task = Task.objects.get(job_id=result['job_id'])
+        self.assertEqual(task.job_type, 'repo_sync')
+        self.assertEqual(task.target, 'TestRepo')
+
+    def test_sync_repo_iso(self):
+        """测试同步 ISO 仓库"""
+        repo = RepoStatus.objects.create(
+            name='IsoRepo',
+            repo_type='iso',
+            base_url='/nonexistent/iso.iso'
+        )
+        result = RepoService.sync_repo(repo.id)
+        self.assertEqual(result['repo_id'], repo.id)
+        self.assertEqual(result['status'], 'failed')
+        self.assertTrue(len(result['errors']) > 0)
+
+    def test_sync_repo_not_found(self):
+        """测试同步不存在的仓库"""
+        with self.assertRaises(ValueError):
+            RepoService.sync_repo(9999)
 
     def test_sync_repo_not_found(self):
         """测试同步不存在的仓库"""
