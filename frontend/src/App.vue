@@ -56,6 +56,12 @@
         </nav>
       </aside>
       <main class="main-content">
+        <div v-if="pageHeader" class="page-header-bar">
+          <div class="page-header-content">
+            <h2 class="page-title">{{ pageHeader.title }}</h2>
+            <p class="page-desc">{{ pageHeader.description }}</p>
+          </div>
+        </div>
         <transition name="fade" mode="out-in">
           <router-view></router-view>
         </transition>
@@ -82,6 +88,18 @@ export default {
     },
     sidebarHidden() {
       return this.$route.meta?.hideSidebar
+    },
+    pageHeader() {
+      const path = this.$route.path
+      const allMenus = this.flattenMenus(this.menus)
+      const match = allMenus.find(m => m.path === path)
+      if (match) {
+        return {
+          title: match.meta?.title || match.name,
+          description: match.description || ''
+        }
+      }
+      return null
     }
   },
   mounted() {
@@ -119,6 +137,16 @@ export default {
       this.menuVisible = false
       this.$store.dispatch('auth/logout')
       this.$router.push('/login')
+    },
+    flattenMenus(menus) {
+      const result = []
+      for (const menu of menus || []) {
+        result.push(menu)
+        if (menu.children?.length) {
+          result.push(...this.flattenMenus(menu.children))
+        }
+      }
+      return result
     },
     getMenuIcon(path) {
       const icons = {
@@ -399,6 +427,30 @@ body {
   flex: 1;
   overflow-y: auto;
   background: #f5f7fa;
+}
+
+.page-header-bar {
+  background: #fff;
+  border-bottom: 1px solid #e4e7ed;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.page-header-content {
+  max-width: 1400px;
+}
+
+.page-title {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.page-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #909399;
 }
 
 .main-content.full-width {

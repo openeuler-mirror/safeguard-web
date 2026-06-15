@@ -16,7 +16,7 @@ class MenuSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Menu
-        fields = ['id', 'parent', 'path', 'name', 'component', 'sort', 'meta', 'buttons', 'created_at', 'updated_at']
+        fields = ['id', 'parent', 'path', 'name', 'component', 'sort', 'meta', 'description', 'buttons', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -36,7 +36,7 @@ class MenuTreeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Menu
-        fields = ['id', 'parent', 'path', 'name', 'component', 'sort', 'meta', 'children']
+        fields = ['id', 'parent', 'path', 'name', 'component', 'sort', 'meta', 'description', 'children']
 
     def get_children(self, obj):
         children = obj.children.all()
