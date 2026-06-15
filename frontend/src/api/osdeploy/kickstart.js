@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 // 获取Kickstart模板列表
 export function getKickstarts(params) {

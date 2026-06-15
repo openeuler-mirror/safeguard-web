@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 // 获取任务列表
 export function getJobs(params) {

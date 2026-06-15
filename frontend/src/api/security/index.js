@@ -1,5 +1,5 @@
 /** Safeguard API */
-import api from '../index'
+import api from '../auth'
 
 export function getSafeguards(params) {
   return api.get('/safeguards/', { params })

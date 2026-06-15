@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 // 获取白名单列表
 export function getWhiteList(params) {
