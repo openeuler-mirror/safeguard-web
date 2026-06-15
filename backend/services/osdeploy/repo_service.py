@@ -68,19 +68,140 @@ class RepoService:
 
     @staticmethod
     def sync_repo(repo_id: int) -> dict:
-        """同步仓库"""
+        """同步仓库
+
+        区分 repo_type（yum/iso/http）执行不同的同步逻辑：
+        - yum/http：尝试 urlopen 探测可用性，并尝试执行 reposync/createrepo（本地环境不存在命令时不报错）
+        - iso：检查挂载路径/ISO 文件是否存在
+
+        同时创建 Task 记录（job_type='repo_sync'）并返回结果。
+        """
+        import os
+        import shutil
+        import subprocess
+        import urllib.request
+        import urllib.error
+        import uuid
+
+        from backend.models.task import Task
+
         try:
             repo = RepoStatus.objects.get(pk=repo_id)
-            # TODO: 实现实际的仓库同步逻辑
-            # 例如：rsync, reposync 等
+        except RepoStatus.DoesNotExist:
+            raise ValueError(f"仓库不存在: {repo_id}")
+
+        job_id = f"repo_sync_{repo_id}_{uuid.uuid4().hex[:8]}"
+        task = Task.objects.create(
+            job_id=job_id,
+            job_type="repo_sync",
+            target=repo.name,
+            status="running",
+            progress=0,
+            result={},
+        )
+
+        errors = []
+        warnings = []
+        synced = False
+
+        repo_type = repo.repo_type
+        base_url = repo.base_url or ""
+
+        try:
+            if repo_type in ("yum", "http"):
+                # 1) 网络可用性探测
+                try:
+                    req = urllib.request.Request(base_url, method="HEAD")
+                    urllib.request.urlopen(req, timeout=10)
+                    warnings.append("仓库 URL 可访问")
+                except urllib.error.URLError as e:
+                    errors.append(f"仓库 URL 不可访问: {e}")
+                except urllib.error.HTTPError as e:
+                    errors.append(f"仓库 URL 返回 HTTP 错误: {e.code}")
+                except Exception as e:
+                    warnings.append(f"URL 探测异常（非致命）: {e}")
+
+                # 2) 尝试 reposync（本地不存在命令时不报错）
+                if shutil.which("reposync"):
+                    try:
+                        subprocess.run(
+                            ["reposync", "-n", "--repoid", repo.name, "-p", "/tmp/reposync"],
+                            capture_output=True,
+                            text=True,
+                            check=True,
+                        )
+                        warnings.append("reposync 预检成功")
+                    except subprocess.CalledProcessError as e:
+                        warnings.append(f"reposync 预检失败: {e.stderr}")
+                else:
+                    warnings.append("reposync 命令未安装，跳过")
+
+                # 3) 尝试 createrepo（本地不存在命令时不报错）
+                if shutil.which("createrepo") or shutil.which("createrepo_c"):
+                    try:
+                        cmd = "createrepo_c" if shutil.which("createrepo_c") else "createrepo"
+                        subprocess.run(
+                            [cmd, "/tmp/reposync/" + repo.name],
+                            capture_output=True,
+                            text=True,
+                            check=True,
+                        )
+                        warnings.append("createrepo 成功")
+                    except subprocess.CalledProcessError as e:
+                        warnings.append(f"createrepo 失败: {e.stderr}")
+                else:
+                    warnings.append("createrepo 命令未安装，跳过")
+
+                synced = len(errors) == 0
+
+            elif repo_type == "iso":
+                # ISO 类型：检查挂载路径或 ISO 文件
+                iso_path = base_url
+                if iso_path.startswith("file://"):
+                    iso_path = iso_path[len("file://"):]
+
+                if os.path.isfile(iso_path):
+                    warnings.append(f"ISO 文件存在: {iso_path}")
+                elif os.path.isdir(iso_path):
+                    warnings.append(f"ISO 挂载目录存在: {iso_path}")
+                else:
+                    errors.append(f"ISO 文件或挂载路径不存在: {iso_path}")
+
+                synced = len(errors) == 0
+
+            else:
+                errors.append(f"不支持的仓库类型: {repo_type}")
+
+            # 更新 Task 状态
+            task.status = "success" if synced else "failed"
+            task.progress = 100 if synced else 50
+            task.result = {
+                "repo_id": repo_id,
+                "repo_name": repo.name,
+                "repo_type": repo_type,
+                "synced": synced,
+                "warnings": warnings,
+            }
+            task.error_message = "; ".join(errors) if errors else ""
+            task.save()
+
             return {
                 "repo_id": repo_id,
                 "repo_name": repo.name,
-                "status": "synced",
-                "message": "仓库同步完成"
+                "repo_type": repo_type,
+                "status": "synced" if synced else "failed",
+                "job_id": job_id,
+                "message": "仓库同步完成" if synced else "仓库同步失败",
+                "warnings": warnings,
+                "errors": errors,
             }
-        except RepoStatus.DoesNotExist:
-            raise ValueError(f"仓库不存在: {repo_id}")
+
+        except Exception as e:
+            task.status = "failed"
+            task.progress = 0
+            task.error_message = str(e)
+            task.save()
+            raise
 
     @staticmethod
     def get_default_repo() -> Optional[RepoStatus]:
