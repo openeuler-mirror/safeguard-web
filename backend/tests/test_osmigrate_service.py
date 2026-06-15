@@ -157,3 +157,21 @@ class X2cuServiceTest(TestCase):
         # 验证传入的 migrate_type 为 iaas (第7个位置参数)
         call_args = mock_task.delay.call_args
         self.assertEqual(call_args[0][6], "iaas")
+
+    @patch("backend.tasks.osmigrate.migrate_task")
+    def test_start_migrate_iaas(self, mock_task):
+        mock_task.delay = MagicMock()
+
+        job_id = X2cuService.start_migrate(
+            job_name="test-migrate-iaas",
+            host="192.168.1.1",
+            port="22",
+            username="root",
+            password="pass",
+            hosts=[{"host": "192.168.1.1", "port": "22", "username": "root", "password": "pass"}],
+            migrate_type="iaas",
+        )
+        self.assertEqual(job_id, "test-migrate-iaas")
+        mock_task.delay.assert_called_once()
+        call_args = mock_task.delay.call_args
+        self.assertEqual(call_args[0][6], "iaas")
