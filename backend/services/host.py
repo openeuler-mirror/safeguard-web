@@ -274,6 +274,32 @@ class HostService:
             return {'success': False, 'message': 'LLDP 信息采集失败', 'data': None}
 
     @staticmethod
+    def get_host_lldp(host_id: int) -> Dict:
+        """
+        获取主机已保存的 LLDP 信息
+
+        Args:
+            host_id: 主机ID
+
+        Returns:
+            {
+                'success': bool,
+                'message': str,
+                'data': [...]  # LLDP 信息列表
+            }
+        """
+        try:
+            host = Host.objects.get(pk=host_id)
+        except Host.DoesNotExist:
+            return {'success': False, 'message': '主机不存在', 'data': None}
+
+        return {
+            'success': True,
+            'message': 'LLDP 信息获取成功',
+            'data': host.lldp_infos or []
+        }
+
+    @staticmethod
     def collect_all(host_id: int) -> Dict:
         """
         采集主机所有硬件信息（包括 LLDP）
