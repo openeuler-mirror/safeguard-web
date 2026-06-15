@@ -26,14 +26,15 @@ class Command(BaseCommand):
         Menu.objects.all().delete()
         AuthorityMenu.objects.all().delete()
 
-        def create_menu(name, path, sort, parent=None, component=''):
+        def create_menu(name, path, sort, parent=None, component='', description=''):
             return Menu.objects.create(
                 name=name,
                 path=path,
                 sort=sort,
                 parent=parent,
                 component=component,
-                meta={'title': name, 'icon': 'app'}
+                meta={'title': name, 'icon': 'app'},
+                description=description,
             )
 
         # 一级菜单

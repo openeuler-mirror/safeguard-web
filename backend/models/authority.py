@@ -39,6 +39,7 @@ class Menu(models.Model):
     component = models.CharField(max_length=255, blank=True, verbose_name="前端组件路径")
     sort = models.IntegerField(default=0, verbose_name="排序")
     meta = models.JSONField(default=dict, verbose_name="菜单元数据")  # {title, icon}
+    description = models.CharField(max_length=255, blank=True, verbose_name="页面描述")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
