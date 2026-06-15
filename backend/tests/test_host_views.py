@@ -445,6 +445,36 @@ class HostActionViewSetTest(APITestCase):
         response = self.client.post('/api/hosts/9999/collect_lldp/')
         self.assertNotEqual(response.data['errno'], 0)
 
+    def test_get_host_lldp_success(self):
+        """测试获取主机已保存的 LLDP 信息"""
+        self.host.lldp_infos = [
+            {
+                'ifname': 'eth0',
+                'peer_dev_name': 'switch-01',
+                'peer_chassis_type': 'network',
+                'peer_chassis_value': '00:11:22:33:44:55',
+                'peer_port_id': 'Gi0/1',
+                'vlan': '100',
+            }
+        ]
+        self.host.save()
+        response = self.client.get(f'/api/hosts/{self.host.pk}/lldp/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(len(response.data['data']), 1)
+        self.assertEqual(response.data['data'][0]['ifname'], 'eth0')
+        self.assertEqual(response.data['data'][0]['peer_dev_name'], 'switch-01')
+
+    def test_get_host_lldp_empty(self):
+        """测试获取未保存 LLDP 信息的主机"""
+        response = self.client.get(f'/api/hosts/{self.host.pk}/lldp/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data'], [])
+
+    def test_get_host_lldp_not_found(self):
+        """测试获取不存在主机的 LLDP 信息"""
+        response = self.client.get('/api/hosts/9999/lldp/')
+        self.assertNotEqual(response.data['errno'], 0)
+
     def test_collect_all_success(self):
         """测试采集全部信息成功"""
         response = self.client.post(f'/api/hosts/{self.host.pk}/collect_all/')
