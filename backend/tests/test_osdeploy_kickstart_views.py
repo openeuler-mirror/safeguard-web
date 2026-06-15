@@ -118,12 +118,26 @@ class KickStartViewSetTest(APITestCase):
         """测试验证Kickstart模板action"""
         ks = KickStartFileStatus.objects.create(
             name='validate-ks',
-            content='#!ks',
+            content='url --url=http://repo.example.com\nrootpw --iscrypted $6$salt$hash\ninstall\npart / --fstype=xfs --size=1',
             repo=self.repo
         )
         response = self.client.post(f'/api/kickstarts/{ks.pk}/validate/')
         self.assertEqual(response.data['errno'], 0)
         self.assertIn('验证', response.data['errmsg'])
+        self.assertTrue(response.data['data']['valid'])
+        self.assertEqual(response.data['data']['errors'], [])
+
+    def test_validate_kickstart_action_invalid(self):
+        """测试验证存在问题的Kickstart模板"""
+        ks = KickStartFileStatus.objects.create(
+            name='validate-ks-invalid',
+            content='missing required sections {{unreplaced_var}}',
+            repo=self.repo
+        )
+        response = self.client.post(f'/api/kickstarts/{ks.pk}/validate/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertFalse(response.data['data']['valid'])
+        self.assertTrue(len(response.data['data']['errors']) > 0)
 
     def test_preview_kickstart_action(self):
         """测试预览Kickstart模板action"""
