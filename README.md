@@ -103,7 +103,10 @@ python manage.py migrate
 # 6. 初始化权限与默认角色
 python manage.py init_authority
 
-# 7. 启动后端服务
+# 7. 重建系统菜单树（首次部署或菜单结构需要重置时执行）
+python manage.py rebuild_menus
+
+# 8. 启动后端服务
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -142,7 +145,7 @@ npm run test:run
 ## 使用说明
 
 1. 打开前端页面，使用默认管理员账号登录，或前往注册页面创建新用户。
-2. 登录后可在左侧菜单中访问：
+2. 登录后若侧边栏缺少某些模块（如 OS 部署、网络 LB、系统迁移等），请确认已执行 `python manage.py rebuild_menus` 重建菜单树，且当前账号已绑定“超级管理员”角色。
    - **系统管理**：用户、角色、菜单、权限
    - **主机管理**：集群、主机、虚拟机、镜像
    - **OS 部署**：ISO、Kickstart、PXE、自动安装、仓库、白名单
