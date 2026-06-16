@@ -1,7 +1,6 @@
 <template>
   <div class="kickstarts-container">
     <div class="kickstarts-header">
-      <h2>Kickstart 模板管理</h2>
       <div class="header-actions">
         <select v-model="filterRepo" class="filter-select" @change="handleFilter">
           <option value="">全部仓库</option>

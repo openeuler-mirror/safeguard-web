@@ -1,7 +1,6 @@
 <template>
   <div class="clusters-container">
     <div class="clusters-header">
-      <h2>集群管理</h2>
       <div class="header-actions">
         <input
           v-model="searchName"

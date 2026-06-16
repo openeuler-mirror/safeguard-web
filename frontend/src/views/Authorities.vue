@@ -1,7 +1,6 @@
 <template>
   <div class="authorities-container">
     <div class="authorities-header">
-      <h2>角色管理</h2>
       <div class="header-actions">
         <button class="refresh-btn" @click="loadAuthorities">刷新</button>
         <button class="add-btn" @click="openCreateDialog">新增角色</button>

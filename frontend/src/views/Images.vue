@@ -1,7 +1,6 @@
 <template>
   <div class="images-container">
     <div class="images-header">
-      <h2>镜像管理</h2>
       <div class="header-actions">
         <select v-model="filterHost" class="filter-select" @change="handleFilter">
           <option value="">全部宿主机</option>

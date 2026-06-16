@@ -1,7 +1,6 @@
 <template>
   <div class="whitelist-container">
     <div class="whitelist-header">
-      <h2>MAC地址白名单</h2>
       <div class="header-actions">
         <button class="btn-import" @click="openImportDialog">批量导入</button>
         <button class="btn-primary" @click="openCreateDialog">添加白名单</button>

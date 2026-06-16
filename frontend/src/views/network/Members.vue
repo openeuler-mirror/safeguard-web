@@ -1,7 +1,6 @@
 <template>
   <div class="members-container">
     <div class="members-header">
-      <h2>池成员</h2>
       <div class="header-actions">
         <select v-model="filterPool" class="filter-select" @change="handleFilter">
           <option value="">全部后端池</option>

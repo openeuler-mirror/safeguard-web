@@ -1,9 +1,5 @@
 <template>
   <div class="auto-install-container">
-    <div class="auto-install-header">
-      <h2>自动装机</h2>
-    </div>
-
     <div class="auto-install-content">
       <div class="form-card">
         <h3>装机配置</h3>

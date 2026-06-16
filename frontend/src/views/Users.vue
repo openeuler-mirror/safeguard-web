@@ -1,7 +1,6 @@
 <template>
   <div class="users-container">
     <div class="users-header">
-      <h2>用户管理</h2>
       <button class="refresh-btn" @click="loadUsers">刷新</button>
     </div>
 

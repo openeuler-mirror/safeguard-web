@@ -1,7 +1,6 @@
 <template>
   <div class="health-monitors-container">
     <div class="health-monitors-header">
-      <h2>健康检查</h2>
       <div class="header-actions">
         <select v-model="filterPool" class="filter-select" @change="handleFilter">
           <option value="">全部后端池</option>

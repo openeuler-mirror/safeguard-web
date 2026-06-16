@@ -1,7 +1,6 @@
 <template>
   <div class="vms-container">
     <div class="vms-header">
-      <h2>虚拟机管理</h2>
       <div class="header-actions">
         <select v-model="filterCluster" class="filter-select" @change="handleFilter">
           <option value="">全部集群</option>
