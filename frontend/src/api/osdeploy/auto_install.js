@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 export function autoInstall(data) {
   return api.post('/autoinstall/auto_install/', data)

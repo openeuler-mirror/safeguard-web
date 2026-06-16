@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 // 获取仓库列表
 export function getRepos(params) {

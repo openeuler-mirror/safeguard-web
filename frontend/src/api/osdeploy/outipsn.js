@@ -1,4 +1,4 @@
-import api from './auth'
+import api from '../auth'
 
 // 获取出口IP序列号列表
 export function getOutIpSNs(params) {
