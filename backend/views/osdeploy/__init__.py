@@ -8,6 +8,7 @@ from backend.views.osdeploy.sensor import SensorViewSet
 from backend.views.osdeploy.novnc import NoVNCViewSet
 from backend.views.osdeploy.disk_partition import DiskPartitionViewSet
 from backend.views.osdeploy.package import PackageViewSet
+from backend.views.osdeploy.iso_file_status import ISOFileStatusViewSet
 
 __all__ = [
     'JobViewSet',
@@ -19,4 +20,5 @@ __all__ = [
     'NoVNCViewSet',
     'DiskPartitionViewSet',
     'PackageViewSet',
+    'ISOFileStatusViewSet',
 ]

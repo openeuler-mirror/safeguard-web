@@ -11,6 +11,7 @@ from backend.views.osdeploy import (
     NoVNCViewSet,
     DiskPartitionViewSet,
     PackageViewSet,
+    ISOFileStatusViewSet,
 )
 
 router = DefaultRouter()
@@ -23,6 +24,7 @@ router.register(r'sensors', SensorViewSet, basename='sensor')
 router.register(r'novnc', NoVNCViewSet, basename='novnc')
 router.register(r'disk-partition', DiskPartitionViewSet, basename='disk-partition')
 router.register(r'packages', PackageViewSet, basename='package')
+router.register(r'isos', ISOFileStatusViewSet, basename='iso')
 
 urlpatterns = [
     path('', include(router.urls)),
