@@ -129,6 +129,23 @@ class Host(models.Model):
     mac_address = models.CharField(max_length=17, blank=True, verbose_name="MAC地址")
     region = models.CharField(max_length=100, blank=True, verbose_name="区域")
 
+    # Safeguard 相关
+    safeguard_status = models.CharField(
+        max_length=20,
+        choices=[('uninstalled', '未安装'), ('active', '已激活'), ('inactive', '未激活'), ('error', '错误')],
+        default='uninstalled',
+        verbose_name='Safeguard 状态'
+    )
+    last_heartbeat = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='最后心跳时间'
+    )
+    monitor_enabled = models.BooleanField(
+        default=False,
+        verbose_name='监控启用'
+    )
+
     # 创建者
     created_by = models.ForeignKey(
         'backend.Users', on_delete=models.SET_NULL, null=True, blank=True,
