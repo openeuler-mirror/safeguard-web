@@ -17,6 +17,30 @@ class HostMonitorData(models.Model):
         verbose_name='采集时间',
     )
 
+    # CPU 相关字段
+    cpu_usage = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='CPU使用率',
+    )
+
+    # 内存相关字段
+    memory_total = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='总内存(字节)',
+    )
+    memory_used = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='已用内存(字节)',
+    )
+    memory_usage = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='内存使用率',
+    )
+
     class Meta:
         db_table = 'host_monitor_data'
         ordering = ['-timestamp']
