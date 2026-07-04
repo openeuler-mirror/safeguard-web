@@ -41,6 +41,30 @@ class HostMonitorData(models.Model):
         verbose_name='内存使用率',
     )
 
+    # 网络相关字段
+    network_in = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='入站流量(字节)',
+    )
+    network_out = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='出站流量(字节)',
+    )
+
+    # 磁盘相关字段
+    disk_read = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='磁盘读(字节)',
+    )
+    disk_write = models.BigIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='磁盘写(字节)',
+    )
+
     class Meta:
         db_table = 'host_monitor_data'
         ordering = ['-timestamp']
