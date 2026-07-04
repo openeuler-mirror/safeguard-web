@@ -4,6 +4,7 @@ from backend.models.safeguard.file_monitor import FileMonitorRule, FileMonitorEv
 from backend.models.safeguard.policy import (
     SafeguardPolicyTemplate,
     HostSafeguardPolicy,
+    PolicyApplyTask,
 )
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     'FileMonitorEvent',
     'SafeguardPolicyTemplate',
     'HostSafeguardPolicy',
+    'PolicyApplyTask',
 ]
 
