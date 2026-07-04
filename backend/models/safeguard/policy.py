@@ -124,3 +124,76 @@ class HostSafeguardPolicy(models.Model):
 
     def __str__(self):
         return f'{self.host.hostname} - {self.status}'
+
+
+class PolicyApplyTask(models.Model):
+    """策略下发任务"""
+
+    TASK_TYPE_CHOICES = [
+        ('apply', '下发'),
+        ('rollback', '回滚'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', '待执行'),
+        ('running', '执行中'),
+        ('success', '成功'),
+        ('failed', '失败'),
+    ]
+
+    host = models.ForeignKey(
+        Host,
+        on_delete=models.CASCADE,
+        related_name='policy_tasks',
+        verbose_name='主机',
+    )
+    policy = models.ForeignKey(
+        HostSafeguardPolicy,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        verbose_name='策略',
+    )
+    task_type = models.CharField(
+        max_length=20,
+        choices=TASK_TYPE_CHOICES,
+        verbose_name='任务类型',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name='状态',
+    )
+    message = models.TextField(
+        blank=True,
+        verbose_name='消息',
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='开始时间',
+    )
+    finished_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='完成时间',
+    )
+    created_by = models.ForeignKey(
+        'backend.Users',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='创建者',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间',
+    )
+
+    class Meta:
+        db_table = 'policy_apply_tasks'
+        ordering = ['-created_at']
+        verbose_name = '策略下发任务'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.host.hostname} - {self.task_type} - {self.status}'
