@@ -40,10 +40,45 @@ class FileMonitorRule(models.Model):
         default=True,
         verbose_name='监控删除',
     )
+    watch_access = models.BooleanField(
+        default=False,
+        verbose_name='监控访问',
+    )
+    watch_perm = models.BooleanField(
+        default=True,
+        verbose_name='监控权限变更',
+    )
+
+    recursive = models.BooleanField(
+        default=False,
+        verbose_name='递归监控',
+    )
+    includes = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='包含规则',
+    )
+    excludes = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='排除规则',
+    )
+    enabled = models.BooleanField(
+        default=True,
+        verbose_name='启用',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间',
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='更新时间',
+    )
 
     class Meta:
         db_table = 'file_monitor_rules'
-        ordering = ['-id']
+        ordering = ['-created_at']
         verbose_name = '文件监控规则'
         verbose_name_plural = verbose_name
 
