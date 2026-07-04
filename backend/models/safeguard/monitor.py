@@ -23,6 +23,21 @@ class HostMonitorData(models.Model):
         blank=True,
         verbose_name='CPU使用率',
     )
+    load_1m = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='1分钟负载',
+    )
+    load_5m = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='5分钟负载',
+    )
+    load_15m = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='15分钟负载',
+    )
 
     # 内存相关字段
     memory_total = models.BigIntegerField(
@@ -70,6 +85,9 @@ class HostMonitorData(models.Model):
         ordering = ['-timestamp']
         verbose_name = '主机监控数据'
         verbose_name_plural = verbose_name
+        indexes = [
+            models.Index(fields=['host', 'timestamp']),
+        ]
 
     def __str__(self):
         return f'{self.host.hostname} - {self.timestamp}'
