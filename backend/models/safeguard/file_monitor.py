@@ -95,6 +95,14 @@ class FileMonitorEvent(models.Model):
         related_name='file_monitor_events',
         verbose_name='主机',
     )
+    rule = models.ForeignKey(
+        FileMonitorRule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='events',
+        verbose_name='触发规则',
+    )
     event_type = models.CharField(
         max_length=50,
         verbose_name='事件类型',
@@ -103,10 +111,42 @@ class FileMonitorEvent(models.Model):
         max_length=500,
         verbose_name='文件路径',
     )
+    process_name = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='进程名称',
+    )
+    process_id = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='进程ID',
+    )
+    user = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='操作用户',
+    )
+    timestamp = models.DateTimeField(
+        db_index=True,
+        verbose_name='事件时间',
+    )
+    details = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='详细信息',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间',
+    )
 
     class Meta:
         db_table = 'file_monitor_events'
-        ordering = ['-id']
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['host', 'timestamp']),
+            models.Index(fields=['event_type']),
+        ]
         verbose_name = '文件监控事件'
         verbose_name_plural = verbose_name
 
