@@ -84,3 +84,31 @@ class FileMonitorRule(models.Model):
 
     def __str__(self):
         return f'{self.host.hostname} - {self.path}'
+
+
+class FileMonitorEvent(models.Model):
+    """文件监控事件"""
+
+    host = models.ForeignKey(
+        Host,
+        on_delete=models.CASCADE,
+        related_name='file_monitor_events',
+        verbose_name='主机',
+    )
+    event_type = models.CharField(
+        max_length=50,
+        verbose_name='事件类型',
+    )
+    path = models.CharField(
+        max_length=500,
+        verbose_name='文件路径',
+    )
+
+    class Meta:
+        db_table = 'file_monitor_events'
+        ordering = ['-id']
+        verbose_name = '文件监控事件'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.event_type} - {self.path}'
