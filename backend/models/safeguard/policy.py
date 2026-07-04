@@ -59,3 +59,22 @@ class SafeguardPolicyTemplate(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class HostSafeguardPolicy(models.Model):
+    """主机 Safeguard 策略"""
+
+    host = models.OneToOneField(
+        Host,
+        on_delete=models.CASCADE,
+        related_name='safeguard_policy',
+        verbose_name='主机',
+    )
+
+    class Meta:
+        db_table = 'host_safeguard_policies'
+        verbose_name = '主机策略'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.host.hostname}'
