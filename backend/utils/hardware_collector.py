@@ -1382,3 +1382,221 @@ def collect_disk_metrics(host: Host) -> Dict[str, Any]:
         result['error'] = str(e)
 
     return result
+
+
+def _get_system_accounts(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取系统账户列表
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        系统账户列表
+    """
+    accounts = []
+    try:
+        # 使用 cat /etc/passwd 获取账户信息
+        stdout, stderr, exit_code = client.execute_command("cat /etc/passwd 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return accounts
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+
+            parts = line.split(':')
+            if len(parts) < 7:
+                continue
+
+            username = parts[0]
+            password = parts[1]
+            uid = int(parts[2]) if parts[2].isdigit() else -1
+            gid = int(parts[3]) if parts[3].isdigit() else -1
+            gecos = parts[4]
+            home_dir = parts[5]
+            shell = parts[6]
+
+            # 判断账户类型
+            is_system = uid < 1000
+
+            accounts.append({
+                'username': username,
+                'uid': uid,
+                'gid': gid,
+                'gecos': gecos,
+                'home_dir': home_dir,
+                'shell': shell,
+                'is_system': is_system,
+                'is_locked': password.startswith('!') or password.startswith('*'),
+            })
+
+    except Exception as e:
+        logger.error(f"Error getting system accounts: {e}")
+
+    return accounts
+
+
+def _get_account_password_info(client: SSHClient, username: str) -> Dict[str, Any]:
+    """
+    获取账户密码信息
+
+    Args:
+        client: SSH 客户端
+        username: 用户名
+
+    Returns:
+        密码信息字典
+    """
+    info = {
+        'password_changed': None,
+        'password_expires': None,
+        'min_days': -1,
+        'max_days': -1,
+        'warn_days': -1,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command(f"chage -l {username} 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return info
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip().lower()
+                value = value.strip()
+
+                if 'last password change' in key:
+                    if value and value != 'never':
+                        try:
+                            info['password_changed'] = value
+                        except:
+                            pass
+                elif 'password expires' in key:
+                    if value and value != 'never':
+                        try:
+                            info['password_expires'] = value
+                        except:
+                            pass
+                elif 'minimum' in key and 'days' in key:
+                    try:
+                        info['min_days'] = int(value) if value.isdigit() else -1
+                    except:
+                        pass
+                elif 'maximum' in key and 'days' in key:
+                    try:
+                        info['max_days'] = int(value) if value.isdigit() else -1
+                    except:
+                        pass
+                elif 'warning' in key and 'days' in key:
+                    try:
+                        info['warn_days'] = int(value) if value.isdigit() else -1
+                    except:
+                        pass
+
+    except Exception as e:
+        logger.error(f"Error getting account password info for {username}: {e}")
+
+    return info
+
+
+def _get_last_login_info(client: SSHClient, username: str) -> Dict[str, Any]:
+    """
+    获取账户最后登录信息
+
+    Args:
+        client: SSH 客户端
+        username: 用户名
+
+    Returns:
+        最后登录信息字典
+    """
+    info = {
+        'last_login': None,
+        'login_count': 0,
+    }
+
+    try:
+        # 使用 last 命令获取最后登录信息
+        stdout, stderr, exit_code = client.execute_command(f"last -n 10 {username} 2>/dev/null")
+        if exit_code == 0 and stdout:
+            lines = stdout.strip().split('\n')
+            login_count = 0
+            for line in lines:
+                line = line.strip()
+                if line.startswith(username):
+                    login_count += 1
+                    if not info['last_login']:
+                        # 提取最后登录时间
+                        parts = line.split()
+                        if len(parts) >= 7:
+                            info['last_login'] = ' '.join(parts[3:7])
+            info['login_count'] = login_count
+
+    except Exception as e:
+        logger.error(f"Error getting last login info for {username}: {e}")
+
+    return info
+
+
+def collect_system_accounts(host: Host) -> Dict[str, Any]:
+    """
+    采集系统账户信息
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        系统账户信息字典
+    """
+    result = {
+        'success': False,
+        'accounts': [],
+        'total_accounts': 0,
+        'system_accounts': 0,
+        'user_accounts': 0,
+        'collected_at': '',
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取系统账户列表
+            accounts = _get_system_accounts(client)
+
+            # 为每个账户获取详细信息
+            for account in accounts:
+                username = account['username']
+                # 获取密码信息
+                password_info = _get_account_password_info(client, username)
+                account.update(password_info)
+
+                # 获取最后登录信息
+                login_info = _get_last_login_info(client, username)
+                account.update(login_info)
+
+            result['accounts'] = accounts
+            result['total_accounts'] = len(accounts)
+            result['system_accounts'] = len([a for a in accounts if a['is_system']])
+            result['user_accounts'] = len([a for a in accounts if not a['is_system']])
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect system accounts from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
