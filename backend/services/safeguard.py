@@ -16,6 +16,11 @@ from django.core.cache import cache
 
 from backend.models.host import Host
 from backend.models.safeguard.monitor import HostMonitorData
+from backend.models.safeguard.policy import (
+    SafeguardPolicyTemplate,
+    HostSafeguardPolicy,
+    PolicyApplyTask,
+)
 from backend.utils.hardware_collector import (
     collect_host_hardware,
     collect_ports,
@@ -533,17 +538,46 @@ class PolicyService:
     """
 
     @staticmethod
-    def create_policy_template(data: Dict[str, Any]) -> Dict[str, Any]:
+    def create_policy_template(data: Dict[str, Any], created_by=None) -> Dict[str, Any]:
         """
         创建安全策略模板
 
         Args:
             data: 策略模板数据
+            created_by: 创建者用户
 
         Returns:
             创建的策略模板
         """
-        pass
+        try:
+            with transaction.atomic():
+                template = SafeguardPolicyTemplate.objects.create(
+                    name=data['name'],
+                    description=data.get('description', ''),
+                    template_type=data.get('template_type', 'custom'),
+                    is_builtin=data.get('is_builtin', False),
+                    config=data.get('config', {}),
+                    created_by=created_by,
+                )
+
+            logger.info(f'Policy template created: {template.name}')
+            return {
+                'success': True,
+                'data': {
+                    'id': template.id,
+                    'name': template.name,
+                    'description': template.description,
+                    'template_type': template.template_type,
+                    'is_builtin': template.is_builtin,
+                },
+            }
+
+        except Exception as e:
+            logger.error(f'Error creating policy template: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def list_policy_templates(
@@ -562,21 +596,195 @@ class PolicyService:
         Returns:
             策略模板列表
         """
-        pass
+        try:
+            queryset = SafeguardPolicyTemplate.objects.all()
+
+            if template_type:
+                queryset = queryset.filter(template_type=template_type)
+
+            total = queryset.count()
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            data = []
+            for template in queryset:
+                data.append({
+                    'id': template.id,
+                    'name': template.name,
+                    'description': template.description,
+                    'template_type': template.template_type,
+                    'is_builtin': template.is_builtin,
+                    'created_at': template.created_at.isoformat(),
+                    'updated_at': template.updated_at.isoformat(),
+                })
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error listing policy templates: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
-    def bind_host_policy(host_id: int, template_id: int) -> Dict[str, Any]:
+    def get_policy_template(template_id: int) -> Dict[str, Any]:
+        """
+        获取策略模板详情
+
+        Args:
+            template_id: 模板ID
+
+        Returns:
+            策略模板详情
+        """
+        try:
+            template = SafeguardPolicyTemplate.objects.get(id=template_id)
+            return {
+                'success': True,
+                'data': {
+                    'id': template.id,
+                    'name': template.name,
+                    'description': template.description,
+                    'template_type': template.template_type,
+                    'is_builtin': template.is_builtin,
+                    'config': template.config,
+                    'created_at': template.created_at.isoformat(),
+                    'updated_at': template.updated_at.isoformat(),
+                },
+            }
+
+        except SafeguardPolicyTemplate.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Policy template {template_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting policy template: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def bind_host_policy(host_id: int, template_id: int, created_by=None) -> Dict[str, Any]:
         """
         为主机绑定安全策略
 
         Args:
             host_id: 主机ID
             template_id: 策略模板ID
+            created_by: 操作人
 
         Returns:
             绑定结果
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            template = SafeguardPolicyTemplate.objects.get(id=template_id)
+
+            with transaction.atomic():
+                # 获取或创建主机策略
+                policy, created = HostSafeguardPolicy.objects.get_or_create(
+                    host=host,
+                    defaults={
+                        'template': template,
+                        'config': template.config.copy(),
+                    },
+                )
+
+                # 如果已存在，更新策略
+                if not created:
+                    policy.template = template
+                    policy.config = template.config.copy()
+                    policy.config_version += 1
+                    policy.status = 'pending'
+                    policy.save()
+
+                # 创建下发任务
+                task = PolicyApplyTask.objects.create(
+                    host=host,
+                    policy=policy,
+                    task_type='apply',
+                    status='pending',
+                    created_by=created_by,
+                )
+
+            logger.info(f'Policy bound to host {host_id}: template {template_id}')
+            return {
+                'success': True,
+                'data': {
+                    'policy_id': policy.id,
+                    'task_id': task.id,
+                    'host_id': host_id,
+                    'template_id': template_id,
+                    'status': policy.status,
+                },
+            }
+
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except SafeguardPolicyTemplate.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Policy template {template_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error binding host policy: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_host_policy(host_id: int) -> Dict[str, Any]:
+        """
+        获取主机策略
+
+        Args:
+            host_id: 主机ID
+
+        Returns:
+            主机策略详情
+        """
+        try:
+            policy = HostSafeguardPolicy.objects.select_related('template', 'host').get(host_id=host_id)
+            return {
+                'success': True,
+                'data': {
+                    'id': policy.id,
+                    'host_id': policy.host_id,
+                    'host_name': policy.host.hostname,
+                    'template_id': policy.template_id,
+                    'template_name': policy.template.name if policy.template else None,
+                    'config': policy.config,
+                    'config_version': policy.config_version,
+                    'status': policy.status,
+                    'applied_at': policy.applied_at.isoformat() if policy.applied_at else None,
+                    'last_sync': policy.last_sync.isoformat() if policy.last_sync else None,
+                },
+            }
+
+        except HostSafeguardPolicy.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Policy for host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting host policy: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
 
 class AuditService:
