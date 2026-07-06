@@ -37,7 +37,7 @@ class SafeguardPolicyTemplateViewSet(UnifiedModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return SafeguardPolicyTemplateCreateSerializer
-        if self.action in ('update', 'partial_update'):
+        if self.action in ['update', 'partial_update']:
             return SafeguardPolicyTemplateUpdateSerializer
         return SafeguardPolicyTemplateSerializer
 
@@ -94,3 +94,19 @@ class PolicyApplyTaskViewSet(UnifiedModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='apply')
+    def apply(self, request, pk=None):
+        """执行策略下发"""
+        result = PolicyService.apply_policy(pk)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '策略下发失败'))
+
+    @action(detail=True, methods=['get'], url_path='status')
+    def task_status(self, request, pk=None):
+        """获取任务状态"""
+        result = PolicyService.get_task_status(pk)
+        if result['success']:
+            return SuccessResponse(result['data'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取任务状态失败'))

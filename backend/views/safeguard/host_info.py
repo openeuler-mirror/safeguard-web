@@ -101,3 +101,61 @@ class HostInfoViewSet(viewsets.ViewSet):
         if result['success']:
             return SuccessResponse(result)
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取账户信息失败'))
+
+    @action(detail=False, methods=['post'], url_path='service-control')
+    def service_control(self, request):
+        """控制主机服务（启动、停止、重启、重载、启用、禁用）"""
+        host_id = request.data.get('host_id')
+        service_name = request.data.get('service_name')
+        action = request.data.get('action')
+
+        if not host_id or not service_name or not action:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id, service_name and action are required')
+
+        if action not in ['start', 'stop', 'restart', 'reload', 'enable', 'disable']:
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='Invalid action')
+
+        result = HostInfoService.control_service(host_id, service_name, action)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '服务控制失败')))
+
+    @action(detail=False, methods=['get'], url_path='service-logs')
+    def service_logs(self, request):
+        """获取服务日志"""
+        host_id = request.query_params.get('host_id')
+        service_name = request.query_params.get('service_name')
+        lines = request.query_params.get('lines', 100)
+
+        if not host_id or not service_name:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id and service_name are required')
+
+        try:
+            lines = int(lines)
+        except (ValueError, TypeError):
+            lines = 100
+
+        result = HostInfoService.get_service_logs(host_id, service_name, lines)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务日志失败'))
+
+    @action(detail=False, methods=['post'], url_path='kill-process')
+    def kill_process(self, request):
+        """终止主机进程"""
+        host_id = request.data.get('host_id')
+        pid = request.data.get('pid')
+        force = request.data.get('force', False)
+
+        if not host_id or pid is None:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id and pid are required')
+
+        try:
+            pid = int(pid)
+        except (ValueError, TypeError):
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='pid must be an integer')
+
+        result = HostInfoService.kill_process(host_id, pid, force)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '终止进程失败')))
