@@ -49,8 +49,16 @@ class TaskViewSet(UnifiedModelViewSet):
             for k, v in serializer.validated_data.items()
             if v
         }
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", 10))
+        # 安全解析分页参数
+        try:
+            page = int(request.query_params.get("page", 1))
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            page_size = int(request.query_params.get("page_size", 10))
+        except (ValueError, TypeError):
+            page_size = 10
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
@@ -66,8 +74,16 @@ class TaskViewSet(UnifiedModelViewSet):
             for k, v in serializer.validated_data.items()
             if v
         }
-        page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", 10))
+        # 安全解析分页参数
+        try:
+            page = int(request.query_params.get("page", 1))
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            page_size = int(request.query_params.get("page_size", 10))
+        except (ValueError, TypeError):
+            page_size = 10
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
