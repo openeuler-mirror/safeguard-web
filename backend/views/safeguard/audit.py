@@ -41,3 +41,32 @@ class SystemLogViewSet(UnifiedModelViewSet):
     def get_queryset(self):
         queryset = SystemLog.objects.select_related('host').all().order_by('-timestamp')
         return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+
+    @action(detail=False, methods=['post'], url_path='collect')
+    def collect_logs(self, request):
+        """采集系统日志"""
+        from backend.services.safeguard import AuditService
+
+        host_id = request.data.get('host_id')
+        if not host_id:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id is required')
+
+        try:
+            host_id = int(host_id)
+        except (ValueError, TypeError):
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
+
+        log_sources = request.data.get('log_sources')
+        num_lines = request.data.get('num_lines', 100)
+        save_to_db = request.data.get('save_to_db', True)
+
+        result = AuditService.collect_and_save_system_logs(
+            host_id,
+            log_sources=log_sources,
+            num_lines=num_lines,
+            save_to_db=save_to_db
+        )
+
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '采集系统日志失败'))
