@@ -54,11 +54,19 @@ class TaskViewSet(UnifiedModelViewSet):
             page = int(request.query_params.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        # 确保 page >= 1
+        if page < 1:
+            page = 1
 
         try:
             page_size = int(request.query_params.get("page_size", 10))
         except (ValueError, TypeError):
             page_size = 10
+        # 确保 page_size 在合理范围内 (1-1000)
+        if page_size < 1:
+            page_size = 10
+        if page_size > 1000:
+            page_size = 1000
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
@@ -79,11 +87,19 @@ class TaskViewSet(UnifiedModelViewSet):
             page = int(request.query_params.get("page", 1))
         except (ValueError, TypeError):
             page = 1
+        # 确保 page >= 1
+        if page < 1:
+            page = 1
 
         try:
             page_size = int(request.query_params.get("page_size", 10))
         except (ValueError, TypeError):
             page_size = 10
+        # 确保 page_size 在合理范围内 (1-1000)
+        if page_size < 1:
+            page_size = 10
+        if page_size > 1000:
+            page_size = 1000
         result = TaskService.query_by_condition(
             condition=condition, page=page, page_size=page_size
         )
