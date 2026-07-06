@@ -17,8 +17,10 @@ class ErrCode:
 
     # 通用错误 (1xxx)
     PARAM_ERROR = 1001
+    PARAMETER_MISSING = 1002
     NOT_FOUND = 1004
     METHOD_NOT_ALLOWED = 1005
+    OPERATION_FAILED = 1006
     INTERNAL_ERROR = 1500
 
     # 认证错误 (2xxx)
@@ -80,8 +82,10 @@ class ErrCode:
 _ERRCODE_MAP = {
     0: "操作成功",
     1001: "参数错误",
+    1002: "缺少必要参数",
     1004: "资源不存在",
     1005: "请求方法不支持",
+    1006: "操作失败",
     1500: "服务器内部错误",
     2001: "认证失败",
     2002: "token已过期",
