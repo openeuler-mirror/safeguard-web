@@ -9,7 +9,7 @@ from backend.views.safeguard.file_monitor import (
     FileMonitorRuleViewSet,
     FileMonitorEventViewSet,
 )
-from backend.views.safeguard.audit import AuditLogViewSet
+from backend.views.safeguard.audit import AuditLogViewSet, SystemLogViewSet
 from backend.views.safeguard.host_info import HostInfoViewSet
 
 __all__ = [
@@ -20,5 +20,6 @@ __all__ = [
     'FileMonitorRuleViewSet',
     'FileMonitorEventViewSet',
     'AuditLogViewSet',
+    'SystemLogViewSet',
     'HostInfoViewSet',
 ]
