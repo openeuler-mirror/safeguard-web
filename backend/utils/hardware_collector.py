@@ -811,3 +811,565 @@ def collect_services(host: Host) -> Dict[str, Any]:
         result['error'] = str(e)
 
     return result
+
+
+def _get_cpu_usage_from_proc(client: SSHClient) -> Dict[str, Any]:
+    """
+    从 /proc/stat 获取 CPU 使用情况
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        CPU 使用信息
+    """
+    cpu_stats = {
+        'user': 0,
+        'nice': 0,
+        'system': 0,
+        'idle': 0,
+        'iowait': 0,
+        'irq': 0,
+        'softirq': 0,
+        'steal': 0,
+        'guest': 0,
+        'guest_nice': 0,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/stat 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return cpu_stats
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            if line.startswith('cpu '):
+                parts = line.split()
+                if len(parts) >= 11:
+                    cpu_stats['user'] = int(parts[1])
+                    cpu_stats['nice'] = int(parts[2])
+                    cpu_stats['system'] = int(parts[3])
+                    cpu_stats['idle'] = int(parts[4])
+                    cpu_stats['iowait'] = int(parts[5])
+                    cpu_stats['irq'] = int(parts[6])
+                    cpu_stats['softirq'] = int(parts[7])
+                    cpu_stats['steal'] = int(parts[8])
+                    cpu_stats['guest'] = int(parts[9])
+                    cpu_stats['guest_nice'] = int(parts[10])
+                break
+
+    except Exception as e:
+        logger.error(f"Error getting CPU usage from proc: {e}")
+
+    return cpu_stats
+
+
+def _get_load_average(client: SSHClient) -> Dict[str, float]:
+    """
+    获取系统负载平均值
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        { 'load_1min': float, 'load_5min': float, 'load_15min': float }
+    """
+    load_avg = {
+        'load_1min': 0.0,
+        'load_5min': 0.0,
+        'load_15min': 0.0,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/loadavg 2>/dev/null || uptime 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return load_avg
+
+        if '/proc/loadavg' in stdout or len(stdout.split()) >= 3:
+            parts = stdout.strip().split()
+            try:
+                if len(parts) >= 3:
+                    load_avg['load_1min'] = float(parts[0])
+                    load_avg['load_5min'] = float(parts[1])
+                    load_avg['load_15min'] = float(parts[2])
+            except (ValueError, IndexError):
+                pass
+
+    except Exception as e:
+        logger.error(f"Error getting load average: {e}")
+
+    return load_avg
+
+
+def _get_per_core_usage(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取每核 CPU 使用情况
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        每核 CPU 使用信息列表
+    """
+    per_core = []
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/stat 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return per_core
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            if line.startswith('cpu') and not line.startswith('cpu '):
+                parts = line.split()
+                if len(parts) >= 5:
+                    core_id = parts[0].replace('cpu', '')
+                    per_core.append({
+                        'core_id': core_id,
+                        'user': int(parts[1]) if parts[1].isdigit() else 0,
+                        'system': int(parts[3]) if parts[3].isdigit() else 0,
+                        'idle': int(parts[4]) if parts[4].isdigit() else 0,
+                    })
+
+    except Exception as e:
+        logger.error(f"Error getting per-core usage: {e}")
+
+    return per_core
+
+
+def collect_cpu_metrics(host: Host) -> Dict[str, Any]:
+    """
+    采集 CPU 监控数据
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        CPU 监控数据
+    """
+    result = {
+        'cpu_usage': {},
+        'load_avg': {},
+        'per_core': [],
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取 CPU 使用情况
+            cpu_usage = _get_cpu_usage_from_proc(client)
+            result['cpu_usage'] = cpu_usage
+
+            # 计算使用率百分比
+            total = sum(cpu_usage.values())
+            if total > 0:
+                idle = cpu_usage.get('idle', 0)
+                result['cpu_usage']['usage_percent'] = round(100.0 * (total - idle) / total, 2)
+            else:
+                result['cpu_usage']['usage_percent'] = 0.0
+
+            # 获取负载平均值
+            load_avg = _get_load_average(client)
+            result['load_avg'] = load_avg
+
+            # 获取每核使用情况
+            per_core = _get_per_core_usage(client)
+            result['per_core'] = per_core
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect CPU metrics from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
+
+
+def _get_memory_usage_from_proc(client: SSHClient) -> Dict[str, Any]:
+    """
+    从 /proc/meminfo 获取内存使用情况
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        内存使用信息
+    """
+    meminfo = {
+        'mem_total': 0,
+        'mem_free': 0,
+        'mem_available': 0,
+        'mem_buffers': 0,
+        'mem_cached': 0,
+        'swap_total': 0,
+        'swap_free': 0,
+        'swap_cached': 0,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/meminfo 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return meminfo
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            parts = line.split(':')
+            if len(parts) >= 2:
+                key = parts[0].strip()
+                value_part = parts[1].strip().split()[0]
+                value = int(value_part) if value_part.isdigit() else 0
+
+                if key == 'MemTotal':
+                    meminfo['mem_total'] = value
+                elif key == 'MemFree':
+                    meminfo['mem_free'] = value
+                elif key == 'MemAvailable':
+                    meminfo['mem_available'] = value
+                elif key == 'Buffers':
+                    meminfo['mem_buffers'] = value
+                elif key == 'Cached':
+                    meminfo['mem_cached'] = value
+                elif key == 'SwapTotal':
+                    meminfo['swap_total'] = value
+                elif key == 'SwapFree':
+                    meminfo['swap_free'] = value
+                elif key == 'SwapCached':
+                    meminfo['swap_cached'] = value
+
+    except Exception as e:
+        logger.error(f"Error getting memory usage from proc: {e}")
+
+    return meminfo
+
+
+def _get_swap_usage(client: SSHClient) -> Dict[str, Any]:
+    """
+    获取 Swap 使用情况
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        Swap 使用信息
+    """
+    swap_info = {
+        'swap_total': 0,
+        'swap_used': 0,
+        'swap_free': 0,
+        'swap_percent': 0.0,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("free -k 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return swap_info
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            if line.startswith('Swap:'):
+                parts = line.split()
+                if len(parts) >= 4:
+                    swap_info['swap_total'] = int(parts[1])
+                    swap_info['swap_used'] = int(parts[2])
+                    swap_info['swap_free'] = int(parts[3])
+                    if swap_info['swap_total'] > 0:
+                        swap_info['swap_percent'] = round(100.0 * swap_info['swap_used'] / swap_info['swap_total'], 2)
+                break
+
+    except Exception as e:
+        logger.error(f"Error getting swap usage: {e}")
+
+    return swap_info
+
+
+def collect_memory_metrics(host: Host) -> Dict[str, Any]:
+    """
+    采集内存监控数据
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        内存监控数据
+    """
+    result = {
+        'memory': {},
+        'swap': {},
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取内存使用情况
+            meminfo = _get_memory_usage_from_proc(client)
+            result['memory'] = meminfo
+
+            # 计算内存使用率
+            if meminfo['mem_total'] > 0:
+                mem_used = meminfo['mem_total'] - meminfo['mem_available']
+                result['memory']['mem_used'] = mem_used
+                result['memory']['mem_percent'] = round(100.0 * mem_used / meminfo['mem_total'], 2)
+
+            # 获取 Swap 使用情况
+            swap_info = _get_swap_usage(client)
+            result['swap'] = swap_info
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect memory metrics from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
+
+
+def _get_network_stats_from_proc(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    从 /proc/net/dev 获取网络接口统计
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        网络接口统计列表
+    """
+    interfaces = []
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/net/dev 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return interfaces
+
+        lines = stdout.strip().split('\n')
+        # 跳过标题行
+        for line in lines[2:]:
+            line = line.strip()
+            if not line:
+                continue
+
+            if ':' in line:
+                iface_part, stats_part = line.split(':', 1)
+                iface_name = iface_part.strip()
+                parts = stats_part.strip().split()
+
+                if len(parts) >= 16:
+                    interfaces.append({
+                        'interface': iface_name,
+                        'rx_bytes': int(parts[0]) if parts[0].isdigit() else 0,
+                        'rx_packets': int(parts[1]) if parts[1].isdigit() else 0,
+                        'rx_errors': int(parts[2]) if parts[2].isdigit() else 0,
+                        'rx_drop': int(parts[3]) if parts[3].isdigit() else 0,
+                        'tx_bytes': int(parts[8]) if parts[8].isdigit() else 0,
+                        'tx_packets': int(parts[9]) if parts[9].isdigit() else 0,
+                        'tx_errors': int(parts[10]) if parts[10].isdigit() else 0,
+                        'tx_drop': int(parts[11]) if parts[11].isdigit() else 0,
+                    })
+
+    except Exception as e:
+        logger.error(f"Error getting network stats from proc: {e}")
+
+    return interfaces
+
+
+def collect_network_metrics(host: Host) -> Dict[str, Any]:
+    """
+    采集网络监控数据
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        网络监控数据
+    """
+    result = {
+        'interfaces': [],
+        'total_rx_bytes': 0,
+        'total_tx_bytes': 0,
+        'total_errors': 0,
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取网络接口统计
+            interfaces = _get_network_stats_from_proc(client)
+            result['interfaces'] = interfaces
+
+            # 计算总计
+            for iface in interfaces:
+                result['total_rx_bytes'] += iface.get('rx_bytes', 0)
+                result['total_tx_bytes'] += iface.get('tx_bytes', 0)
+                result['total_errors'] += iface.get('rx_errors', 0) + iface.get('tx_errors', 0)
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect network metrics from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
+
+
+def _get_disk_stats_from_proc(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    从 /proc/diskstats 获取磁盘统计
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        磁盘统计列表
+    """
+    disks = []
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("cat /proc/diskstats 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return disks
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            parts = line.strip().split()
+            if len(parts) >= 14:
+                major = int(parts[0]) if parts[0].isdigit() else 0
+                minor = int(parts[1]) if parts[1].isdigit() else 0
+                dev_name = parts[2]
+
+                # 只处理磁盘设备，跳过分区
+                if dev_name.startswith(('sd', 'hd', 'vd', 'nvme')) and not any(c.isdigit() for c in dev_name):
+                    disks.append({
+                        'device': dev_name,
+                        'major': major,
+                        'minor': minor,
+                        'reads_completed': int(parts[3]) if parts[3].isdigit() else 0,
+                        'reads_merged': int(parts[4]) if parts[4].isdigit() else 0,
+                        'sectors_read': int(parts[5]) if parts[5].isdigit() else 0,
+                        'time_reading': int(parts[6]) if parts[6].isdigit() else 0,
+                        'writes_completed': int(parts[7]) if parts[7].isdigit() else 0,
+                        'writes_merged': int(parts[8]) if parts[8].isdigit() else 0,
+                        'sectors_written': int(parts[9]) if parts[9].isdigit() else 0,
+                        'time_writing': int(parts[10]) if parts[10].isdigit() else 0,
+                        'io_in_progress': int(parts[11]) if parts[11].isdigit() else 0,
+                        'time_io': int(parts[12]) if parts[12].isdigit() else 0,
+                        'time_io_weighted': int(parts[13]) if parts[13].isdigit() else 0,
+                    })
+
+    except Exception as e:
+        logger.error(f"Error getting disk stats from proc: {e}")
+
+    return disks
+
+
+def _get_partition_usage(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取分区使用情况
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        分区使用情况列表
+    """
+    partitions = []
+
+    try:
+        stdout, stderr, exit_code = client.execute_command("df -kP 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return partitions
+
+        lines = stdout.strip().split('\n')
+        for line in lines[1:]:
+            parts = line.strip().split()
+            if len(parts) >= 6:
+                try:
+                    total = int(parts[1])
+                    used = int(parts[2])
+                    available = int(parts[3])
+                    use_percent = float(parts[4].replace('%', '')) if '%' in parts[4] else 0.0
+
+                    partitions.append({
+                        'filesystem': parts[0],
+                        'total_kb': total,
+                        'used_kb': used,
+                        'available_kb': available,
+                        'use_percent': use_percent,
+                        'mount_point': parts[5],
+                    })
+                except (ValueError, IndexError):
+                    continue
+
+    except Exception as e:
+        logger.error(f"Error getting partition usage: {e}")
+
+    return partitions
+
+
+def collect_disk_metrics(host: Host) -> Dict[str, Any]:
+    """
+    采集磁盘监控数据
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        磁盘监控数据
+    """
+    result = {
+        'disks': [],
+        'partitions': [],
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取磁盘统计
+            disks = _get_disk_stats_from_proc(client)
+            result['disks'] = disks
+
+            # 获取分区使用情况
+            partitions = _get_partition_usage(client)
+            result['partitions'] = partitions
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect disk metrics from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
