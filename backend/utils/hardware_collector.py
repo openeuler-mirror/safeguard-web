@@ -1263,7 +1263,16 @@ def _get_disk_stats_from_proc(client: SSHClient) -> List[Dict[str, Any]]:
                 dev_name = parts[2]
 
                 # 只处理磁盘设备，跳过分区
-                if dev_name.startswith(('sd', 'hd', 'vd', 'nvme')) and not any(c.isdigit() for c in dev_name):
+                is_disk = False
+                if dev_name.startswith(('sd', 'hd', 'vd')):
+                    # 传统磁盘: sda, sdb, hda, vda - 分区有数字后缀
+                    is_disk = not any(c.isdigit() for c in dev_name)
+                elif dev_name.startswith('nvme'):
+                    # NVMe磁盘: nvme0n1, nvme1n1 - 分区是 nvme0n1p1, nvme0n1p2
+                    # 匹配 nvmeXnY 格式，不匹配 nvmeXnYpZ
+                    is_disk = bool(re.match(r'nvme\d+n\d+$', dev_name))
+
+                if is_disk:
                     disks.append({
                         'device': dev_name,
                         'major': major,
