@@ -84,3 +84,20 @@ class HostInfoViewSet(viewsets.ViewSet):
         if result['success']:
             return SuccessResponse(result)
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务信息失败'))
+
+    @action(detail=False, methods=['get'], url_path='accounts-info')
+    def accounts_info(self, request):
+        """获取主机系统账户信息"""
+        host_id = request.query_params.get('host_id')
+        if not host_id:
+            return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id is required')
+
+        try:
+            host_id = int(host_id)
+        except (ValueError, TypeError):
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
+
+        result = HostInfoService.get_accounts_info(host_id)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取账户信息失败'))
