@@ -15,6 +15,15 @@ from backend.admin.network import (
     LBMemberAdmin,
     LBHealthMonitorAdmin,
 )
+from backend.admin.safeguard import (
+    HostMonitorDataAdmin,
+    FileMonitorRuleAdmin,
+    FileMonitorEventAdmin,
+    SafeguardPolicyTemplateAdmin,
+    HostSafeguardPolicyAdmin,
+    PolicyApplyTaskAdmin,
+)
+from backend.admin.audit import AuditLogAdmin, SystemLogAdmin
 
 __all__ = [
     'UsersAdmin',
@@ -30,4 +39,12 @@ __all__ = [
     'LBPoolAdmin',
     'LBMemberAdmin',
     'LBHealthMonitorAdmin',
+    'HostMonitorDataAdmin',
+    'FileMonitorRuleAdmin',
+    'FileMonitorEventAdmin',
+    'SafeguardPolicyTemplateAdmin',
+    'HostSafeguardPolicyAdmin',
+    'PolicyApplyTaskAdmin',
+    'AuditLogAdmin',
+    'SystemLogAdmin',
 ]
