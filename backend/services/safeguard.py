@@ -21,6 +21,11 @@ from backend.models.safeguard.policy import (
     HostSafeguardPolicy,
     PolicyApplyTask,
 )
+from backend.models.safeguard.file_monitor import (
+    FileMonitorRule,
+    FileMonitorEvent,
+)
+from backend.models.audit.audit_log import AuditLog
 from backend.utils.hardware_collector import (
     collect_host_hardware,
     collect_ports,
@@ -793,4 +798,356 @@ class AuditService:
 
     负责记录用户操作日志、文件监控事件、系统日志等。
     """
-    pass
+
+    @staticmethod
+    def log_action(
+        user=None,
+        action: str = '',
+        resource_type: str = '',
+        resource_id: str = '',
+        resource_name: str = '',
+        action_details: Optional[Dict] = None,
+        old_value: Optional[Dict] = None,
+        new_value: Optional[Dict] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        status: str = 'success',
+        error_message: str = '',
+    ) -> Dict[str, Any]:
+        """
+        记录操作日志
+
+        Args:
+            user: 用户对象
+            action: 操作类型
+            resource_type: 资源类型
+            resource_id: 资源ID
+            resource_name: 资源名称
+            action_details: 操作详情
+            old_value: 变更前值
+            new_value: 变更后值
+            ip_address: 客户端IP
+            user_agent: User-Agent
+            status: 状态
+            error_message: 错误消息
+
+        Returns:
+            记录结果
+        """
+        try:
+            audit_log = AuditLog.objects.create(
+                user=user,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                resource_name=resource_name,
+                action_details=action_details or {},
+                old_value=old_value or {},
+                new_value=new_value or {},
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status=status,
+                error_message=error_message,
+            )
+
+            logger.info(f'Audit log created: {action} - {resource_name}')
+            return {
+                'success': True,
+                'data': {
+                    'id': audit_log.id,
+                    'action': audit_log.action,
+                },
+            }
+
+        except Exception as e:
+            logger.error(f'Error logging audit action: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def list_audit_logs(
+        user=None,
+        action: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        status: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        获取审计日志列表
+
+        Args:
+            user: 过滤用户
+            action: 过滤操作类型
+            resource_type: 过滤资源类型
+            start_time: 开始时间
+            end_time: 结束时间
+            status: 过滤状态
+            page: 页码
+            page_size: 每页大小
+
+        Returns:
+            审计日志列表
+        """
+        try:
+            queryset = AuditLog.objects.all()
+
+            if user:
+                queryset = queryset.filter(user=user)
+            if action:
+                queryset = queryset.filter(action=action)
+            if resource_type:
+                queryset = queryset.filter(resource_type=resource_type)
+            if start_time:
+                queryset = queryset.filter(created_at__gte=start_time)
+            if end_time:
+                queryset = queryset.filter(created_at__lte=end_time)
+            if status:
+                queryset = queryset.filter(status=status)
+
+            total = queryset.count()
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            data = []
+            for log in queryset:
+                data.append({
+                    'id': log.id,
+                    'user_id': log.user_id,
+                    'user_name': log.user.username if log.user else None,
+                    'action': log.action,
+                    'resource_type': log.resource_type,
+                    'resource_id': log.resource_id,
+                    'resource_name': log.resource_name,
+                    'action_details': log.action_details,
+                    'status': log.status,
+                    'error_message': log.error_message,
+                    'ip_address': log.ip_address,
+                    'created_at': log.created_at.isoformat(),
+                })
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error listing audit logs: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def create_file_monitor_rule(
+        host_id: int,
+        path: str,
+        monitor_type: str = 'file',
+        watch_create: bool = True,
+        watch_modify: bool = True,
+        watch_delete: bool = True,
+        watch_access: bool = False,
+        watch_perm: bool = True,
+        recursive: bool = False,
+        includes: Optional[List] = None,
+        excludes: Optional[List] = None,
+    ) -> Dict[str, Any]:
+        """
+        创建文件监控规则
+
+        Args:
+            host_id: 主机ID
+            path: 监控路径
+            monitor_type: 监控类型
+            watch_create: 监控创建事件
+            watch_modify: 监控修改事件
+            watch_delete: 监控删除事件
+            watch_access: 监控访问事件
+            watch_perm: 监控权限变更事件
+            recursive: 是否递归监控
+            includes: 包含规则
+            excludes: 排除规则
+
+        Returns:
+            创建结果
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+
+            rule = FileMonitorRule.objects.create(
+                host=host,
+                path=path,
+                monitor_type=monitor_type,
+                watch_create=watch_create,
+                watch_modify=watch_modify,
+                watch_delete=watch_delete,
+                watch_access=watch_access,
+                watch_perm=watch_perm,
+                recursive=recursive,
+                includes=includes or [],
+                excludes=excludes or [],
+            )
+
+            logger.info(f'File monitor rule created: {host.hostname} - {path}')
+            return {
+                'success': True,
+                'data': {
+                    'id': rule.id,
+                    'host_id': host_id,
+                    'path': path,
+                    'enabled': rule.enabled,
+                },
+            }
+
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error creating file monitor rule: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def list_file_monitor_rules(
+        host_id: Optional[int] = None,
+        enabled: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        获取文件监控规则列表
+
+        Args:
+            host_id: 过滤主机
+            enabled: 过滤启用状态
+            page: 页码
+            page_size: 每页大小
+
+        Returns:
+            监控规则列表
+        """
+        try:
+            queryset = FileMonitorRule.objects.all()
+
+            if host_id:
+                queryset = queryset.filter(host_id=host_id)
+            if enabled is not None:
+                queryset = queryset.filter(enabled=enabled)
+
+            total = queryset.count()
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            data = []
+            for rule in queryset:
+                data.append({
+                    'id': rule.id,
+                    'host_id': rule.host_id,
+                    'host_name': rule.host.hostname,
+                    'path': rule.path,
+                    'monitor_type': rule.monitor_type,
+                    'watch_create': rule.watch_create,
+                    'watch_modify': rule.watch_modify,
+                    'watch_delete': rule.watch_delete,
+                    'watch_access': rule.watch_access,
+                    'watch_perm': rule.watch_perm,
+                    'recursive': rule.recursive,
+                    'enabled': rule.enabled,
+                    'created_at': rule.created_at.isoformat(),
+                })
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error listing file monitor rules: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def list_file_monitor_events(
+        host_id: Optional[int] = None,
+        event_type: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        获取文件监控事件列表
+
+        Args:
+            host_id: 过滤主机
+            event_type: 过滤事件类型
+            start_time: 开始时间
+            end_time: 结束时间
+            page: 页码
+            page_size: 每页大小
+
+        Returns:
+            文件监控事件列表
+        """
+        try:
+            queryset = FileMonitorEvent.objects.all()
+
+            if host_id:
+                queryset = queryset.filter(host_id=host_id)
+            if event_type:
+                queryset = queryset.filter(event_type=event_type)
+            if start_time:
+                queryset = queryset.filter(timestamp__gte=start_time)
+            if end_time:
+                queryset = queryset.filter(timestamp__lte=end_time)
+
+            total = queryset.count()
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            data = []
+            for event in queryset:
+                data.append({
+                    'id': event.id,
+                    'host_id': event.host_id,
+                    'host_name': event.host.hostname,
+                    'rule_id': event.rule_id,
+                    'event_type': event.event_type,
+                    'path': event.path,
+                    'process_name': event.process_name,
+                    'process_id': event.process_id,
+                    'user': event.user,
+                    'timestamp': event.timestamp.isoformat(),
+                    'details': event.details,
+                })
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error listing file monitor events: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
