@@ -477,3 +477,181 @@ def collect_all_hardware_info(host: Host) -> Dict:
         'hardware': hardware,
         'lldp': lldp,
     }
+
+
+def _get_process_list(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取进程列表
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        进程列表
+    """
+    processes = []
+    try:
+        # 使用 ps aux 命令获取进程列表
+        stdout, stderr, exit_code = client.execute_command(
+            "ps aux --no-headers 2>/dev/null || ps -ef 2>/dev/null"
+        )
+        if exit_code != 0 or not stdout:
+            logger.warning("Failed to get process list")
+            return processes
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            parts = line.split()
+            if len(parts) < 10:
+                continue
+
+            # 尝试解析 ps aux 输出
+            try:
+                user = parts[0]
+                pid = int(parts[1])
+                cpu_percent = float(parts[2]) if parts[2].replace('.', '').isdigit() else 0.0
+                mem_percent = float(parts[3]) if parts[3].replace('.', '').isdigit() else 0.0
+                vsz = int(parts[4]) if parts[4].isdigit() else 0
+                rss = int(parts[5]) if parts[5].isdigit() else 0
+                tty = parts[6]
+                stat = parts[7]
+                start = parts[8]
+                time = parts[9]
+                command = ' '.join(parts[10:]) if len(parts) > 10 else ''
+
+                processes.append({
+                    'pid': pid,
+                    'user': user,
+                    'cpu_percent': cpu_percent,
+                    'mem_percent': mem_percent,
+                    'vsz': vsz,
+                    'rss': rss,
+                    'tty': tty,
+                    'stat': stat,
+                    'start': start,
+                    'time': time,
+                    'command': command,
+                })
+            except (ValueError, IndexError):
+                continue
+
+    except Exception as e:
+        logger.error(f"Error getting process list: {e}")
+
+    return processes
+
+
+def _get_process_tree(processes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    构建进程树
+
+    Args:
+        processes: 进程列表
+
+    Returns:
+        进程树
+    """
+    # 先获取 ppid 信息
+    # 这里简化处理，实际可以通过 ps -ef 获取完整父子关系
+    return processes
+
+
+def _detect_high_cpu_processes(
+    processes: List[Dict[str, Any]],
+    threshold: float = 50.0
+) -> List[Dict[str, Any]]:
+    """
+    检测高CPU占用进程
+
+    Args:
+        processes: 进程列表
+        threshold: CPU使用率阈值
+
+    Returns:
+        高CPU占用进程列表
+    """
+    return [p for p in processes if p.get('cpu_percent', 0) > threshold]
+
+
+def _detect_high_memory_processes(
+    processes: List[Dict[str, Any]],
+    threshold: float = 30.0
+) -> List[Dict[str, Any]]:
+    """
+    检测高内存占用进程
+
+    Args:
+        processes: 进程列表
+        threshold: 内存使用率阈值
+
+    Returns:
+        高内存占用进程列表
+    """
+    return [p for p in processes if p.get('mem_percent', 0) > threshold]
+
+
+def collect_processes(host: Host) -> Dict[str, Any]:
+    """
+    采集主机进程信息
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        {
+            'processes': [...],           # 进程列表
+            'process_tree': [...],        # 进程树
+            'high_cpu_processes': [...],  # 高CPU占用进程
+            'high_mem_processes': [...],  # 高内存占用进程
+            'total_processes': int,       # 进程总数
+            'collected_at': str,          # 采集时间
+        }
+    """
+    result = {
+        'processes': [],
+        'process_tree': [],
+        'high_cpu_processes': [],
+        'high_mem_processes': [],
+        'total_processes': 0,
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取进程列表
+            processes = _get_process_list(client)
+            result['processes'] = processes
+            result['total_processes'] = len(processes)
+
+            # 构建进程树
+            process_tree = _get_process_tree(processes)
+            result['process_tree'] = process_tree
+
+            # 检测高CPU进程
+            high_cpu = _detect_high_cpu_processes(processes)
+            result['high_cpu_processes'] = high_cpu
+
+            # 检测高内存进程
+            high_mem = _detect_high_memory_processes(processes)
+            result['high_mem_processes'] = high_mem
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect processes from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
