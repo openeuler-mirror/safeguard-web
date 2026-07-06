@@ -1800,3 +1800,334 @@ def _get_available_log_sources(client: SSHClient) -> List[str]:
         logger.error(f"Error getting available log sources: {e}")
 
     return sources
+
+
+def control_service(host: Host, service_name: str, action: str) -> Dict[str, Any]:
+    """
+    控制主机服务（启动、停止、重启、重载、启用、禁用）
+
+    Args:
+        host: Host 模型实例
+        service_name: 服务名称
+        action: 操作类型 - 'start' | 'stop' | 'restart' | 'reload' | 'enable' | 'disable'
+
+    Returns:
+        操作结果字典
+    """
+    result = {
+        'success': False,
+        'message': '',
+        'service_name': service_name,
+        'action': action,
+        'collected_at': '',
+        'stdout': '',
+        'stderr': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 构建命令
+            if action in ['enable', 'disable']:
+                cmd = f"systemctl {action} {service_name} 2>&1"
+            else:
+                cmd = f"systemctl {action} {service_name} 2>&1"
+
+            stdout, stderr, exit_code = client.execute_command(cmd)
+
+            result['stdout'] = stdout
+            result['stderr'] = stderr
+
+            if exit_code == 0:
+                result['success'] = True
+                result['message'] = f"Service {service_name} {action} successful"
+            else:
+                result['success'] = False
+                result['message'] = f"Service {service_name} {action} failed: {stderr or stdout}"
+
+            # 记录操作时间
+            result['collected_at'] = datetime.now().isoformat()
+
+    except Exception as e:
+        logger.error(f"Failed to {action} service {service_name} on host {host.id}: {e}")
+        result['message'] = str(e)
+        result['error'] = str(e)
+
+    return result
+
+
+def get_service_logs(host: Host, service_name: str, lines: int = 100) -> Dict[str, Any]:
+    """
+    获取服务日志
+
+    Args:
+        host: Host 模型实例
+        service_name: 服务名称
+        lines: 获取日志行数
+
+    Returns:
+        日志信息字典
+    """
+    result = {
+        'success': False,
+        'logs': [],
+        'service_name': service_name,
+        'collected_at': '',
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 使用 journalctl 获取服务日志
+            cmd = f"journalctl -u {service_name} -n {lines} --no-pager 2>&1"
+            stdout, stderr, exit_code = client.execute_command(cmd)
+
+            if exit_code == 0 and stdout:
+                log_lines = stdout.strip().split('\n')
+                parsed_logs = []
+                for line in log_lines:
+                    parsed = _parse_syslog_line(line)
+                    if parsed:
+                        parsed_logs.append(parsed)
+                    else:
+                        parsed_logs.append({'raw_line': line})
+                result['logs'] = parsed_logs
+                result['success'] = True
+            else:
+                # 尝试从常见日志文件查找
+                log_paths = [
+                    f'/var/log/{service_name}.log',
+                    f'/var/log/{service_name}/{service_name}.log',
+                    '/var/log/syslog',
+                    '/var/log/messages',
+                ]
+                for log_path in log_paths:
+                    logs = _collect_logs_from_file(client, log_path, lines)
+                    if logs:
+                        result['logs'] = logs
+                        result['success'] = True
+                        break
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+
+    except Exception as e:
+        logger.error(f"Failed to get service logs for {service_name} on host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
+
+
+def _kill_process(client: SSHClient, pid: int, force: bool = False) -> Dict[str, Any]:
+    """
+    终止进程
+
+    Args:
+        client: SSH 客户端
+        pid: 进程ID
+        force: 是否强制终止（使用 SIGKILL）
+
+    Returns:
+        操作结果字典
+    """
+    result = {
+        'success': False,
+        'message': '',
+        'pid': pid,
+    }
+
+    try:
+        # 检查进程是否存在
+        check_cmd = f"ps -p {pid} -o pid= 2>/dev/null"
+        stdout, stderr, exit_code = client.execute_command(check_cmd)
+        if exit_code != 0 or not stdout.strip():
+            result['message'] = f"Process {pid} not found"
+            return result
+
+        # 终止进程
+        signal = '-9' if force else '-15'
+        kill_cmd = f"kill {signal} {pid} 2>&1"
+        stdout, stderr, exit_code = client.execute_command(kill_cmd)
+
+        if exit_code == 0:
+            result['success'] = True
+            result['message'] = f"Process {pid} killed successfully"
+        else:
+            result['message'] = f"Failed to kill process {pid}: {stderr or stdout}"
+
+    except Exception as e:
+        logger.error(f"Error killing process {pid}: {e}")
+        result['message'] = str(e)
+
+    return result
+
+
+def kill_process(host: Host, pid: int, force: bool = False) -> Dict[str, Any]:
+    """
+    终止主机上的进程
+
+    Args:
+        host: Host 模型实例
+        pid: 进程ID
+        force: 是否强制终止
+
+    Returns:
+        操作结果字典
+    """
+    result = {
+        'success': False,
+        'message': '',
+        'pid': pid,
+        'collected_at': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            kill_result = _kill_process(client, pid, force)
+            result.update(kill_result)
+            result['collected_at'] = datetime.now().isoformat()
+
+    except Exception as e:
+        logger.error(f"Failed to kill process {pid} on host {host.id}: {e}")
+        result['message'] = str(e)
+        result['error'] = str(e)
+
+    return result
+
+
+def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    收集文件监控事件（通过检查文件状态变化）
+
+    Args:
+        client: SSH 客户端
+        monitor_rules: 监控规则列表
+
+    Returns:
+        文件事件列表
+    """
+    events = []
+
+    try:
+        for rule in monitor_rules:
+            path = rule.get('path', '')
+            if not path:
+                continue
+
+            # 检查路径是否存在
+            check_cmd = f"test -e {path} && echo exists || echo not_exists"
+            stdout, stderr, exit_code = client.execute_command(check_cmd)
+            exists = stdout.strip() == 'exists'
+
+            if not exists:
+                events.append({
+                    'rule_id': rule.get('id'),
+                    'path': path,
+                    'event_type': 'path_not_exists',
+                    'timestamp': datetime.now().isoformat(),
+                    'details': 'Path does not exist',
+                })
+                continue
+
+            # 获取文件状态信息
+            stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a' {path} 2>/dev/null"
+            stdout, stderr, exit_code = client.execute_command(stat_cmd)
+            if exit_code == 0 and stdout:
+                parts = stdout.strip().split(':')
+                if len(parts) >= 6:
+                    mtime = int(parts[0])
+                    ctime = int(parts[1])
+                    size = int(parts[2])
+                    uid = int(parts[3])
+                    gid = int(parts[4])
+                    mode = parts[5]
+
+                    # 转换时间戳
+                    mtime_dt = datetime.fromtimestamp(mtime).isoformat()
+                    ctime_dt = datetime.fromtimestamp(ctime).isoformat()
+
+                    events.append({
+                        'rule_id': rule.get('id'),
+                        'path': path,
+                        'event_type': 'file_status',
+                        'timestamp': datetime.now().isoformat(),
+                        'details': {
+                            'mtime': mtime_dt,
+                            'ctime': ctime_dt,
+                            'size': size,
+                            'uid': uid,
+                            'gid': gid,
+                            'mode': mode,
+                        },
+                    })
+
+            # 如果是目录且启用递归监控
+            if rule.get('recursive', False):
+                ls_cmd = f"ls -la --time-style=full-iso {path} 2>/dev/null"
+                stdout, stderr, exit_code = client.execute_command(ls_cmd)
+                if exit_code == 0 and stdout:
+                    events.append({
+                        'rule_id': rule.get('id'),
+                        'path': path,
+                        'event_type': 'directory_listing',
+                        'timestamp': datetime.now().isoformat(),
+                        'details': {'listing': stdout},
+                    })
+
+    except Exception as e:
+        logger.error(f"Error collecting file events: {e}")
+
+    return events
+
+
+def collect_file_events(host: Host, monitor_rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    收集文件监控事件
+
+    Args:
+        host: Host 模型实例
+        monitor_rules: 监控规则列表
+
+    Returns:
+        文件监控事件字典
+    """
+    result = {
+        'success': False,
+        'events': [],
+        'total_events': 0,
+        'collected_at': '',
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            events = _collect_file_events(client, monitor_rules)
+            result['events'] = events
+            result['total_events'] = len(events)
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect file events on host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
