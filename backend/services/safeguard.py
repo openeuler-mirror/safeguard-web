@@ -15,7 +15,17 @@ from django.db import transaction
 from django.core.cache import cache
 
 from backend.models.host import Host
-from backend.utils.hardware_collector import collect_host_hardware
+from backend.models.safeguard.monitor import HostMonitorData
+from backend.utils.hardware_collector import (
+    collect_host_hardware,
+    collect_ports,
+    collect_processes,
+    collect_services,
+    collect_cpu_metrics,
+    collect_memory_metrics,
+    collect_network_metrics,
+    collect_disk_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +49,24 @@ class HostInfoService:
         Returns:
             包含系统信息的字典
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            hardware_info = collect_host_hardware(host)
+            return {
+                'success': True,
+                'data': hardware_info,
+            }
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting system info for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def get_ports_info(host_id: int) -> Dict[str, Any]:
@@ -52,7 +79,21 @@ class HostInfoService:
         Returns:
             包含端口信息的字典，包括监听端口、连接统计、高风险端口标记
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            port_info = collect_ports(host)
+            return port_info
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting ports info for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def get_processes_info(host_id: int) -> Dict[str, Any]:
@@ -65,7 +106,48 @@ class HostInfoService:
         Returns:
             包含进程信息的字典，包括进程列表、进程树、高资源占用进程
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            process_info = collect_processes(host)
+            return process_info
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting processes info for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_services_info(host_id: int) -> Dict[str, Any]:
+        """
+        获取主机服务信息
+
+        Args:
+            host_id: 主机ID
+
+        Returns:
+            包含服务信息的字典
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+            service_info = collect_services(host)
+            return service_info
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting services info for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def collect_and_save_ports(host_id: int) -> Dict[str, Any]:
@@ -78,7 +160,26 @@ class HostInfoService:
         Returns:
             采集结果
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            port_info = collect_ports(host)
+
+            # 使用缓存保存结果（暂时）
+            cache_key = f'safeguard:ports:{host_id}'
+            cache.set(cache_key, port_info, 3600)
+
+            return port_info
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting and saving ports for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
 
 class MonitorService:
@@ -100,7 +201,20 @@ class MonitorService:
         Returns:
             CPU使用率、负载平均值、每核使用率等
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            return collect_cpu_metrics(host)
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting CPU metrics for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def collect_memory_metrics(host_id: int) -> Dict[str, Any]:
@@ -113,7 +227,20 @@ class MonitorService:
         Returns:
             内存总量、使用量、Swap使用量、使用率等
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            return collect_memory_metrics(host)
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting memory metrics for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def collect_network_metrics(host_id: int) -> Dict[str, Any]:
@@ -126,7 +253,20 @@ class MonitorService:
         Returns:
             网络接口流量、包统计、错误/丢包统计等
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            return collect_network_metrics(host)
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting network metrics for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def collect_disk_metrics(host_id: int) -> Dict[str, Any]:
@@ -139,7 +279,64 @@ class MonitorService:
         Returns:
             磁盘IO统计、分区使用率、IOPS等
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+            return collect_disk_metrics(host)
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting disk metrics for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def collect_all_metrics(host_id: int, save: bool = True) -> Dict[str, Any]:
+        """
+        采集所有监控数据
+
+        Args:
+            host_id: 主机ID
+            save: 是否保存到数据库
+
+        Returns:
+            所有监控数据
+        """
+        result = {
+            'success': False,
+            'cpu': None,
+            'memory': None,
+            'network': None,
+            'disk': None,
+            'collected_at': datetime.now().isoformat(),
+            'saved': False,
+        }
+
+        try:
+            host = Host.objects.get(id=host_id)
+
+            result['cpu'] = collect_cpu_metrics(host)
+            result['memory'] = collect_memory_metrics(host)
+            result['network'] = collect_network_metrics(host)
+            result['disk'] = collect_disk_metrics(host)
+            result['success'] = True
+
+            # 保存到数据库
+            if save:
+                saved = MonitorService.save_monitor_data(host_id, result)
+                result['saved'] = saved
+
+        except Host.DoesNotExist:
+            result['error'] = f'Host {host_id} not found'
+        except Exception as e:
+            logger.error(f'Error collecting all metrics for host {host_id}: {e}')
+            result['error'] = str(e)
+
+        return result
 
     @staticmethod
     def save_monitor_data(host_id: int, data: Dict[str, Any]) -> bool:
@@ -153,7 +350,91 @@ class MonitorService:
         Returns:
             是否保存成功
         """
-        pass
+        try:
+            host = Host.objects.get(id=host_id)
+
+            with transaction.atomic():
+                monitor_data = HostMonitorData.objects.create(
+                    host=host,
+                )
+
+                # 保存 CPU 数据
+                if data.get('cpu') and data['cpu'].get('success'):
+                    cpu = data['cpu']
+                    monitor_data.cpu_usage = cpu.get('cpu_usage', {}).get('usage_percent')
+                    monitor_data.load_1m = cpu.get('load_avg', {}).get('load_1min')
+                    monitor_data.load_5m = cpu.get('load_avg', {}).get('load_5min')
+                    monitor_data.load_15m = cpu.get('load_avg', {}).get('load_15min')
+
+                # 保存内存数据
+                if data.get('memory') and data['memory'].get('success'):
+                    memory = data['memory']
+                    mem = memory.get('memory', {})
+                    monitor_data.memory_total = mem.get('mem_total')
+                    monitor_data.memory_used = mem.get('mem_used')
+                    monitor_data.memory_usage = mem.get('mem_percent')
+
+                # 保存网络数据
+                if data.get('network') and data['network'].get('success'):
+                    network = data['network']
+                    monitor_data.network_in = network.get('total_rx_bytes')
+                    monitor_data.network_out = network.get('total_tx_bytes')
+
+                # 保存磁盘数据
+                if data.get('disk') and data['disk'].get('success'):
+                    disk = data['disk']
+                    total_read = sum(d.get('sectors_read', 0) for d in disk.get('disks', []))
+                    total_write = sum(d.get('sectors_written', 0) for d in disk.get('disks', []))
+                    monitor_data.disk_read = total_read * 512  # 转换为字节
+                    monitor_data.disk_write = total_write * 512
+
+                monitor_data.save()
+
+            logger.info(f'Monitor data saved for host {host_id}')
+            return True
+
+        except Host.DoesNotExist:
+            logger.error(f'Host {host_id} not found when saving monitor data')
+            return False
+        except Exception as e:
+            logger.error(f'Error saving monitor data for host {host_id}: {e}')
+            return False
+
+    @staticmethod
+    def batch_save_monitor_data(host_ids: List[int], data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        批量保存监控数据
+
+        Args:
+            host_ids: 主机ID列表
+            data_list: 监控数据列表
+
+        Returns:
+            保存结果
+        """
+        success_count = 0
+        failed_ids = []
+
+        try:
+            with transaction.atomic():
+                for host_id, data in zip(host_ids, data_list):
+                    if MonitorService.save_monitor_data(host_id, data):
+                        success_count += 1
+                    else:
+                        failed_ids.append(host_id)
+
+            return {
+                'success': True,
+                'success_count': success_count,
+                'failed_ids': failed_ids,
+            }
+
+        except Exception as e:
+            logger.error(f'Error batch saving monitor data: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def get_monitor_history(
@@ -178,7 +459,70 @@ class MonitorService:
         Returns:
             监控历史数据
         """
-        pass
+        try:
+            # 基础查询
+            queryset = HostMonitorData.objects.filter(host_id=host_id)
+
+            # 时间范围过滤
+            if start_time:
+                queryset = queryset.filter(timestamp__gte=start_time)
+            if end_time:
+                queryset = queryset.filter(timestamp__lte=end_time)
+
+            # 排序
+            queryset = queryset.order_by('-timestamp')
+
+            # 计算总数
+            total = queryset.count()
+
+            # 分页
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            # 构建返回数据
+            data = []
+            for record in queryset:
+                item = {
+                    'timestamp': record.timestamp.isoformat(),
+                    'cpu_usage': record.cpu_usage,
+                    'load_1m': record.load_1m,
+                    'load_5m': record.load_5m,
+                    'load_15m': record.load_15m,
+                    'memory_total': record.memory_total,
+                    'memory_used': record.memory_used,
+                    'memory_usage': record.memory_usage,
+                    'network_in': record.network_in,
+                    'network_out': record.network_out,
+                    'disk_read': record.disk_read,
+                    'disk_write': record.disk_write,
+                }
+
+                # 根据指标类型过滤返回字段
+                if metric_type == 'cpu':
+                    item = {k: v for k, v in item.items() if k in ['timestamp', 'cpu_usage', 'load_1m', 'load_5m', 'load_15m']}
+                elif metric_type == 'memory':
+                    item = {k: v for k, v in item.items() if k in ['timestamp', 'memory_total', 'memory_used', 'memory_usage']}
+                elif metric_type == 'network':
+                    item = {k: v for k, v in item.items() if k in ['timestamp', 'network_in', 'network_out']}
+                elif metric_type == 'disk':
+                    item = {k: v for k, v in item.items() if k in ['timestamp', 'disk_read', 'disk_write']}
+
+                data.append(item)
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error getting monitor history for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
 
 class PolicyService:
