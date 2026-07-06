@@ -4,11 +4,222 @@
 通过 SSH 连接到远程主机，采集硬件信息（CPU、内存、磁盘、网络等）
 """
 import logging
-from typing import Dict, List, Optional, Tuple
+import json
+import re
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 from backend.models.host import Host
 from backend.utils.ssh import SSHClient
 
 logger = logging.getLogger(__name__)
+
+# 高风险端口列表
+HIGH_RISK_PORTS = {
+    21,    # FTP
+    22,    # SSH (管理端口，需要特别关注)
+    23,    # Telnet
+    25,    # SMTP
+    53,    # DNS
+    111,   # RPC
+    135,   # MS RPC
+    139,   # NetBIOS
+    445,   # SMB
+    3306,  # MySQL
+    3389,  # RDP
+    5432,  # PostgreSQL
+    6379,  # Redis
+    27017, # MongoDB
+    9200,  # Elasticsearch
+}
+
+
+def _get_listening_ports(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取监听端口列表
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        监听端口列表，每个元素包含端口、协议、进程名等
+    """
+    ports = []
+    try:
+        # 使用 ss 命令获取监听端口
+        stdout, stderr, exit_code = client.execute_command(
+            "ss -tuln -p 2>/dev/null || netstat -tuln -p 2>/dev/null"
+        )
+        if exit_code != 0 or not stdout:
+            logger.warning("Failed to get listening ports")
+            return ports
+
+        # 解析 ss/netstat 输出
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith(('State', 'Proto', 'Active')):
+                continue
+
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+
+            # 尝试提取协议和地址
+            proto = parts[0].lower() if parts[0].lower() in ('tcp', 'udp') else 'tcp'
+
+            # 提取本地地址
+            local_addr = parts[3] if 'LISTEN' in parts or '0.0.0.0:*' in parts[4] else parts[3]
+            if ':' in local_addr:
+                # IPv4:port 格式
+                port_part = local_addr.rsplit(':', 1)[-1]
+            else:
+                port_part = local_addr
+
+            try:
+                port = int(port_part)
+            except (ValueError, IndexError):
+                continue
+
+            # 提取进程信息
+            process_name = ''
+            pid = ''
+            if len(parts) >= 7:
+                process_part = ' '.join(parts[6:])
+                # 匹配类似 "pid=1234,process=sshd" 的格式
+                pid_match = re.search(r'pid=(\d+)', process_part)
+                proc_match = re.search(r'process=([^\s,]+)', process_part)
+                if pid_match:
+                    pid = pid_match.group(1)
+                if proc_match:
+                    process_name = proc_match.group(1)
+
+            ports.append({
+                'port': port,
+                'protocol': proto,
+                'process_name': process_name,
+                'pid': pid,
+                'is_high_risk': port in HIGH_RISK_PORTS
+            })
+
+    except Exception as e:
+        logger.error(f"Error getting listening ports: {e}")
+
+    return ports
+
+
+def _get_connection_stats(client: SSHClient) -> Dict[str, int]:
+    """
+    获取连接统计信息
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        各状态的连接数统计
+    """
+    stats = {
+        'ESTABLISHED': 0,
+        'TIME_WAIT': 0,
+        'LISTEN': 0,
+        'CLOSE_WAIT': 0,
+        'FIN_WAIT1': 0,
+        'FIN_WAIT2': 0,
+        'SYN_SENT': 0,
+        'SYN_RECV': 0,
+        'LAST_ACK': 0,
+        'CLOSING': 0,
+    }
+
+    try:
+        stdout, stderr, exit_code = client.execute_command(
+            "ss -tuan state all 2>/dev/null || netstat -tuan 2>/dev/null"
+        )
+        if exit_code != 0 or not stdout:
+            return stats
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            for state in stats.keys():
+                if state in line:
+                    stats[state] += 1
+
+    except Exception as e:
+        logger.error(f"Error getting connection stats: {e}")
+
+    return stats
+
+
+def _is_high_risk_port(port: int) -> bool:
+    """
+    判断端口是否为高风险端口
+
+    Args:
+        port: 端口号
+
+    Returns:
+        是否为高风险端口
+    """
+    return port in HIGH_RISK_PORTS
+
+
+def collect_ports(host: Host) -> Dict[str, Any]:
+    """
+    采集主机端口信息
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        {
+            'listening_ports': [...],      # 监听端口列表
+            'connection_stats': {...},     # 连接统计
+            'high_risk_ports': [...],      # 高风险端口列表
+            'total_listening': int,        # 监听端口总数
+            'total_high_risk': int,        # 高风险端口数
+            'collected_at': str,           # 采集时间
+        }
+    """
+    result = {
+        'listening_ports': [],
+        'connection_stats': {},
+        'high_risk_ports': [],
+        'total_listening': 0,
+        'total_high_risk': 0,
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取监听端口
+            listening_ports = _get_listening_ports(client)
+            result['listening_ports'] = listening_ports
+            result['total_listening'] = len(listening_ports)
+
+            # 获取连接统计
+            connection_stats = _get_connection_stats(client)
+            result['connection_stats'] = connection_stats
+
+            # 提取高风险端口
+            high_risk_ports = [p for p in listening_ports if p['is_high_risk']]
+            result['high_risk_ports'] = high_risk_ports
+            result['total_high_risk'] = len(high_risk_ports)
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect ports from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
 
 
 def collect_host_hardware(host: Host) -> Dict[str, str]:
