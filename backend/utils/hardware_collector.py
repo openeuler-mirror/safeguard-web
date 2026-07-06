@@ -655,3 +655,159 @@ def collect_processes(host: Host) -> Dict[str, Any]:
         result['error'] = str(e)
 
     return result
+
+
+def _get_systemd_services(client: SSHClient) -> List[Dict[str, Any]]:
+    """
+    获取 systemd 服务列表
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        服务列表
+    """
+    services = []
+    try:
+        # 使用 systemctl list-units 命令获取服务列表
+        stdout, stderr, exit_code = client.execute_command(
+            "systemctl list-units --type=service --all --no-legend 2>/dev/null || echo ''"
+        )
+        if exit_code != 0 or not stdout:
+            # 尝试使用 service 命令
+            stdout, stderr, exit_code = client.execute_command(
+                "service --status-all 2>/dev/null || echo ''"
+            )
+            if exit_code != 0 or not stdout:
+                return services
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # 解析 systemctl 输出格式: "  sshd.service  loaded  active  running  OpenSSH server"
+            parts = line.split(None, 4)
+            if len(parts) >= 4:
+                service_name = parts[0]
+                load_state = parts[1]
+                active_state = parts[2]
+                sub_state = parts[3]
+                description = parts[4] if len(parts) > 4 else ''
+
+                # 去除 .service 后缀
+                if service_name.endswith('.service'):
+                    service_name = service_name[:-8]
+
+                services.append({
+                    'name': service_name,
+                    'load_state': load_state,
+                    'active_state': active_state,
+                    'sub_state': sub_state,
+                    'description': description,
+                })
+
+    except Exception as e:
+        logger.error(f"Error getting systemd services: {e}")
+
+    return services
+
+
+def _get_service_enabled_status(client: SSHClient, service_name: str) -> str:
+    """
+    获取服务开机自启状态
+
+    Args:
+        client: SSH 客户端
+        service_name: 服务名称
+
+    Returns:
+        'enabled' | 'disabled' | 'unknown'
+    """
+    try:
+        stdout, stderr, exit_code = client.execute_command(
+            f"systemctl is-enabled {service_name} 2>/dev/null"
+        )
+        if exit_code == 0 and stdout:
+            return stdout.strip()
+    except Exception as e:
+        logger.error(f"Error getting service enabled status for {service_name}: {e}")
+
+    return 'unknown'
+
+
+def _control_service(client: SSHClient, service_name: str, action: str) -> bool:
+    """
+    控制服务启停
+
+    Args:
+        client: SSH 客户端
+        service_name: 服务名称
+        action: 'start' | 'stop' | 'restart' | 'reload'
+
+    Returns:
+        是否成功
+    """
+    try:
+        stdout, stderr, exit_code = client.execute_command(
+            f"systemctl {action} {service_name} 2>&1"
+        )
+        return exit_code == 0
+    except Exception as e:
+        logger.error(f"Error {action} service {service_name}: {e}")
+        return False
+
+
+def collect_services(host: Host) -> Dict[str, Any]:
+    """
+    采集主机服务信息
+
+    Args:
+        host: Host 模型实例
+
+    Returns:
+        {
+            'services': [...],        # 服务列表
+            'total_services': int,    # 服务总数
+            'running_services': int,  # 运行中的服务数
+            'collected_at': str,      # 采集时间
+        }
+    """
+    result = {
+        'services': [],
+        'total_services': 0,
+        'running_services': 0,
+        'collected_at': '',
+        'success': False,
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            # 获取服务列表
+            services = _get_systemd_services(client)
+            result['services'] = services
+            result['total_services'] = len(services)
+
+            # 统计运行中的服务
+            running_services = [
+                s for s in services
+                if s.get('active_state') in ('active', 'running')
+            ]
+            result['running_services'] = len(running_services)
+
+            # 记录采集时间
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect services from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
