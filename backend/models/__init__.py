@@ -28,6 +28,15 @@ from backend.models.network import (
 from backend.models.security import SafeguardDeploy
 from backend.models.task import Task
 from backend.models.osmigrate import MigrateJob
+from backend.models.safeguard import (
+    HostMonitorData,
+    FileMonitorRule,
+    FileMonitorEvent,
+    SafeguardPolicyTemplate,
+    HostSafeguardPolicy,
+    PolicyApplyTask,
+)
+from backend.models.audit import AuditLog, SystemLog
 
 __all__ = [
     'Users',
@@ -57,4 +66,12 @@ __all__ = [
     'SafeguardDeploy',
     'Task',
     'MigrateJob',
+    'HostMonitorData',
+    'FileMonitorRule',
+    'FileMonitorEvent',
+    'SafeguardPolicyTemplate',
+    'HostSafeguardPolicy',
+    'PolicyApplyTask',
+    'AuditLog',
+    'SystemLog',
 ]
