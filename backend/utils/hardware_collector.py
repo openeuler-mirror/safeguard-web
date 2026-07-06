@@ -1600,3 +1600,203 @@ def collect_system_accounts(host: Host) -> Dict[str, Any]:
         result['error'] = str(e)
 
     return result
+
+
+def _parse_syslog_line(line: str) -> Optional[Dict[str, Any]]:
+    """
+    解析系统日志行
+
+    Args:
+        line: 日志行文本
+
+    Returns:
+        解析后的日志字典，或 None
+    """
+    try:
+        line = line.strip()
+        if not line:
+            return None
+
+        # 尝试解析标准的 syslog 格式
+        # 格式: <month> <day> <time> <hostname> <process>: <message>
+        parts = line.split(None, 5)
+        if len(parts) >= 6:
+            month = parts[0]
+            day = parts[1]
+            time_str = parts[2]
+            hostname = parts[3]
+            process = parts[4].rstrip(':')
+            message = parts[5]
+
+            # 提取进程ID (如果有)
+            pid = None
+            process_name = process
+            if '[' in process and ']' in process:
+                pid_match = process.split('[')[1].rstrip(']')
+                if pid_match.isdigit():
+                    pid = int(pid_match)
+                process_name = process.split('[')[0]
+
+            # 判断日志级别
+            level = 'info'
+            message_lower = message.lower()
+            if any(keyword in message_lower for keyword in ['error', 'err', 'critical', 'fatal']):
+                level = 'error'
+            elif any(keyword in message_lower for keyword in ['warning', 'warn']):
+                level = 'warning'
+            elif any(keyword in message_lower for keyword in ['debug']):
+                level = 'debug'
+
+            return {
+                'timestamp': f"{month} {day} {time_str}",
+                'hostname': hostname,
+                'process': process_name,
+                'pid': pid,
+                'message': message,
+                'level': level,
+                'raw_line': line,
+            }
+
+    except Exception as e:
+        logger.debug(f"Failed to parse syslog line: {e}")
+
+    return None
+
+
+def _collect_logs_from_file(client: SSHClient, log_path: str, num_lines: int = 100) -> List[Dict[str, Any]]:
+    """
+    从指定文件中收集日志
+
+    Args:
+        client: SSH 客户端
+        log_path: 日志文件路径
+        num_lines: 收集的行数
+
+    Returns:
+        日志列表
+    """
+    logs = []
+    try:
+        # 使用 tail 命令获取最后的日志行
+        stdout, stderr, exit_code = client.execute_command(f"tail -n {num_lines} {log_path} 2>/dev/null")
+        if exit_code != 0 or not stdout:
+            return logs
+
+        lines = stdout.strip().split('\n')
+        for line in lines:
+            parsed_log = _parse_syslog_line(line)
+            if parsed_log:
+                logs.append(parsed_log)
+
+    except Exception as e:
+        logger.error(f"Error collecting logs from {log_path}: {e}")
+
+    return logs
+
+
+def collect_system_logs(host: Host, log_sources: Optional[List[str]] = None, num_lines: int = 100) -> Dict[str, Any]:
+    """
+    采集系统日志
+
+    Args:
+        host: Host 模型实例
+        log_sources: 日志源列表（默认包含常见系统日志）
+        num_lines: 每个源采集的行数
+
+    Returns:
+        系统日志信息字典
+    """
+    if log_sources is None:
+        log_sources = [
+            '/var/log/syslog',
+            '/var/log/messages',
+            '/var/log/auth.log',
+            '/var/log/secure',
+            '/var/log/kern.log',
+            '/var/log/dmesg',
+        ]
+
+    result = {
+        'success': False,
+        'logs': [],
+        'sources_collected': [],
+        'total_logs': 0,
+        'collected_at': '',
+        'error': '',
+    }
+
+    try:
+        with SSHClient(
+            host=host.ip_address,
+            port=host.port,
+            username=host.username,
+            password=host.password,
+        ) as client:
+            all_logs = []
+
+            for log_path in log_sources:
+                # 检查文件是否存在
+                check_cmd = f"test -f {log_path} && echo exists || echo not_exists"
+                stdout, stderr, exit_code = client.execute_command(check_cmd)
+                if stdout.strip() != 'exists':
+                    continue
+
+                # 收集日志
+                logs = _collect_logs_from_file(client, log_path, num_lines)
+                if logs:
+                    # 添加源信息
+                    for log in logs:
+                        log['source'] = log_path
+                    all_logs.extend(logs)
+                    result['sources_collected'].append(log_path)
+
+            # 按时间倒序排序
+            all_logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+
+            result['logs'] = all_logs
+            result['total_logs'] = len(all_logs)
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
+
+    except Exception as e:
+        logger.error(f"Failed to collect system logs from host {host.id}: {e}")
+        result['error'] = str(e)
+
+    return result
+
+
+def _get_available_log_sources(client: SSHClient) -> List[str]:
+    """
+    获取可用的日志源列表
+
+    Args:
+        client: SSH 客户端
+
+    Returns:
+        可用日志源列表
+    """
+    sources = []
+    try:
+        # 常见的日志目录和文件
+        common_paths = [
+            '/var/log/syslog',
+            '/var/log/messages',
+            '/var/log/auth.log',
+            '/var/log/secure',
+            '/var/log/kern.log',
+            '/var/log/dmesg',
+            '/var/log/daemon.log',
+            '/var/log/user.log',
+            '/var/log/cron.log',
+        ]
+
+        for path in common_paths:
+            check_cmd = f"test -f {path} && echo exists || echo not_exists"
+            stdout, stderr, exit_code = client.execute_command(check_cmd)
+            if stdout.strip() == 'exists':
+                sources.append(path)
+
+    except Exception as e:
+        logger.error(f"Error getting available log sources: {e}")
+
+    return sources
