@@ -1873,6 +1873,17 @@ def control_service(host: Host, service_name: str, action: str) -> Dict[str, Any
     }
 
     try:
+        import shlex
+        # Validate inputs first
+        allowed_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+        if action not in allowed_actions:
+            result['message'] = f"Invalid action: {action}"
+            return result
+        if not service_name or not all(c.isalnum() or c in '-_.' for c in service_name):
+            result['message'] = f"Invalid service name: {service_name}"
+            return result
+
+        safe_service_name = shlex.quote(service_name)
         with SSHClient(
             host=host.ip_address,
             port=host.port,
@@ -1880,10 +1891,7 @@ def control_service(host: Host, service_name: str, action: str) -> Dict[str, Any
             password=host.password,
         ) as client:
             # 构建命令
-            if action in ['enable', 'disable']:
-                cmd = f"systemctl {action} {service_name} 2>&1"
-            else:
-                cmd = f"systemctl {action} {service_name} 2>&1"
+            cmd = f"systemctl {action} {safe_service_name} 2>&1"
 
             stdout, stderr, exit_code = client.execute_command(cmd)
 
