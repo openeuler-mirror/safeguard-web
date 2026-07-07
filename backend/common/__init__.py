@@ -3,6 +3,22 @@ from backend.common.errcodes import ErrCode, get_errmsg
 from backend.common.responses import ApiResponse, SuccessResponse, ErrorResponse, api_response
 from backend.common.mixins import UnifiedSerializerMixin, ListUnifiedSerializerMixin
 from backend.common.viewsets import UnifiedModelViewSet
+from backend.common.exceptions import (
+    ServiceError,
+    HostNotFoundError,
+    VMNotFoundError,
+    ClusterNotFoundError,
+    PolicyTemplateNotFoundError,
+    HostPolicyNotFoundError,
+    TaskNotFoundError,
+    JobNotFoundError,
+    HardwareCollectError,
+    LLDCollectError,
+    PasswordUpdateError,
+    VMOperationError,
+    OperationError,
+    HostConnectionError,
+)
 
 __all__ = [
     'ErrCode',
@@ -14,4 +30,18 @@ __all__ = [
     'UnifiedSerializerMixin',
     'ListUnifiedSerializerMixin',
     'UnifiedModelViewSet',
+    'ServiceError',
+    'HostNotFoundError',
+    'VMNotFoundError',
+    'ClusterNotFoundError',
+    'PolicyTemplateNotFoundError',
+    'HostPolicyNotFoundError',
+    'TaskNotFoundError',
+    'JobNotFoundError',
+    'HardwareCollectError',
+    'LLDCollectError',
+    'PasswordUpdateError',
+    'VMOperationError',
+    'OperationError',
+    'HostConnectionError',
 ]
