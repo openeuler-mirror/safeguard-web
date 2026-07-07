@@ -18,6 +18,17 @@ from backend.common.exceptions import (
     VMOperationError,
     OperationError,
     HostConnectionError,
+    FileMonitorRuleNotFoundError,
+    AuditLogCreateError,
+    FileMonitorRuleCreateError,
+    FileMonitorEventCollectError,
+    SystemLogCollectError,
+    HostInfoCollectError,
+    MonitorDataSaveError,
+    MonitorHistoryQueryError,
+    PolicyApplyError,
+    HostImportError,
+    RemoteCommandError,
 )
 
 __all__ = [

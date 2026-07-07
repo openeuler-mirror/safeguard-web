@@ -104,3 +104,80 @@ class HostConnectionError(ServiceError):
 
     def __init__(self, message: str):
         super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class FileMonitorRuleNotFoundError(ServiceError):
+    """文件监控规则不存在"""
+
+    def __init__(self, rule_id: int):
+        super().__init__(ErrCode.NOT_FOUND, f"文件监控规则 {rule_id} 不存在")
+
+
+class AuditLogCreateError(ServiceError):
+    """审计日志创建失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class FileMonitorRuleCreateError(ServiceError):
+    """文件监控规则创建失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class FileMonitorEventCollectError(ServiceError):
+    """文件监控事件收集失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class SystemLogCollectError(ServiceError):
+    """系统日志收集失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class HostInfoCollectError(ServiceError):
+    """主机信息收集失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class MonitorDataSaveError(ServiceError):
+    """监控数据保存失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class MonitorHistoryQueryError(ServiceError):
+    """监控历史查询失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class PolicyApplyError(ServiceError):
+    """策略应用失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class HostImportError(ServiceError):
+    """主机导入失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
+class RemoteCommandError(ServiceError):
+    """远程命令执行失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
