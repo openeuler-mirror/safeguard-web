@@ -755,8 +755,17 @@ def _control_service(client: SSHClient, service_name: str, action: str) -> bool:
         是否成功
     """
     try:
+        import shlex
+        # Validate action: only allow specific values
+        allowed_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+        if action not in allowed_actions:
+            return False
+        # Validate service_name
+        if not service_name or not all(c.isalnum() or c in '-_.' for c in service_name):
+            return False
+        safe_service_name = shlex.quote(service_name)
         stdout, stderr, exit_code = client.execute_command(
-            f"systemctl {action} {service_name} 2>&1"
+            f"systemctl {action} {safe_service_name} 2>&1"
         )
         return exit_code == 0
     except Exception as e:
