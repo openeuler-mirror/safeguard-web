@@ -422,6 +422,15 @@ class MonitorService:
         Returns:
             保存结果
         """
+        # 校验两个列表长度一致
+        if len(host_ids) != len(data_list):
+            error_msg = f'host_ids and data_list length mismatch: {len(host_ids)} != {len(data_list)}'
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg,
+            }
+
         success_count = 0
         failed_ids = []
 
