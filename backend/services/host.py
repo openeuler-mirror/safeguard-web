@@ -3,8 +3,19 @@ import random
 import string
 import hashlib
 import logging
+from dataclasses import dataclass
 from typing import Optional, Dict, List
 from backend.models.host import Cluster, Host, VM
+
+
+@dataclass
+class VMOperationResult:
+    """VM 操作结果"""
+    success: bool
+    vm: Optional[VM] = None
+    message: str = ""
+    is_simulation: bool = False
+    new_status: Optional[str] = None
 from backend.utils.hardware_collector import (
     collect_host_hardware,
     collect_host_lldp,
@@ -767,7 +778,7 @@ class VMService:
             return False
 
     @staticmethod
-    def start_vm(vm_id: int) -> str:
+    def start_vm(vm_id: int) -> VMOperationResult:
         """
         启动 VM
 
@@ -775,7 +786,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -801,7 +812,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} started (simulation mode)")
-                return 'VM启动成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM启动成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             success, message = client.start_domain(vm.name)
             client.close()
 
@@ -809,7 +826,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} started")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message=message,
+                    is_simulation=False,
+                    new_status='running'
+                )
             else:
                 logger.error(f"Failed to start VM {vm_id}: {message}")
                 raise VMOperationError(message)
@@ -817,18 +840,30 @@ class VMService:
             vm.status = 'running'
             vm.save()
             logger.info(f"VM {vm_id} started (simulation mode - libvirt not installed)")
-            return 'VM启动成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=vm,
+                message='VM启动成功（模拟模式）',
+                is_simulation=True,
+                new_status='running'
+            )
         except Exception as e:
             logger.error(f"Failed to start VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} started (simulation mode - connection failed)")
-                return 'VM启动成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM启动成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             raise VMOperationError(str(e))
 
     @staticmethod
-    def stop_vm(vm_id: int) -> str:
+    def stop_vm(vm_id: int) -> VMOperationResult:
         """
         停止 VM（强制关机）
 
@@ -836,7 +871,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -862,7 +897,13 @@ class VMService:
                 vm.status = 'stopped'
                 vm.save()
                 logger.info(f"VM {vm_id} stopped (simulation mode)")
-                return 'VM停止成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM停止成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='stopped'
+                )
             success, message = client.stop_domain(vm.name)
             client.close()
 
@@ -870,7 +911,13 @@ class VMService:
                 vm.status = 'stopped'
                 vm.save()
                 logger.info(f"VM {vm_id} stopped")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message=message,
+                    is_simulation=False,
+                    new_status='stopped'
+                )
             else:
                 logger.error(f"Failed to stop VM {vm_id}: {message}")
                 raise VMOperationError(message)
@@ -878,18 +925,30 @@ class VMService:
             vm.status = 'stopped'
             vm.save()
             logger.info(f"VM {vm_id} stopped (simulation mode - libvirt not installed)")
-            return 'VM停止成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=vm,
+                message='VM停止成功（模拟模式）',
+                is_simulation=True,
+                new_status='stopped'
+            )
         except Exception as e:
             logger.error(f"Failed to stop VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'stopped'
                 vm.save()
                 logger.info(f"VM {vm_id} stopped (simulation mode - connection failed)")
-                return 'VM停止成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM停止成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='stopped'
+                )
             raise VMOperationError(str(e))
 
     @staticmethod
-    def reboot_vm(vm_id: int) -> str:
+    def reboot_vm(vm_id: int) -> VMOperationResult:
         """
         重启 VM
 
@@ -897,7 +956,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -923,7 +982,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} rebooted (simulation mode)")
-                return 'VM重启成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM重启成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             success, message = client.reboot_domain(vm.name)
             client.close()
 
@@ -931,7 +996,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} rebooted")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message=message,
+                    is_simulation=False,
+                    new_status='running'
+                )
             else:
                 logger.error(f"Failed to reboot VM {vm_id}: {message}")
                 raise VMOperationError(message)
@@ -939,18 +1010,30 @@ class VMService:
             vm.status = 'running'
             vm.save()
             logger.info(f"VM {vm_id} rebooted (simulation mode - libvirt not installed)")
-            return 'VM重启成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=vm,
+                message='VM重启成功（模拟模式）',
+                is_simulation=True,
+                new_status='running'
+            )
         except Exception as e:
             logger.error(f"Failed to reboot VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} rebooted (simulation mode - connection failed)")
-                return 'VM重启成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM重启成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             raise VMOperationError(str(e))
 
     @staticmethod
-    def pause_vm(vm_id: int) -> str:
+    def pause_vm(vm_id: int) -> VMOperationResult:
         """
         暂停 VM
 
@@ -958,7 +1041,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -984,7 +1067,13 @@ class VMService:
                 vm.status = 'paused'
                 vm.save()
                 logger.info(f"VM {vm_id} paused (simulation mode)")
-                return 'VM暂停成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM暂停成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='paused'
+                )
             success, message = client.pause_domain(vm.name)
             client.close()
 
@@ -992,7 +1081,13 @@ class VMService:
                 vm.status = 'paused'
                 vm.save()
                 logger.info(f"VM {vm_id} paused")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message=message,
+                    is_simulation=False,
+                    new_status='paused'
+                )
             else:
                 logger.error(f"Failed to pause VM {vm_id}: {message}")
                 raise VMOperationError(message)
@@ -1000,18 +1095,30 @@ class VMService:
             vm.status = 'paused'
             vm.save()
             logger.info(f"VM {vm_id} paused (simulation mode - libvirt not installed)")
-            return 'VM暂停成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=vm,
+                message='VM暂停成功（模拟模式）',
+                is_simulation=True,
+                new_status='paused'
+            )
         except Exception as e:
             logger.error(f"Failed to pause VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'paused'
                 vm.save()
                 logger.info(f"VM {vm_id} paused (simulation mode - connection failed)")
-                return 'VM暂停成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM暂停成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='paused'
+                )
             raise VMOperationError(str(e))
 
     @staticmethod
-    def resume_vm(vm_id: int) -> str:
+    def resume_vm(vm_id: int) -> VMOperationResult:
         """
         恢复 VM
 
@@ -1019,7 +1126,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -1045,7 +1152,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} resumed (simulation mode)")
-                return 'VM恢复成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM恢复成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             success, message = client.resume_domain(vm.name)
             client.close()
 
@@ -1053,7 +1166,13 @@ class VMService:
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} resumed")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message=message,
+                    is_simulation=False,
+                    new_status='running'
+                )
             else:
                 logger.error(f"Failed to resume VM {vm_id}: {message}")
                 raise VMOperationError(message)
@@ -1061,14 +1180,26 @@ class VMService:
             vm.status = 'running'
             vm.save()
             logger.info(f"VM {vm_id} resumed (simulation mode - libvirt not installed)")
-            return 'VM恢复成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=vm,
+                message='VM恢复成功（模拟模式）',
+                is_simulation=True,
+                new_status='running'
+            )
         except Exception as e:
             logger.error(f"Failed to resume VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
                 logger.info(f"VM {vm_id} resumed (simulation mode - connection failed)")
-                return 'VM恢复成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=vm,
+                    message='VM恢复成功（模拟模式）',
+                    is_simulation=True,
+                    new_status='running'
+                )
             raise VMOperationError(str(e))
 
     @staticmethod
@@ -1118,7 +1249,7 @@ class VMService:
             return vm.status
 
     @staticmethod
-    def delete_vm_from_libvirt(vm_id: int) -> str:
+    def delete_vm_from_libvirt(vm_id: int) -> VMOperationResult:
         """
         从 libvirt 删除 VM（先关机再删除定义）
 
@@ -1126,7 +1257,7 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            结果消息
+            VMOperationResult: VM 操作结果
 
         Raises:
             VMNotFoundError: VM不存在
@@ -1151,7 +1282,13 @@ class VMService:
             if conn is None:
                 vm.delete()
                 logger.info(f"VM {vm_id} deleted (simulation mode)")
-                return 'VM删除成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=None,
+                    message='VM删除成功（模拟模式）',
+                    is_simulation=True,
+                    new_status=None
+                )
 
             client.stop_domain(vm.name)
             success, message = client.undefine_domain(vm.name)
@@ -1160,20 +1297,38 @@ class VMService:
             if success:
                 vm.delete()
                 logger.info(f"VM {vm_id} deleted from libvirt and database")
-                return message
+                return VMOperationResult(
+                    success=True,
+                    vm=None,
+                    message=message,
+                    is_simulation=False,
+                    new_status=None
+                )
             else:
                 logger.error(f"Failed to delete VM {vm_id} from libvirt: {message}")
                 raise VMOperationError(message)
         except ImportError:
             vm.delete()
             logger.info(f"VM {vm_id} deleted (simulation mode - libvirt not installed)")
-            return 'VM删除成功（模拟模式）'
+            return VMOperationResult(
+                success=True,
+                vm=None,
+                message='VM删除成功（模拟模式）',
+                is_simulation=True,
+                new_status=None
+            )
         except Exception as e:
             logger.error(f"Failed to delete VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.delete()
                 logger.info(f"VM {vm_id} deleted (simulation mode - connection failed)")
-                return 'VM删除成功（模拟模式）'
+                return VMOperationResult(
+                    success=True,
+                    vm=None,
+                    message='VM删除成功（模拟模式）',
+                    is_simulation=True,
+                    new_status=None
+                )
             raise VMOperationError(str(e))
 
     @staticmethod

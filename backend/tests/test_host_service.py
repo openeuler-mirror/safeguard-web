@@ -274,39 +274,49 @@ class TestVMService(TestCase):
 
     def test_start_vm(self):
         result = VMService.start_vm(self.vm.id)
-        self.assertIn('成功', result)
+        self.assertTrue(result.success)
+        self.assertIn('成功', result.message)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
+        self.assertEqual(result.new_status, 'running')
 
     def test_stop_vm(self):
         self.vm.status = 'running'
         self.vm.save()
         result = VMService.stop_vm(self.vm.id)
-        self.assertIn('成功', result)
+        self.assertTrue(result.success)
+        self.assertIn('成功', result.message)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'stopped')
+        self.assertEqual(result.new_status, 'stopped')
 
     def test_reboot_vm(self):
         result = VMService.reboot_vm(self.vm.id)
-        self.assertIn('成功', result)
+        self.assertTrue(result.success)
+        self.assertIn('成功', result.message)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
+        self.assertEqual(result.new_status, 'running')
 
     def test_pause_vm(self):
         self.vm.status = 'running'
         self.vm.save()
         result = VMService.pause_vm(self.vm.id)
-        self.assertIn('成功', result)
+        self.assertTrue(result.success)
+        self.assertIn('成功', result.message)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'paused')
+        self.assertEqual(result.new_status, 'paused')
 
     def test_resume_vm(self):
         self.vm.status = 'paused'
         self.vm.save()
         result = VMService.resume_vm(self.vm.id)
-        self.assertIn('成功', result)
+        self.assertTrue(result.success)
+        self.assertIn('成功', result.message)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
+        self.assertEqual(result.new_status, 'running')
 
     def test_get_vm_status_not_found(self):
         with self.assertRaises(VMNotFoundError):
@@ -331,7 +341,10 @@ class TestVMService(TestCase):
         mock_client_class.return_value = mock_client
 
         result = VMService.delete_vm_from_libvirt(self.vm.id)
-        self.assertEqual(result, 'undefined')
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, 'undefined')
+        self.assertIsNone(result.vm)
+        self.assertIsNone(result.new_status)
 
     @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_not_found(self, mock_client_class):
