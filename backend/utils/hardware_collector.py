@@ -1937,6 +1937,20 @@ def get_service_logs(host: Host, service_name: str, lines: int = 100) -> Dict[st
     }
 
     try:
+        import shlex
+        # Validate inputs
+        if not service_name or not all(c.isalnum() or c in '-_.' for c in service_name):
+            result['error'] = f"Invalid service name: {service_name}"
+            return result
+        # Validate lines: must be integer between 1 and 10000
+        if not isinstance(lines, int):
+            try:
+                lines = int(lines)
+            except (ValueError, TypeError):
+                lines = 100
+        lines = max(1, min(lines, 10000))
+
+        safe_service_name = shlex.quote(service_name)
         with SSHClient(
             host=host.ip_address,
             port=host.port,
@@ -1944,7 +1958,7 @@ def get_service_logs(host: Host, service_name: str, lines: int = 100) -> Dict[st
             password=host.password,
         ) as client:
             # 使用 journalctl 获取服务日志
-            cmd = f"journalctl -u {service_name} -n {lines} --no-pager 2>&1"
+            cmd = f"journalctl -u {safe_service_name} -n {lines} --no-pager 2>&1"
             stdout, stderr, exit_code = client.execute_command(cmd)
 
             if exit_code == 0 and stdout:
@@ -2002,6 +2016,13 @@ def _kill_process(client: SSHClient, pid: int, force: bool = False) -> Dict[str,
     }
 
     try:
+        # Validate pid is an integer
+        if not isinstance(pid, int):
+            try:
+                pid = int(pid)
+            except (ValueError, TypeError):
+                result['message'] = f"Invalid pid: {pid}"
+                return result
         # 检查进程是否存在
         check_cmd = f"ps -p {pid} -o pid= 2>/dev/null"
         stdout, stderr, exit_code = client.execute_command(check_cmd)
@@ -2077,6 +2098,7 @@ def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]])
         文件事件列表
     """
     events = []
+    import shlex
 
     try:
         for rule in monitor_rules:
@@ -2084,10 +2106,30 @@ def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]])
             if not path:
                 continue
 
-            # 检查路径是否存在
-            check_cmd = f"test -e {path} && echo exists || echo not_exists"
-            stdout, stderr, exit_code = client.execute_command(check_cmd)
-            exists = stdout.strip() == 'exists'
+            # Validate path
+            if not path.startswith('/'):
+                events.append({
+                    'rule_id': rule.get('id'),
+                    'path': path,
+                    'event_type': 'invalid_path',
+                    'timestamp': datetime.now().isoformat(),
+                    'details': 'Path must be absolute',
+                })
+                continue
+            if any(c in path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+                events.append({
+                    'rule_id': rule.get('id'),
+                    'path': path,
+                    'event_type': 'invalid_path',
+                    'timestamp': datetime.now().isoformat(),
+                    'details': 'Path contains invalid characters',
+                })
+                continue
+
+            safe_path = shlex.quote(path)
+
+            # 检查路径是否存在 using file_exists method
+            exists = client.file_exists(path) or client.dir_exists(path)
 
             if not exists:
                 events.append({
@@ -2100,40 +2142,43 @@ def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]])
                 continue
 
             # 获取文件状态信息
-            stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a' {path} 2>/dev/null"
+            stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a' {safe_path} 2>/dev/null"
             stdout, stderr, exit_code = client.execute_command(stat_cmd)
             if exit_code == 0 and stdout:
                 parts = stdout.strip().split(':')
                 if len(parts) >= 6:
-                    mtime = int(parts[0])
-                    ctime = int(parts[1])
-                    size = int(parts[2])
-                    uid = int(parts[3])
-                    gid = int(parts[4])
-                    mode = parts[5]
+                    try:
+                        mtime = int(parts[0])
+                        ctime = int(parts[1])
+                        size = int(parts[2])
+                        uid = int(parts[3])
+                        gid = int(parts[4])
+                        mode = parts[5]
 
-                    # 转换时间戳
-                    mtime_dt = datetime.fromtimestamp(mtime).isoformat()
-                    ctime_dt = datetime.fromtimestamp(ctime).isoformat()
+                        # 转换时间戳
+                        mtime_dt = datetime.fromtimestamp(mtime).isoformat()
+                        ctime_dt = datetime.fromtimestamp(ctime).isoformat()
 
-                    events.append({
-                        'rule_id': rule.get('id'),
-                        'path': path,
-                        'event_type': 'file_status',
-                        'timestamp': datetime.now().isoformat(),
-                        'details': {
-                            'mtime': mtime_dt,
-                            'ctime': ctime_dt,
-                            'size': size,
-                            'uid': uid,
-                            'gid': gid,
-                            'mode': mode,
-                        },
-                    })
+                        events.append({
+                            'rule_id': rule.get('id'),
+                            'path': path,
+                            'event_type': 'file_status',
+                            'timestamp': datetime.now().isoformat(),
+                            'details': {
+                                'mtime': mtime_dt,
+                                'ctime': ctime_dt,
+                                'size': size,
+                                'uid': uid,
+                                'gid': gid,
+                                'mode': mode,
+                            },
+                        })
+                    except (ValueError, IndexError):
+                        pass
 
             # 如果是目录且启用递归监控
             if rule.get('recursive', False):
-                ls_cmd = f"ls -la --time-style=full-iso {path} 2>/dev/null"
+                ls_cmd = f"ls -la --time-style=full-iso {safe_path} 2>/dev/null"
                 stdout, stderr, exit_code = client.execute_command(ls_cmd)
                 if exit_code == 0 and stdout:
                     events.append({
