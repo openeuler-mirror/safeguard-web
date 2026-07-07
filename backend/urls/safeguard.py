@@ -12,7 +12,7 @@ from backend.views.safeguard.file_monitor import (
     FileMonitorRuleViewSet,
     FileMonitorEventViewSet,
 )
-from backend.views.safeguard.audit import AuditLogViewSet
+from backend.views.safeguard.audit import AuditLogViewSet, SystemLogViewSet
 
 router = DefaultRouter()
 router.register(r'host-info', HostInfoViewSet, basename='host-info')
@@ -23,6 +23,7 @@ router.register(r'policy-tasks', PolicyApplyTaskViewSet, basename='policy-task')
 router.register(r'file-monitor-rules', FileMonitorRuleViewSet, basename='file-monitor-rule')
 router.register(r'file-monitor-events', FileMonitorEventViewSet, basename='file-monitor-event')
 router.register(r'audit-logs', AuditLogViewSet, basename='audit-log')
+router.register(r'system-logs', SystemLogViewSet, basename='system-log')
 
 urlpatterns = [
     path('', include(router.urls)),

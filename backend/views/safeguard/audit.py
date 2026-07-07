@@ -7,8 +7,11 @@ from rest_framework.permissions import IsAuthenticated
 logger = logging.getLogger(__name__)
 
 from backend.models.audit.audit_log import AuditLog
-from backend.serializers.safeguard.audit import AuditLogSerializer
+from backend.models.audit.system_log import SystemLog
+from backend.models.host import Host
+from backend.serializers.safeguard.audit import AuditLogSerializer, SystemLogSerializer
 from backend.permissions.authority import IsAdmin
+from backend.permissions.base import DataScopePermission
 from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet
 
 
@@ -24,3 +27,17 @@ class AuditLogViewSet(UnifiedModelViewSet):
     def get_queryset(self):
         queryset = AuditLog.objects.select_related('user').all().order_by('-created_at')
         return queryset
+
+
+class SystemLogViewSet(UnifiedModelViewSet):
+    """系统日志视图集"""
+    queryset = SystemLog.objects.select_related('host').all().order_by('-timestamp')
+    serializer_class = SystemLogSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    filterset_fields = ['host', 'source', 'level']
+    search_fields = ['message']
+    ordering_fields = ['timestamp', 'id']
+
+    def get_queryset(self):
+        queryset = SystemLog.objects.select_related('host').all().order_by('-timestamp')
+        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
