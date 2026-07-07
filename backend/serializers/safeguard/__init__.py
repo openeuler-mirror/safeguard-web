@@ -17,6 +17,7 @@ from backend.serializers.safeguard.file_monitor import (
 )
 from backend.serializers.safeguard.audit import (
     AuditLogSerializer,
+    SystemLogSerializer,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     'FileMonitorRuleUpdateSerializer',
     'FileMonitorEventSerializer',
     'AuditLogSerializer',
+    'SystemLogSerializer',
 ]
