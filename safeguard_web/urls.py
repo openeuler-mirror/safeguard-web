@@ -37,6 +37,9 @@ urlpatterns = [
     # RPC routes
     path('api/', include('backend.urls.rpc')),
 
+    # Safeguard routes
+    path('api/safeguard/', include('backend.urls.safeguard')),
+
     # DRF auth
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 

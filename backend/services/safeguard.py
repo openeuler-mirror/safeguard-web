@@ -479,6 +479,14 @@ class MonitorService:
             监控历史数据
         """
         try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
             # 基础查询
             queryset = HostMonitorData.objects.filter(host_id=host_id)
 
@@ -611,6 +619,14 @@ class PolicyService:
             策略模板列表
         """
         try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
             queryset = SafeguardPolicyTemplate.objects.all()
 
             if template_type:
@@ -903,6 +919,14 @@ class AuditService:
             审计日志列表
         """
         try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
             queryset = AuditLog.objects.all()
 
             if user:
@@ -1047,6 +1071,14 @@ class AuditService:
             监控规则列表
         """
         try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
             queryset = FileMonitorRule.objects.all()
 
             if host_id:
@@ -1115,6 +1147,14 @@ class AuditService:
             文件监控事件列表
         """
         try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
             queryset = FileMonitorEvent.objects.all()
 
             if host_id:
