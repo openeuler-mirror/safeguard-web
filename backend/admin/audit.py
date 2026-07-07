@@ -8,7 +8,7 @@ class AuditLogAdmin(admin.ModelAdmin):
     """审计日志 Admin"""
     list_display = ['id', 'user', 'action', 'resource_type', 'status', 'created_at']
     list_filter = ['action', 'status', 'resource_type', 'created_at']
-    search_fields = ['user__username', 'resource_name', 'action_details']
+    search_fields = ['user__user', 'resource_name', 'action_details']
     readonly_fields = ['created_at']
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
