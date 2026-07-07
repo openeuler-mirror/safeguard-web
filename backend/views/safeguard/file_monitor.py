@@ -19,7 +19,7 @@ from backend.serializers.safeguard.file_monitor import (
 )
 from backend.permissions.authority import IsAdmin
 from backend.permissions.base import DataScopePermission
-from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet, ServiceError
 from backend.services.safeguard import AuditService
 
 
@@ -51,10 +51,11 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
         """收集文件监控事件"""
         host_id = request.data.get('host_id')
 
-        result = AuditService.collect_file_events(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '收集文件监控事件失败'))
+        try:
+            result = AuditService.collect_file_events(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='start-monitor')
     def start_monitor(self, request, pk=None):

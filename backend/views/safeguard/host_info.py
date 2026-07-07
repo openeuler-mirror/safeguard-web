@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 from backend.models.host import Host
 from backend.permissions.authority import IsAdmin
 from backend.permissions.base import DataScopePermission
-from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet, ServiceError
 from backend.services.safeguard import HostInfoService
 
 
@@ -29,10 +29,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
 
-        result = HostInfoService.get_system_info(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取系统信息失败'))
+        try:
+            result = HostInfoService.get_system_info(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='ports-info')
     def ports_info(self, request):
@@ -46,10 +47,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
 
-        result = HostInfoService.get_ports_info(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取端口信息失败'))
+        try:
+            result = HostInfoService.get_ports_info(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='processes-info')
     def processes_info(self, request):
@@ -63,10 +65,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
 
-        result = HostInfoService.get_processes_info(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取进程信息失败'))
+        try:
+            result = HostInfoService.get_processes_info(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='services-info')
     def services_info(self, request):
@@ -80,10 +83,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
 
-        result = HostInfoService.get_services_info(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务信息失败'))
+        try:
+            result = HostInfoService.get_services_info(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='accounts-info')
     def accounts_info(self, request):
@@ -97,10 +101,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='host_id must be an integer')
 
-        result = HostInfoService.get_accounts_info(host_id)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取账户信息失败'))
+        try:
+            result = HostInfoService.get_accounts_info(host_id)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['post'], url_path='service-control')
     def service_control(self, request):
@@ -115,10 +120,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         if action not in ['start', 'stop', 'restart', 'reload', 'enable', 'disable']:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='Invalid action')
 
-        result = HostInfoService.control_service(host_id, service_name, action)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '服务控制失败')))
+        try:
+            result = HostInfoService.control_service(host_id, service_name, action)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='service-logs')
     def service_logs(self, request):
@@ -135,10 +141,11 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             lines = 100
 
-        result = HostInfoService.get_service_logs(host_id, service_name, lines)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务日志失败'))
+        try:
+            result = HostInfoService.get_service_logs(host_id, service_name, lines)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['post'], url_path='kill-process')
     def kill_process(self, request):
@@ -155,7 +162,8 @@ class HostInfoViewSet(viewsets.ViewSet):
         except (ValueError, TypeError):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='pid must be an integer')
 
-        result = HostInfoService.kill_process(host_id, pid, force)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '终止进程失败')))
+        try:
+            result = HostInfoService.kill_process(host_id, pid, force)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
