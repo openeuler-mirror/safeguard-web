@@ -224,6 +224,93 @@ class HostInfoService:
                 'error': str(e),
             }
 
+    @staticmethod
+    def control_service(host_id: int, service_name: str, action: str) -> Dict[str, Any]:
+        """
+        控制主机服务（启动、停止、重启、重载、启用、禁用）
+
+        Args:
+            host_id: 主机ID
+            service_name: 服务名称
+            action: 操作类型
+
+        Returns:
+            操作结果字典
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+            result = control_service(host, service_name, action)
+            return result
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error controlling service {service_name} for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_service_logs(host_id: int, service_name: str, lines: int = 100) -> Dict[str, Any]:
+        """
+        获取服务日志
+
+        Args:
+            host_id: 主机ID
+            service_name: 服务名称
+            lines: 获取日志行数
+
+        Returns:
+            日志信息字典
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+            result = get_service_logs(host, service_name, lines)
+            return result
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting service logs for {service_name} on host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def kill_process(host_id: int, pid: int, force: bool = False) -> Dict[str, Any]:
+        """
+        终止主机上的进程
+
+        Args:
+            host_id: 主机ID
+            pid: 进程ID
+            force: 是否强制终止
+
+        Returns:
+            操作结果字典
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+            result = kill_process(host, pid, force)
+            return result
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error killing process {pid} on host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
 
 class MonitorService:
     """
@@ -844,6 +931,87 @@ class PolicyService:
             }
         except Exception as e:
             logger.error(f'Error getting host policy: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def apply_policy(task_id: int) -> Dict[str, Any]:
+        """
+        执行策略下发任务
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            执行结果
+        """
+        from backend.tasks.safeguard import apply_policy_task
+
+        try:
+            # 获取任务对象
+            task = PolicyApplyTask.objects.select_related('host', 'policy', 'created_by').get(id=task_id)
+
+            # 触发异步任务
+            apply_policy_task.delay(task_id)
+
+            return {
+                'success': True,
+                'message': 'Policy apply task has been queued',
+                'task_id': task_id,
+            }
+
+        except PolicyApplyTask.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Task {task_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error applying policy: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_task_status(task_id: int) -> Dict[str, Any]:
+        """
+        获取任务状态
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            任务状态详情
+        """
+        try:
+            task = PolicyApplyTask.objects.select_related('host', 'policy', 'created_by').get(id=task_id)
+
+            return {
+                'success': True,
+                'data': {
+                    'id': task.id,
+                    'host_id': task.host_id,
+                    'policy_id': task.policy_id,
+                    'task_type': task.task_type,
+                    'status': task.status,
+                    'result': task.result,
+                    'error_message': task.error_message,
+                    'created_by': task.created_by.username if task.created_by else None,
+                    'created_at': task.created_at.isoformat(),
+                    'started_at': task.started_at.isoformat() if task.started_at else None,
+                    'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                },
+            }
+
+        except PolicyApplyTask.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Task {task_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting task status: {e}')
             return {
                 'success': False,
                 'error': str(e),
