@@ -65,24 +65,32 @@ class HostInfoService:
         Returns:
             包含系统信息的字典
         """
+        result = {
+            'success': False,
+            'arch_info': '',
+            'uptime': '',
+            'os_version': '',
+            'cpu_info': '',
+            'disk_info': '',
+            'memory_info': '',
+            'network_info': '',
+            'mount_info': '',
+            'dmesg_info': '',
+            'collected_at': '',
+            'error': '',
+        }
         try:
             host = Host.objects.get(id=host_id)
             hardware_info = collect_host_hardware(host)
-            return {
-                'success': True,
-                'data': hardware_info,
-            }
+            result.update(hardware_info)
+            result['collected_at'] = datetime.now().isoformat()
+            result['success'] = True
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            result['error'] = f'Host {host_id} not found'
         except Exception as e:
             logger.error(f'Error getting system info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            result['error'] = str(e)
+        return result
 
     @staticmethod
     def get_ports_info(host_id: int) -> Dict[str, Any]:
