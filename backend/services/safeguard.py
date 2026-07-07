@@ -1433,12 +1433,29 @@ class AuditService:
                 # 保存日志到数据库
                 with transaction.atomic():
                     for log_data in logs_result['logs']:
+                        # 尝试解析日志的原始时间戳
+                        log_timestamp = datetime.now()
+                        timestamp_str = log_data.get('timestamp')
+                        if timestamp_str:
+                            try:
+                                # 解析 "Mar 25 14:30:00" 格式的时间
+                                parsed = datetime.strptime(timestamp_str, "%b %d %H:%M:%S")
+                                # 补充年份，默认为当前年份
+                                parsed = parsed.replace(year=datetime.now().year)
+                                # 如果解析后的时间在未来，说明是去年的日志
+                                if parsed > datetime.now():
+                                    parsed = parsed.replace(year=datetime.now().year - 1)
+                                log_timestamp = parsed
+                            except (ValueError, TypeError):
+                                # 解析失败，使用当前时间
+                                pass
+
                         SystemLog.objects.create(
                             host=host,
                             source=log_data.get('source', ''),
                             level=log_data.get('level', 'info'),
                             message=log_data.get('message', ''),
-                            timestamp=datetime.now(),
+                            timestamp=log_timestamp,
                             raw_log=log_data.get('raw_line', ''),
                             parsed_fields={
                                 'process': log_data.get('process'),
