@@ -35,7 +35,7 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return FileMonitorRuleCreateSerializer
-        if self.action in ('update', 'partial_update'):
+        if self.action in ['update', 'partial_update']:
             return FileMonitorRuleUpdateSerializer
         return FileMonitorRuleSerializer
 
@@ -45,6 +45,38 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+    @action(detail=False, methods=['post'], url_path='collect-events')
+    def collect_events(self, request):
+        """收集文件监控事件"""
+        host_id = request.data.get('host_id')
+
+        result = AuditService.collect_file_events(host_id)
+        if result['success']:
+            return SuccessResponse(result)
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '收集文件监控事件失败'))
+
+    @action(detail=True, methods=['post'], url_path='start-monitor')
+    def start_monitor(self, request, pk=None):
+        """启用监控规则"""
+        try:
+            rule = self.get_object()
+            rule.enabled = True
+            rule.save()
+            return SuccessResponse({'id': rule.id, 'enabled': True})
+        except FileMonitorRule.DoesNotExist:
+            return ErrorResponse(ErrCode.NOT_FOUND, errmsg='监控规则不存在')
+
+    @action(detail=True, methods=['post'], url_path='stop-monitor')
+    def stop_monitor(self, request, pk=None):
+        """禁用监控规则"""
+        try:
+            rule = self.get_object()
+            rule.enabled = False
+            rule.save()
+            return SuccessResponse({'id': rule.id, 'enabled': False})
+        except FileMonitorRule.DoesNotExist:
+            return ErrorResponse(ErrCode.NOT_FOUND, errmsg='监控规则不存在')
 
 
 class FileMonitorEventViewSet(UnifiedModelViewSet):
