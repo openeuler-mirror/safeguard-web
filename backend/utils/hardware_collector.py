@@ -1777,10 +1777,13 @@ def collect_system_logs(host: Host, log_sources: Optional[List[str]] = None, num
             all_logs = []
 
             for log_path in log_sources:
-                # 检查文件是否存在
-                check_cmd = f"test -f {log_path} && echo exists || echo not_exists"
-                stdout, stderr, exit_code = client.execute_command(check_cmd)
-                if stdout.strip() != 'exists':
+                # Validate log path first
+                if not log_path.startswith('/'):
+                    continue
+                if any(c in log_path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+                    continue
+                # 检查文件是否存在 using file_exists method instead of shell command
+                if not client.file_exists(log_path):
                     continue
 
                 # 收集日志
