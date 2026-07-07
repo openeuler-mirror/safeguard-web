@@ -35,6 +35,7 @@ from backend.utils.hardware_collector import (
     collect_memory_metrics,
     collect_network_metrics,
     collect_disk_metrics,
+    collect_system_accounts,
 )
 
 logger = logging.getLogger(__name__)
@@ -186,6 +187,33 @@ class HostInfoService:
             }
         except Exception as e:
             logger.error(f'Error collecting and saving ports for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_accounts_info(host_id: int) -> Dict[str, Any]:
+        """
+        获取主机系统账户信息
+
+        Args:
+            host_id: 主机ID
+
+        Returns:
+            包含系统账户信息的字典
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+            accounts_info = collect_system_accounts(host)
+            return accounts_info
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error getting accounts info for host {host_id}: {e}')
             return {
                 'success': False,
                 'error': str(e),
