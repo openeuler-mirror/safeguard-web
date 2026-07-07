@@ -1229,3 +1229,152 @@ class AuditService:
                 'success': False,
                 'error': str(e),
             }
+
+    @staticmethod
+    def collect_and_save_system_logs(
+        host_id: int,
+        log_sources: Optional[List[str]] = None,
+        num_lines: int = 100,
+        save_to_db: bool = True
+    ) -> Dict[str, Any]:
+        """
+        采集并保存系统日志
+
+        Args:
+            host_id: 主机ID
+            log_sources: 日志源列表
+            num_lines: 每个源采集的行数
+            save_to_db: 是否保存到数据库
+
+        Returns:
+            采集结果
+        """
+        try:
+            host = Host.objects.get(id=host_id)
+
+            # 采集系统日志
+            logs_result = collect_system_logs(host, log_sources, num_lines)
+
+            if logs_result['success'] and save_to_db:
+                from backend.models.audit.system_log import SystemLog
+
+                # 保存日志到数据库
+                with transaction.atomic():
+                    for log_data in logs_result['logs']:
+                        SystemLog.objects.create(
+                            host=host,
+                            source=log_data.get('source', ''),
+                            level=log_data.get('level', 'info'),
+                            message=log_data.get('message', ''),
+                            timestamp=datetime.now(),
+                            raw_log=log_data.get('raw_line', ''),
+                            parsed_fields={
+                                'process': log_data.get('process'),
+                                'pid': log_data.get('pid'),
+                                'hostname': log_data.get('hostname'),
+                            }
+                        )
+
+            return logs_result
+
+        except Host.DoesNotExist:
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
+        except Exception as e:
+            logger.error(f'Error collecting system logs for host {host_id}: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def get_system_logs(
+        host_id: Optional[int] = None,
+        source: Optional[str] = None,
+        level: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        page: int = 1,
+        page_size: int = 100
+    ) -> Dict[str, Any]:
+        """
+        获取系统日志列表
+
+        Args:
+            host_id: 过滤主机
+            source: 过滤日志源
+            level: 过滤日志级别
+            start_time: 开始时间
+            end_time: 结束时间
+            page: 页码
+            page_size: 每页大小
+
+        Returns:
+            系统日志列表
+        """
+        from backend.models.audit.system_log import SystemLog
+
+        try:
+            # 校验并标准化分页参数
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 100
+            if page_size > 1000:
+                page_size = 1000
+
+            queryset = SystemLog.objects.all()
+
+            if host_id:
+                queryset = queryset.filter(host_id=host_id)
+            if source:
+                queryset = queryset.filter(source=source)
+            if level:
+                queryset = queryset.filter(level=level)
+            if start_time:
+                queryset = queryset.filter(timestamp__gte=start_time)
+            if end_time:
+                queryset = queryset.filter(timestamp__lte=end_time)
+
+            # 排序
+            queryset = queryset.order_by('-timestamp')
+
+            # 计算总数
+            total = queryset.count()
+
+            # 分页
+            offset = (page - 1) * page_size
+            queryset = queryset[offset:offset + page_size]
+
+            # 构建返回数据
+            data = []
+            for log in queryset:
+                data.append({
+                    'id': log.id,
+                    'host_id': log.host_id,
+                    'host_name': log.host.hostname if log.host else None,
+                    'source': log.source,
+                    'level': log.level,
+                    'message': log.message,
+                    'timestamp': log.timestamp.isoformat(),
+                    'raw_log': log.raw_log,
+                    'parsed_fields': log.parsed_fields,
+                    'collected_at': log.collected_at.isoformat(),
+                })
+
+            return {
+                'success': True,
+                'data': data,
+                'page': page,
+                'page_size': page_size,
+                'total': total,
+            }
+
+        except Exception as e:
+            logger.error(f'Error getting system logs: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
