@@ -73,7 +73,7 @@ class KickStartViewSet(UnifiedModelViewSet):
         try:
             content = KickstartService.generate_kickstart(kickstart.id, variables)
         except ValueError as e:
-            return ErrorResponse(code=ErrCode.NOT_FOUND, errmsg=str(e))
+            return ErrorResponse(ErrCode.NOT_FOUND, errmsg=str(e))
         return SuccessResponse({'content': content})
 
     @extend_schema(
@@ -88,11 +88,11 @@ class KickStartViewSet(UnifiedModelViewSet):
         repo_id = request.data.get('repo_id')
         os_type = request.data.get('os_type', 'culinux')
         if not host_id or not repo_id:
-            return ErrorResponse(code=ErrCode.PARAMS_ERROR, errmsg='缺少 host_id 或 repo_id 参数')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='缺少 host_id 或 repo_id 参数')
         try:
             content = KickstartService.auto_generate_kickstart(host_id, repo_id, os_type)
         except ValueError as e:
-            return ErrorResponse(code=ErrCode.NOT_FOUND, errmsg=str(e))
+            return ErrorResponse(ErrCode.NOT_FOUND, errmsg=str(e))
         return SuccessResponse({'content': content})
 
     @extend_schema(
@@ -107,7 +107,7 @@ class KickStartViewSet(UnifiedModelViewSet):
         result = KickstartService.generate_system_conf_file(output_path)
         if result['success']:
             return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(code=ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
 
     @extend_schema(
         summary="生成网络配置文件",
@@ -121,4 +121,4 @@ class KickStartViewSet(UnifiedModelViewSet):
         result = KickstartService.generate_network_conf_file(output_path)
         if result['success']:
             return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(code=ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])

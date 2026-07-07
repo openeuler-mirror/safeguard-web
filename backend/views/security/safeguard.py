@@ -38,7 +38,7 @@ class SafeguardViewSet(UnifiedModelViewSet):
         success = SafeguardService.deploy(safeguard.id)
         if success:
             return SuccessResponse({'message': '部署任务已启动'})
-        return ErrorResponse(7001, errmsg='启动部署失败')
+        return ErrorResponse(ErrCode.DEPLOY_FAILED, errmsg='启动部署失败')
 
     @action(['post'], True)
     def rollback(self, request, pk=None):
@@ -47,7 +47,7 @@ class SafeguardViewSet(UnifiedModelViewSet):
         success = SafeguardService.rollback(safeguard.id)
         if success:
             return SuccessResponse({'message': '回滚任务已启动'})
-        return ErrorResponse(7002, errmsg='启动回滚失败')
+        return ErrorResponse(ErrCode.ROLLBACK_FAILED, errmsg='启动回滚失败')
 
     @action(['get'], True)
     def status(self, request, pk=None):
@@ -56,4 +56,4 @@ class SafeguardViewSet(UnifiedModelViewSet):
         status_info = SafeguardService.get_deploy_status(safeguard.id)
         if status_info:
             return SuccessResponse(status_info)
-        return ErrorResponse(7003, errmsg='获取状态失败')
+        return ErrorResponse(ErrCode.NOT_FOUND, errmsg='获取状态失败')

@@ -88,4 +88,4 @@ class MigrateViewSet(UnifiedModelViewSet):
         result = X2cuService.get_migrate_status(job.job_id)
         if result:
             return SuccessResponse(result)
-        return ErrorResponse("任务不存在")
+        return ErrorResponse(ErrCode.NOT_FOUND, errmsg="任务不存在")

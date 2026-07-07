@@ -22,12 +22,12 @@ class FileViewSet(viewsets.ViewSet):
         password = request.data.get('password')
 
         if not all([srcfile, destfile, host, username, password]):
-            return ErrorResponse(400, errmsg='missing required parameters')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='missing required parameters')
 
         success, message = FileService.file_copy(srcfile, destfile, host, port, username, password)
         if success:
             return SuccessResponse({'message': message})
-        return ErrorResponse(500, errmsg=message)
+        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=message)
 
     @action(detail=False, methods=['post'], url_path='download')
     def download(self, request):
@@ -40,12 +40,12 @@ class FileViewSet(viewsets.ViewSet):
         password = request.data.get('password')
 
         if not all([remote_path, local_path, host, username, password]):
-            return ErrorResponse(400, errmsg='missing required parameters')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='missing required parameters')
 
         success, message = FileService.file_download(remote_path, local_path, host, port, username, password)
         if success:
             return SuccessResponse({'message': message})
-        return ErrorResponse(500, errmsg=message)
+        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=message)
 
     @action(detail=False, methods=['post'], url_path='exists')
     def exists(self, request):
@@ -57,7 +57,7 @@ class FileViewSet(viewsets.ViewSet):
         password = request.data.get('password')
 
         if not all([remote_path, host, username, password]):
-            return ErrorResponse(400, errmsg='missing required parameters')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='missing required parameters')
 
         exists, message = FileService.remote_file_exists(remote_path, host, port, username, password)
         return SuccessResponse({'exists': exists, 'message': message})

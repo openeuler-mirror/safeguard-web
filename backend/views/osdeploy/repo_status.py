@@ -116,7 +116,7 @@ class RepoViewSet(UnifiedModelViewSet):
         ssh = SSHClient(host=host, port=int(port), username=username, password=password, timeout=30)
         if not ssh.connect():
             TaskService.update_job(job.job_id, status='failed', error_message=f'无法连接到主机 {host}')
-            return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg=f'无法连接到主机 {host}')
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=f'无法连接到主机 {host}')
 
         try:
             # 下载 ISO 并挂载创建仓库
@@ -156,7 +156,7 @@ class RepoViewSet(UnifiedModelViewSet):
 
         ssh = SSHClient(host=host, port=int(port), username=username, password=password, timeout=30)
         if not ssh.connect():
-            return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg=f'无法连接到主机 {host}')
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=f'无法连接到主机 {host}')
 
         try:
             repo_file = f'/etc/yum.repos.d/{repo.name}.repo'
