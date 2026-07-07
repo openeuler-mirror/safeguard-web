@@ -68,8 +68,17 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
         start_time = request.query_params.get('start_time')
         end_time = request.query_params.get('end_time')
         metric_type = request.query_params.get('metric_type')
-        page = int(request.query_params.get('page', 1))
-        page_size = int(request.query_params.get('page_size', 100))
+
+        # 安全解析分页参数
+        try:
+            page = int(request.query_params.get('page', 1))
+        except (ValueError, TypeError):
+            page = 1
+
+        try:
+            page_size = int(request.query_params.get('page_size', 100))
+        except (ValueError, TypeError):
+            page_size = 100
 
         # 解析时间参数
         from datetime import datetime
