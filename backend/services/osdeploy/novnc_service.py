@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 
 from backend.utils.ssh import SSHClient
+from backend.common import HostConnectionError, OperationError
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +20,11 @@ class NoVNCService:
         port = int(config.get("port", "22"))
 
         if not all([host, username, password]):
-            return {"status": "failed", "message": "缺少主机连接信息"}
+            raise OperationError("缺少主机连接信息")
 
         ssh = SSHClient(host=host, port=port, username=username, password=password, timeout=30)
         if not ssh.connect():
-            return {"status": "failed", "message": f"无法连接到主机 {host}"}
+            raise HostConnectionError(f"无法连接到主机 {host}")
 
         try:
             # 1. 检查网络连通性（在线/离线）
@@ -40,9 +41,9 @@ class NoVNCService:
                 # 离线安装：检查本地包是否存在
                 stdout, stderr, exit_code = ssh.execute_command("test -f /tmp/oskit/data/installnoVNC.tar.gz && echo exists || echo missing")
                 if "missing" in stdout:
-                    return {"status": "failed", "message": "离线安装缺少 installnoVNC.tar.gz 包"}
+                    raise OperationError("离线安装缺少 installnoVNC.tar.gz 包")
                 # 解压离线包
-                ssh.execute_command("cd /tmp/oskit/data/ && tar -zxvf installnoVNC.tar.gz -C /tmp/")
+                ssh.execute_command("cd /tmp/oskit/data && tar -zxvf installnoVNC.tar.gz -C /tmp/")
                 # 按架构安装离线 RPM
                 stdout, _, _ = ssh.execute_command("uname -m")
                 arch = stdout.strip()
@@ -56,7 +57,7 @@ class NoVNCService:
                     ssh.execute_command(f"cd {rpm_dir} && rpm -ivh *.rpm 2>/dev/null || true")
 
             # 2. 解压 noVNC（无论在线离线）
-            ssh.execute_command("cd /tmp/oskit/data/ && tar -zxvf installnoVNC.tar.gz -C /tmp/ 2>/dev/null || true")
+            ssh.execute_command("cd /tmp/oskit/data && tar -zxvf installnoVNC.tar.gz -C /tmp/ 2>/dev/null || true")
 
             # 3. 拷贝 generatePem.ctl 并生成 self.pem
             ssh.execute_command("mkdir -p /tmp/installnoVNC/noVNC/utils/")
@@ -82,14 +83,14 @@ class NoVNCService:
             # 6. 验证 noVNC 是否启动成功
             stdout, _, _ = ssh.execute_command("curl -k -sI -w '%{http_code}' http://localhost:6081/vnc.html -o /dev/null 2>/dev/null")
             if "200" not in stdout:
-                return {"status": "failed", "message": "noVNC 启动失败，HTTP 状态码非 200"}
+                raise OperationError("noVNC 启动失败，HTTP 状态码非 200")
 
             # 7. 关闭防火墙（如运行中）
             stdout, _, _ = ssh.execute_command("systemctl status firewalld 2>/dev/null | grep 'active (running)'")
             if stdout.strip():
                 ssh.execute_command("systemctl stop firewalld 2>/dev/null || true")
 
-            return {"status": "success", "message": "noVNC 安装并启动成功"}
+            return {"message": "noVNC 安装并启动成功"}
 
         finally:
             ssh.close()
@@ -103,11 +104,11 @@ class NoVNCService:
         port = int(config.get("port", "22"))
 
         if not all([host, username, password]):
-            return {"status": "failed", "message": "缺少主机连接信息"}
+            raise OperationError("缺少主机连接信息")
 
         ssh = SSHClient(host=host, port=port, username=username, password=password, timeout=30)
         if not ssh.connect():
-            return {"status": "failed", "message": f"无法连接到主机 {host}"}
+            raise HostConnectionError(f"无法连接到主机 {host}")
 
         try:
             # 1. 重启防火墙
@@ -123,7 +124,7 @@ class NoVNCService:
             if ":1" in stdout:
                 ssh.execute_command("vncserver -kill :1 2>/dev/null || true")
 
-            return {"status": "success", "message": "noVNC 已关闭"}
+            return {"message": "noVNC 已关闭"}
 
         finally:
             ssh.close()

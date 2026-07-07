@@ -3,6 +3,8 @@ import logging
 import os
 from typing import Dict
 
+from backend.common import OperationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,7 @@ class PackageService:
             params: 包含 package_name, version, release, summary, description 等
 
         Returns:
-            {"status": str, "path": str, "content": str}
+            {"path": str, "content": str, "message": str}
         """
         package_name = params.get("package_name", "oskit")
         version = params.get("version", "1.0.0")
@@ -80,11 +82,10 @@ Requires:       {requires_str}
             with open(output_path, "w") as f:
                 f.write(content)
             return {
-                "status": "success",
                 "path": output_path,
                 "content": content,
-                "message": f"spec 文件已生成: {output_path}",
+                "message": f"spec 文件已生成: {output_path}"
             }
         except Exception as e:
             logger.error(f"生成 spec 文件失败: {e}")
-            return {"status": "failed", "message": f"生成 spec 文件失败: {e}"}
+            raise OperationError(f"生成 spec 文件失败: {e}")

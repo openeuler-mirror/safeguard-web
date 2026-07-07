@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from backend.schemas.osdeploy.package import SpecParams
 from backend.services.osdeploy.package_service import PackageService
-from backend.common import SuccessResponse, ErrorResponse, ErrCode
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, ServiceError
 
 
 class PackageViewSet(viewsets.ViewSet):
@@ -21,10 +21,11 @@ class PackageViewSet(viewsets.ViewSet):
         except ValidationError as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
-        result = PackageService.generate_spec(params.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse({
-            'path': result['path'],
-            'content': result['content'],
-        }, errmsg=result['message'])
+        try:
+            result = PackageService.generate_spec(params.model_dump())
+            return SuccessResponse({
+                "path": result["path"],
+                "content": result["content"]
+            }, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
