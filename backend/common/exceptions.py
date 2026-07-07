@@ -162,6 +162,13 @@ class MonitorHistoryQueryError(ServiceError):
         super().__init__(ErrCode.OPERATION_FAILED, message)
 
 
+class MonitorCollectError(ServiceError):
+    """监控数据采集失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
 class PolicyApplyError(ServiceError):
     """策略应用失败"""
 
