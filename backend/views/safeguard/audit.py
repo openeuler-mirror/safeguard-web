@@ -89,5 +89,5 @@ class SystemLogViewSet(UnifiedModelViewSet):
         )
 
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '采集系统日志失败'))
