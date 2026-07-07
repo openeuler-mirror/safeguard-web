@@ -1473,7 +1473,12 @@ def _get_account_password_info(client: SSHClient, username: str) -> Dict[str, An
     }
 
     try:
-        stdout, stderr, exit_code = client.execute_command(f"chage -l {username} 2>/dev/null")
+        import shlex
+        # Validate username: only allow alphanumeric, -, _, .
+        if not username or not all(c.isalnum() or c in '-_.' for c in username):
+            return info
+        safe_username = shlex.quote(username)
+        stdout, stderr, exit_code = client.execute_command(f"chage -l {safe_username} 2>/dev/null")
         if exit_code != 0 or not stdout:
             return info
 
