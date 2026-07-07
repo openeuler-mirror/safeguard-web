@@ -1550,3 +1550,107 @@ class AuditService:
                 'success': False,
                 'error': str(e),
             }
+
+    @staticmethod
+    def collect_file_events(host_id: Optional[int] = None) -> Dict[str, Any]:
+        """
+        收集文件监控事件
+
+        Args:
+            host_id: 主机ID（可选）
+
+        Returns:
+            文件监控事件结果
+        """
+        try:
+            # 获取监控规则
+            query = FileMonitorRule.objects.filter(enabled=True)
+            if host_id:
+                query = query.filter(host_id=host_id)
+
+            rules = list(query.values('id', 'host_id', 'path', 'monitor_type',
+                                      'watch_create', 'watch_modify', 'watch_delete',
+                                      'watch_access', 'watch_perm', 'recursive'))
+
+            if not rules:
+                return {
+                    'success': True,
+                    'message': 'No active monitor rules found',
+                    'events': [],
+                    'total_events': 0,
+                }
+
+            # 按主机分组规则
+            from collections import defaultdict
+            rules_by_host = defaultdict(list)
+            for rule in rules:
+                rules_by_host[rule['host_id']].append(rule)
+
+            # 收集每个主机的事件
+            all_events = []
+            for h_id, host_rules in rules_by_host.items():
+                try:
+                    host = Host.objects.get(id=h_id)
+                    result = collect_file_events(host, host_rules)
+                    if result['success']:
+                        all_events.extend(result['events'])
+                except Host.DoesNotExist:
+                    continue
+
+            # 保存事件到数据库
+            saved_count = AuditService.save_file_events(all_events)
+
+            return {
+                'success': True,
+                'events': all_events,
+                'total_events': len(all_events),
+                'saved_count': saved_count,
+            }
+
+        except Exception as e:
+            logger.error(f'Error collecting file events: {e}')
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
+    @staticmethod
+    def save_file_events(events: List[Dict[str, Any]]) -> int:
+        """
+        保存文件监控事件到数据库
+
+        Args:
+            events: 文件事件列表
+
+        Returns:
+            保存的事件数量
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorEvent
+
+        saved_count = 0
+        try:
+            for event in events:
+                try:
+                    rule_id = event.get('rule_id')
+                    if rule_id:
+                        # 查找对应的规则
+                        rule = FileMonitorRule.objects.filter(id=rule_id).first()
+                        if rule:
+                            FileMonitorEvent.objects.create(
+                                host=rule.host,
+                                rule=rule,
+                                event_type=event.get('event_type', 'unknown'),
+                                path=event.get('path', ''),
+                                details=event.get('details', {}),
+                            )
+                            saved_count += 1
+                except Exception as e:
+                    logger.error(f'Error saving file event: {e}')
+                    continue
+
+            logger.info(f'Saved {saved_count} file monitor events')
+
+        except Exception as e:
+            logger.error(f'Error saving file events: {e}')
+
+        return saved_count
