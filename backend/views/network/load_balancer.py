@@ -50,7 +50,7 @@ class LBExtensionMixin:
         """按项目查询 LB（placeholder，需对接外部系统）"""
         project_id = request.query_params.get('project_id')
         if not project_id:
-            return ErrorResponse(400, errmsg='project_id is required')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='project_id is required')
         # TODO: 对接外部项目系统
         lbs = LoadBalancer.objects.all()
         serializer = LoadBalancerListSerializer(lbs, many=True)
@@ -61,7 +61,7 @@ class LBExtensionMixin:
         """按 K8s 集群查询 LB（placeholder，需对接外部系统）"""
         k8s_cluster = request.query_params.get('k8s_cluster')
         if not k8s_cluster:
-            return ErrorResponse(400, errmsg='k8s_cluster is required')
+            return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='k8s_cluster is required')
         # TODO: 对接 K8s 集群信息
         lbs = LoadBalancer.objects.all()
         serializer = LoadBalancerListSerializer(lbs, many=True)

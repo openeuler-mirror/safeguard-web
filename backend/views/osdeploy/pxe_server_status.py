@@ -41,7 +41,7 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
         result = DHCPService.start_dhcp_service()
         if result["status"] == "success":
             return SuccessResponse(result)
-        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
 
     @action(['post'], False)
     def stop_dhcp(self, request):
@@ -49,7 +49,7 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
         result = DHCPService.stop_dhcp_service()
         if result["status"] == "success":
             return SuccessResponse(result)
-        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
 
     @action(['post'], False)
     def restart_dhcp(self, request):
@@ -57,7 +57,7 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
         result = DHCPService.restart_dhcp_service()
         if result["status"] == "success":
             return SuccessResponse(result)
-        return ErrorResponse(code=ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
 
     @action(['get'], False)
     def dhcp_status(self, request):
