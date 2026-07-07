@@ -31,7 +31,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_system_info(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取系统信息失败'))
 
     @action(detail=False, methods=['get'], url_path='ports-info')
@@ -48,7 +48,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_ports_info(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取端口信息失败'))
 
     @action(detail=False, methods=['get'], url_path='processes-info')
@@ -65,7 +65,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_processes_info(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取进程信息失败'))
 
     @action(detail=False, methods=['get'], url_path='services-info')
@@ -82,7 +82,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_services_info(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务信息失败'))
 
     @action(detail=False, methods=['get'], url_path='accounts-info')
@@ -99,7 +99,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_accounts_info(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取账户信息失败'))
 
     @action(detail=False, methods=['post'], url_path='service-control')
@@ -117,7 +117,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.control_service(host_id, service_name, action)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '服务控制失败')))
 
     @action(detail=False, methods=['get'], url_path='service-logs')
@@ -137,7 +137,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_service_logs(host_id, service_name, lines)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取服务日志失败'))
 
     @action(detail=False, methods=['post'], url_path='kill-process')
@@ -157,5 +157,5 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.kill_process(host_id, pid, force)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', result.get('message', '终止进程失败')))

@@ -65,32 +65,24 @@ class HostInfoService:
         Returns:
             包含系统信息的字典
         """
-        result = {
-            'success': False,
-            'arch_info': '',
-            'uptime': '',
-            'os_version': '',
-            'cpu_info': '',
-            'disk_info': '',
-            'memory_info': '',
-            'network_info': '',
-            'mount_info': '',
-            'dmesg_info': '',
-            'collected_at': '',
-            'error': '',
-        }
         try:
             host = Host.objects.get(id=host_id)
             hardware_info = collect_host_hardware(host)
-            result.update(hardware_info)
-            result['collected_at'] = datetime.now().isoformat()
-            result['success'] = True
+            return {
+                'success': True,
+                'data': hardware_info,
+            }
         except Host.DoesNotExist:
-            result['error'] = f'Host {host_id} not found'
+            return {
+                'success': False,
+                'error': f'Host {host_id} not found',
+            }
         except Exception as e:
             logger.error(f'Error getting system info for host {host_id}: {e}')
-            result['error'] = str(e)
-        return result
+            return {
+                'success': False,
+                'error': str(e),
+            }
 
     @staticmethod
     def get_ports_info(host_id: int) -> Dict[str, Any]:
@@ -106,7 +98,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             port_info = collect_ports(host)
-            return port_info
+            return {
+                'success': True,
+                'data': port_info,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -133,7 +128,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             process_info = collect_processes(host)
-            return process_info
+            return {
+                'success': True,
+                'data': process_info,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -160,7 +158,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             service_info = collect_services(host)
-            return service_info
+            return {
+                'success': True,
+                'data': service_info,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -219,7 +220,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             accounts_info = collect_system_accounts(host)
-            return accounts_info
+            return {
+                'success': True,
+                'data': accounts_info,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -248,7 +252,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = control_service(host, service_name, action)
-            return result
+            return {
+                'success': True,
+                'data': result,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -277,7 +284,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = get_service_logs(host, service_name, lines)
-            return result
+            return {
+                'success': True,
+                'data': result,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
@@ -306,7 +316,10 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = kill_process(host, pid, force)
-            return result
+            return {
+                'success': True,
+                'data': result,
+            }
         except Host.DoesNotExist:
             return {
                 'success': False,
