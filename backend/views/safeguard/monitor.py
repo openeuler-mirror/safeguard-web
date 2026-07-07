@@ -37,7 +37,7 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
 
         result = MonitorService.collect_all_metrics(host_id, save=True)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '采集失败'))
 
     @action(detail=False, methods=['post'], url_path='batch_collect')
@@ -115,7 +115,7 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
         )
 
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '查询失败'))
 
     @action(detail=True, methods=['get'], url_path='latest')

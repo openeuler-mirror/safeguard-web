@@ -53,7 +53,7 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
 
         result = AuditService.collect_file_events(host_id)
         if result['success']:
-            return SuccessResponse(result)
+            return SuccessResponse(result['data'])
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '收集文件监控事件失败'))
 
     @action(detail=True, methods=['post'], url_path='start-monitor')
