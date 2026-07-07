@@ -1544,8 +1544,13 @@ def _get_last_login_info(client: SSHClient, username: str) -> Dict[str, Any]:
     }
 
     try:
+        import shlex
+        # Validate username
+        if not username or not all(c.isalnum() or c in '-_.' for c in username):
+            return info
+        safe_username = shlex.quote(username)
         # 使用 last 命令获取最后登录信息
-        stdout, stderr, exit_code = client.execute_command(f"last -n 10 {username} 2>/dev/null")
+        stdout, stderr, exit_code = client.execute_command(f"last -n 10 {safe_username} 2>/dev/null")
         if exit_code == 0 and stdout:
             lines = stdout.strip().split('\n')
             login_count = 0
