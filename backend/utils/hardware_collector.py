@@ -1836,9 +1836,12 @@ def _get_available_log_sources(client: SSHClient) -> List[str]:
         ]
 
         for path in common_paths:
-            check_cmd = f"test -f {path} && echo exists || echo not_exists"
-            stdout, stderr, exit_code = client.execute_command(check_cmd)
-            if stdout.strip() == 'exists':
+            # Validate path
+            if not path.startswith('/'):
+                continue
+            if any(c in path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+                continue
+            if client.file_exists(path):
                 sources.append(path)
 
     except Exception as e:
