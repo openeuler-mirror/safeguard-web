@@ -4,7 +4,7 @@ from backend.models.audit.audit_log import AuditLog
 
 class AuditLogSerializer(serializers.ModelSerializer):
     """审计日志序列化器"""
-    user_name = serializers.CharField(source='user.username', read_only=True, allow_null=True)
+    user_name = serializers.CharField(source='user.user', read_only=True, allow_null=True)
 
     class Meta:
         model = AuditLog
