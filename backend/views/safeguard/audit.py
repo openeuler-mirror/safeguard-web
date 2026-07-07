@@ -60,6 +60,27 @@ class SystemLogViewSet(UnifiedModelViewSet):
         num_lines = request.data.get('num_lines', 100)
         save_to_db = request.data.get('save_to_db', True)
 
+        # Validate num_lines
+        try:
+            num_lines = int(num_lines)
+            num_lines = max(1, min(num_lines, 10000))
+        except (ValueError, TypeError):
+            num_lines = 100
+
+        # Validate log_sources if provided
+        if log_sources is not None:
+            if not isinstance(log_sources, list):
+                return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='log_sources must be a list')
+            # Validate each log source
+            for source in log_sources:
+                if not isinstance(source, str):
+                    return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='each log source must be a string')
+                if not source.startswith('/'):
+                    return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='each log source must be an absolute path')
+                # Disallow shell metacharacters
+                if any(c in source for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+                    return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='log source contains invalid characters')
+
         result = AuditService.collect_and_save_system_logs(
             host_id,
             log_sources=log_sources,
