@@ -36,6 +36,7 @@ from backend.utils.hardware_collector import (
     collect_network_metrics,
     collect_disk_metrics,
     collect_system_accounts,
+    collect_system_logs,
 )
 
 logger = logging.getLogger(__name__)
