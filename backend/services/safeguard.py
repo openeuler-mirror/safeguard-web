@@ -1283,20 +1283,21 @@ class AuditService:
             save_to_db: 是否保存到数据库
 
         Returns:
-            采集结果
+            采集结果数据
         """
+        from backend.common.exceptions import HostNotFoundError, OperationError
         try:
             host = Host.objects.get(id=host_id)
 
             # 采集系统日志
             logs_result = collect_system_logs(host, log_sources, num_lines)
 
-            if logs_result['success'] and save_to_db:
+            if logs_result.get('success', True) and save_to_db:
                 from backend.models.audit.system_log import SystemLog
 
                 # 保存日志到数据库
                 with transaction.atomic():
-                    for log_data in logs_result['logs']:
+                    for log_data in logs_result.get('logs', []):
                         # 尝试解析日志的原始时间戳
                         log_timestamp = datetime.now()
                         timestamp_str = log_data.get('timestamp')
@@ -1328,19 +1329,16 @@ class AuditService:
                             }
                         )
 
+            # 返回数据部分，移除 success 字段
+            if 'success' in logs_result:
+                logs_result = {k: v for k, v in logs_result.items() if k != 'success'}
             return logs_result
 
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting system logs for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def get_system_logs(

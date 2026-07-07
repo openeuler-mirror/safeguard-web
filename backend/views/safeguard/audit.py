@@ -46,6 +46,7 @@ class SystemLogViewSet(UnifiedModelViewSet):
     def collect_logs(self, request):
         """采集系统日志"""
         from backend.services.safeguard import AuditService
+        from backend.common.exceptions import ServiceError
 
         host_id = request.data.get('host_id')
         if not host_id:
@@ -81,13 +82,13 @@ class SystemLogViewSet(UnifiedModelViewSet):
                 if any(c in source for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
                     return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='log source contains invalid characters')
 
-        result = AuditService.collect_and_save_system_logs(
-            host_id,
-            log_sources=log_sources,
-            num_lines=num_lines,
-            save_to_db=save_to_db
-        )
-
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '采集系统日志失败'))
+        try:
+            result = AuditService.collect_and_save_system_logs(
+                host_id,
+                log_sources=log_sources,
+                num_lines=num_lines,
+                save_to_db=save_to_db
+            )
+            return SuccessResponse(result.get('data', result))
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
