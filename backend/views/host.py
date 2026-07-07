@@ -27,7 +27,7 @@ from backend.serializers.host import (
 )
 from backend.permissions.authority import IsAdmin
 from backend.permissions.base import DataScopePermission
-from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet
+from backend.common import ErrCode, SuccessResponse, ErrorResponse, UnifiedModelViewSet, ServiceError
 from backend.services.host import ClusterService, HostService, VMService
 
 
@@ -110,44 +110,49 @@ class HostViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['post'], url_path='collect_hardware')
     def collect_hardware(self, request, pk=None):
         """采集主机硬件信息"""
-        result = HostService.collect_hardware(pk)
-        if result['success']:
-            return SuccessResponse(result['data'], errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_HARDWARE_COLLECT_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.collect_hardware(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='collect_lldp')
     def collect_lldp(self, request, pk=None):
         """采集 LLDP 拓扑信息"""
-        result = HostService.collect_lldp(pk)
-        if result['success']:
-            return SuccessResponse(result['data'], errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_LLDP_COLLECT_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.collect_lldp(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['get'], url_path='lldp')
     def lldp(self, request, pk=None):
         """获取主机已保存的 LLDP 信息"""
-        result = HostService.get_host_lldp(pk)
-        if result['success']:
-            return SuccessResponse(result['data'], errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_NOT_FOUND, errmsg=result['message'])
+        try:
+            result = HostService.get_host_lldp(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='collect_all')
     def collect_all(self, request, pk=None):
         """采集主机所有硬件信息（包括 LLDP）"""
-        result = HostService.collect_all(pk)
-        if result['success']:
-            return SuccessResponse(result['data'], errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_HARDWARE_COLLECT_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.collect_all(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='update_password')
     def update_password(self, request, pk=None):
         """修改主机密码"""
         new_password = request.data.get('password')
         key = request.data.get('key', 'culinux')
-        result = HostService.update_host_password(pk, new_password, key)
-        if result['success']:
-            return SuccessResponse({'password': result['password']}, errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.update_host_password(pk, new_password, key)
+            return SuccessResponse({'password': result})
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
 
 
@@ -156,20 +161,22 @@ class HostViewSet(UnifiedModelViewSet):
         file_obj = request.FILES.get('file')
         if not file_obj:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='please upload Excel file')
-        result = HostService.import_hosts_from_excel(file_obj)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.import_hosts_from_excel(file_obj)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['post'], url_path='import_key_cloud')
     def import_key_cloud(self, request):
         file_obj = request.FILES.get('file')
         if not file_obj:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='please upload Excel file')
-        result = HostService.import_key_cloud(file_obj)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.import_key_cloud(file_obj)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='export')
     def export_hosts(self, request):
@@ -189,10 +196,11 @@ class HostViewSet(UnifiedModelViewSet):
         command = request.data.get('command')
         if not command:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='command is required')
-        result = HostService.remote_command(pk, command)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_CONNECTION_FAILED, errmsg=result['message'])
+        try:
+            result = HostService.remote_command(pk, command)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['post'], url_path='batch_update_password')
     def batch_update_password(self, request):
@@ -202,9 +210,7 @@ class HostViewSet(UnifiedModelViewSet):
         if not host_ids:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_ids is required')
         result = HostService.batch_update_password(host_ids, new_password, key)
-        if result['success']:
-            return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.HOST_PASSWORD_UPDATE_FAILED, errmsg=result['message'])
+        return SuccessResponse(result)
 class VMViewSet(UnifiedModelViewSet):
     """虚拟机管理视图集"""
     queryset = VM.objects.select_related('host', 'cluster').all().order_by('id')
@@ -233,50 +239,56 @@ class VMViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['post'], url_path='start')
     def start(self, request, pk=None):
         """启动VM"""
-        result = VMService.start_vm(pk)
-        if result['success']:
-            return SuccessResponse(errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = VMService.start_vm(pk)
+            return SuccessResponse(errmsg=result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='stop')
     def stop(self, request, pk=None):
         """停止VM"""
-        result = VMService.stop_vm(pk)
-        if result['success']:
-            return SuccessResponse(errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = VMService.stop_vm(pk)
+            return SuccessResponse(errmsg=result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='reboot')
     def reboot(self, request, pk=None):
         """重启VM"""
-        result = VMService.reboot_vm(pk)
-        if result['success']:
-            return SuccessResponse(errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = VMService.reboot_vm(pk)
+            return SuccessResponse(errmsg=result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='pause')
     def pause(self, request, pk=None):
         """暂停VM"""
-        result = VMService.pause_vm(pk)
-        if result['success']:
-            return SuccessResponse(errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = VMService.pause_vm(pk)
+            return SuccessResponse(errmsg=result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['post'], url_path='resume')
     def resume(self, request, pk=None):
         """恢复VM"""
-        result = VMService.resume_vm(pk)
-        if result['success']:
-            return SuccessResponse(errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_OPERATION_FAILED, errmsg=result['message'])
+        try:
+            result = VMService.resume_vm(pk)
+            return SuccessResponse(errmsg=result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['get'], url_path='status')
     def status(self, request, pk=None):
         """获取VM状态"""
-        result = VMService.get_vm_status(pk)
-        if result['success']:
-            return SuccessResponse({'status': result['status']}, errmsg=result['message'])
-        return ErrorResponse(ErrCode.VM_NOT_FOUND, errmsg=result['message'])
+        try:
+            result = VMService.get_vm_status(pk)
+            return SuccessResponse({'status': result})
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
 
 class ImageViewSet(UnifiedModelViewSet):
