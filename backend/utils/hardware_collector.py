@@ -726,8 +726,13 @@ def _get_service_enabled_status(client: SSHClient, service_name: str) -> str:
         'enabled' | 'disabled' | 'unknown'
     """
     try:
+        import shlex
+        # Validate service_name: only allow alphanumeric, -, _, .
+        if not service_name or not all(c.isalnum() or c in '-_.' for c in service_name):
+            return 'unknown'
+        safe_service_name = shlex.quote(service_name)
         stdout, stderr, exit_code = client.execute_command(
-            f"systemctl is-enabled {service_name} 2>/dev/null"
+            f"systemctl is-enabled {safe_service_name} 2>/dev/null"
         )
         if exit_code == 0 and stdout:
             return stdout.strip()
