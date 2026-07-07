@@ -1677,8 +1677,26 @@ def _collect_logs_from_file(client: SSHClient, log_path: str, num_lines: int = 1
     """
     logs = []
     try:
-        # 使用 tail 命令获取最后的日志行
-        stdout, stderr, exit_code = client.execute_command(f"tail -n {num_lines} {log_path} 2>/dev/null")
+        # Validate num_lines: must be integer between 1 and 10000
+        if not isinstance(num_lines, int):
+            try:
+                num_lines = int(num_lines)
+            except (ValueError, TypeError):
+                num_lines = 100
+        num_lines = max(1, min(num_lines, 10000))
+
+        # Validate log_path: should start with / and not contain shell metacharacters
+        if not log_path.startswith('/'):
+            return logs
+        # Disallow shell metacharacters in log_path
+        if any(c in log_path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+            return logs
+
+        # Use single quotes around log_path to prevent shell expansion
+        # Use printf to safely format the command
+        import shlex
+        safe_log_path = shlex.quote(log_path)
+        stdout, stderr, exit_code = client.execute_command(f"tail -n {num_lines} {safe_log_path} 2>/dev/null")
         if exit_code != 0 or not stdout:
             return logs
 
