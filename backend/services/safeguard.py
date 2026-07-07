@@ -37,6 +37,10 @@ from backend.utils.hardware_collector import (
     collect_disk_metrics,
     collect_system_accounts,
     collect_system_logs,
+    control_service,
+    get_service_logs,
+    kill_process,
+    collect_file_events,
 )
 
 logger = logging.getLogger(__name__)
