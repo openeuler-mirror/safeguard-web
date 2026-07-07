@@ -75,8 +75,8 @@ class SystemLogViewSet(UnifiedModelViewSet):
             for source in log_sources:
                 if not isinstance(source, str):
                     return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='each log source must be a string')
-                if not source.startswith('/'):
-                    return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='each log source must be an absolute path')
+                if not source.startswith('/var/log/'):
+                    return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='each log source must be under /var/log/')
                 # Disallow shell metacharacters
                 if any(c in source for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
                     return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='log source contains invalid characters')

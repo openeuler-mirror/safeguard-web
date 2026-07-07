@@ -31,7 +31,7 @@ class HostInfoViewSet(viewsets.ViewSet):
 
         result = HostInfoService.get_system_info(host_id)
         if result['success']:
-            return SuccessResponse(result['data'])
+            return SuccessResponse(result)
         return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取系统信息失败'))
 
     @action(detail=False, methods=['get'], url_path='ports-info')

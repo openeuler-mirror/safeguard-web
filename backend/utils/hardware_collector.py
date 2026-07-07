@@ -1709,8 +1709,8 @@ def _collect_logs_from_file(client: SSHClient, log_path: str, num_lines: int = 1
                 num_lines = 100
         num_lines = max(1, min(num_lines, 10000))
 
-        # Validate log_path: should start with / and not contain shell metacharacters
-        if not log_path.startswith('/'):
+        # Validate log_path: should start with /var/log/ and not contain shell metacharacters
+        if not log_path.startswith('/var/log/'):
             return logs
         # Disallow shell metacharacters in log_path
         if any(c in log_path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
@@ -1778,7 +1778,7 @@ def collect_system_logs(host: Host, log_sources: Optional[List[str]] = None, num
 
             for log_path in log_sources:
                 # Validate log path first
-                if not log_path.startswith('/'):
+                if not log_path.startswith('/var/log/'):
                     continue
                 if any(c in log_path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
                     continue
@@ -1837,7 +1837,7 @@ def _get_available_log_sources(client: SSHClient) -> List[str]:
 
         for path in common_paths:
             # Validate path
-            if not path.startswith('/'):
+            if not path.startswith('/var/log/'):
                 continue
             if any(c in path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
                 continue
