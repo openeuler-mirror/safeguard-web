@@ -26,6 +26,21 @@ from backend.models.safeguard.file_monitor import (
     FileMonitorEvent,
 )
 from backend.models.audit.audit_log import AuditLog
+from backend.common.exceptions import (
+    HostNotFoundError,
+    HostInfoCollectError,
+    MonitorDataSaveError,
+    MonitorHistoryQueryError,
+    MonitorCollectError,
+    PolicyTemplateNotFoundError,
+    HostPolicyNotFoundError,
+    TaskNotFoundError,
+    PolicyApplyError,
+    AuditLogCreateError,
+    FileMonitorRuleCreateError,
+    FileMonitorEventCollectError,
+    OperationError,
+)
 from backend.utils.hardware_collector import (
     collect_host_hardware,
     collect_ports,
@@ -68,21 +83,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             hardware_info = collect_host_hardware(host)
-            return {
-                'success': True,
-                'data': hardware_info,
-            }
+            return hardware_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting system info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def get_ports_info(host_id: int) -> Dict[str, Any]:
@@ -98,21 +104,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             port_info = collect_ports(host)
-            return {
-                'success': True,
-                'data': port_info,
-            }
+            return port_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting ports info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def get_processes_info(host_id: int) -> Dict[str, Any]:
@@ -128,21 +125,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             process_info = collect_processes(host)
-            return {
-                'success': True,
-                'data': process_info,
-            }
+            return process_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting processes info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def get_services_info(host_id: int) -> Dict[str, Any]:
@@ -158,21 +146,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             service_info = collect_services(host)
-            return {
-                'success': True,
-                'data': service_info,
-            }
+            return service_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting services info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def collect_and_save_ports(host_id: int) -> Dict[str, Any]:
@@ -195,16 +174,10 @@ class HostInfoService:
 
             return port_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting and saving ports for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def get_accounts_info(host_id: int) -> Dict[str, Any]:
@@ -220,21 +193,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             accounts_info = collect_system_accounts(host)
-            return {
-                'success': True,
-                'data': accounts_info,
-            }
+            return accounts_info
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting accounts info for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def control_service(host_id: int, service_name: str, action: str) -> Dict[str, Any]:
@@ -252,21 +216,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = control_service(host, service_name, action)
-            return {
-                'success': True,
-                'data': result,
-            }
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error controlling service {service_name} for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def get_service_logs(host_id: int, service_name: str, lines: int = 100) -> Dict[str, Any]:
@@ -284,21 +239,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = get_service_logs(host, service_name, lines)
-            return {
-                'success': True,
-                'data': result,
-            }
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting service logs for {service_name} on host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
     @staticmethod
     def kill_process(host_id: int, pid: int, force: bool = False) -> Dict[str, Any]:
@@ -316,21 +262,12 @@ class HostInfoService:
         try:
             host = Host.objects.get(id=host_id)
             result = kill_process(host, pid, force)
-            return {
-                'success': True,
-                'data': result,
-            }
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error killing process {pid} on host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise HostInfoCollectError(str(e))
 
 
 class MonitorService:
@@ -351,21 +288,22 @@ class MonitorService:
 
         Returns:
             CPU使用率、负载平均值、每核使用率等
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            MonitorCollectError: 采集失败
         """
         try:
             host = Host.objects.get(id=host_id)
-            return collect_cpu_metrics(host)
+            result = collect_cpu_metrics(host)
+            logger.info(f'CPU metrics collected for host {host_id}')
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            logger.error(f'Host {host_id} not found when collecting CPU metrics')
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting CPU metrics for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorCollectError(str(e))
 
     @staticmethod
     def collect_memory_metrics(host_id: int) -> Dict[str, Any]:
@@ -377,21 +315,22 @@ class MonitorService:
 
         Returns:
             内存总量、使用量、Swap使用量、使用率等
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            MonitorCollectError: 采集失败
         """
         try:
             host = Host.objects.get(id=host_id)
-            return collect_memory_metrics(host)
+            result = collect_memory_metrics(host)
+            logger.info(f'Memory metrics collected for host {host_id}')
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            logger.error(f'Host {host_id} not found when collecting memory metrics')
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting memory metrics for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorCollectError(str(e))
 
     @staticmethod
     def collect_network_metrics(host_id: int) -> Dict[str, Any]:
@@ -403,21 +342,22 @@ class MonitorService:
 
         Returns:
             网络接口流量、包统计、错误/丢包统计等
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            MonitorCollectError: 采集失败
         """
         try:
             host = Host.objects.get(id=host_id)
-            return collect_network_metrics(host)
+            result = collect_network_metrics(host)
+            logger.info(f'Network metrics collected for host {host_id}')
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            logger.error(f'Host {host_id} not found when collecting network metrics')
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting network metrics for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorCollectError(str(e))
 
     @staticmethod
     def collect_disk_metrics(host_id: int) -> Dict[str, Any]:
@@ -429,21 +369,22 @@ class MonitorService:
 
         Returns:
             磁盘IO统计、分区使用率、IOPS等
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            MonitorCollectError: 采集失败
         """
         try:
             host = Host.objects.get(id=host_id)
-            return collect_disk_metrics(host)
+            result = collect_disk_metrics(host)
+            logger.info(f'Disk metrics collected for host {host_id}')
+            return result
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            logger.error(f'Host {host_id} not found when collecting disk metrics')
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting disk metrics for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorCollectError(str(e))
 
     @staticmethod
     def collect_all_metrics(host_id: int, save: bool = True) -> Dict[str, Any]:
@@ -457,40 +398,35 @@ class MonitorService:
         Returns:
             所有监控数据
         """
-        result = {
-            'success': False,
-            'cpu': None,
-            'memory': None,
-            'network': None,
-            'disk': None,
-            'collected_at': datetime.now().isoformat(),
-            'saved': False,
-        }
-
         try:
             host = Host.objects.get(id=host_id)
 
-            result['cpu'] = collect_cpu_metrics(host)
-            result['memory'] = collect_memory_metrics(host)
-            result['network'] = collect_network_metrics(host)
-            result['disk'] = collect_disk_metrics(host)
-            result['success'] = True
+            result = {
+                'cpu': collect_cpu_metrics(host),
+                'memory': collect_memory_metrics(host),
+                'network': collect_network_metrics(host),
+                'disk': collect_disk_metrics(host),
+                'collected_at': datetime.now().isoformat(),
+                'saved': False,
+            }
 
             # 保存到数据库
             if save:
-                saved = MonitorService.save_monitor_data(host_id, result)
-                result['saved'] = saved
+                MonitorService.save_monitor_data(host_id, result)
+                result['saved'] = True
+
+            logger.info(f'Metrics collected for host {host_id}')
+            return result
 
         except Host.DoesNotExist:
-            result['error'] = f'Host {host_id} not found'
+            logger.error(f'Host {host_id} not found when collecting metrics')
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error collecting all metrics for host {host_id}: {e}')
-            result['error'] = str(e)
-
-        return result
+            raise MonitorCollectError(str(e))
 
     @staticmethod
-    def save_monitor_data(host_id: int, data: Dict[str, Any]) -> bool:
+    def save_monitor_data(host_id: int, data: Dict[str, Any]) -> None:
         """
         保存监控数据
 
@@ -498,8 +434,9 @@ class MonitorService:
             host_id: 主机ID
             data: 监控数据
 
-        Returns:
-            是否保存成功
+        Raises:
+            HostNotFoundError: 主机不存在
+            MonitorDataSaveError: 保存失败
         """
         try:
             host = Host.objects.get(id=host_id)
@@ -542,14 +479,13 @@ class MonitorService:
                 monitor_data.save()
 
             logger.info(f'Monitor data saved for host {host_id}')
-            return True
 
         except Host.DoesNotExist:
             logger.error(f'Host {host_id} not found when saving monitor data')
-            return False
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error saving monitor data for host {host_id}: {e}')
-            return False
+            raise MonitorDataSaveError(str(e))
 
     @staticmethod
     def batch_save_monitor_data(host_ids: List[int], data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -567,10 +503,7 @@ class MonitorService:
         if len(host_ids) != len(data_list):
             error_msg = f'host_ids and data_list length mismatch: {len(host_ids)} != {len(data_list)}'
             logger.error(error_msg)
-            return {
-                'success': False,
-                'error': error_msg,
-            }
+            raise MonitorDataSaveError(error_msg)
 
         success_count = 0
         failed_ids = []
@@ -578,23 +511,20 @@ class MonitorService:
         try:
             with transaction.atomic():
                 for host_id, data in zip(host_ids, data_list):
-                    if MonitorService.save_monitor_data(host_id, data):
+                    try:
+                        MonitorService.save_monitor_data(host_id, data)
                         success_count += 1
-                    else:
+                    except Exception:
                         failed_ids.append(host_id)
 
             return {
-                'success': True,
                 'success_count': success_count,
                 'failed_ids': failed_ids,
             }
 
         except Exception as e:
             logger.error(f'Error batch saving monitor data: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorDataSaveError(str(e))
 
     @staticmethod
     def get_monitor_history(
@@ -678,7 +608,6 @@ class MonitorService:
                 data.append(item)
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -687,10 +616,7 @@ class MonitorService:
 
         except Exception as e:
             logger.error(f'Error getting monitor history for host {host_id}: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise MonitorHistoryQueryError(str(e))
 
 
 class PolicyService:
@@ -725,22 +651,16 @@ class PolicyService:
 
             logger.info(f'Policy template created: {template.name}')
             return {
-                'success': True,
-                'data': {
-                    'id': template.id,
-                    'name': template.name,
-                    'description': template.description,
-                    'template_type': template.template_type,
-                    'is_builtin': template.is_builtin,
-                },
+                'id': template.id,
+                'name': template.name,
+                'description': template.description,
+                'template_type': template.template_type,
+                'is_builtin': template.is_builtin,
             }
 
         except Exception as e:
             logger.error(f'Error creating policy template: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def list_policy_templates(
@@ -790,7 +710,6 @@ class PolicyService:
                 })
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -799,10 +718,7 @@ class PolicyService:
 
         except Exception as e:
             logger.error(f'Error listing policy templates: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def get_policy_template(template_id: int) -> Dict[str, Any]:
@@ -818,30 +734,21 @@ class PolicyService:
         try:
             template = SafeguardPolicyTemplate.objects.get(id=template_id)
             return {
-                'success': True,
-                'data': {
-                    'id': template.id,
-                    'name': template.name,
-                    'description': template.description,
-                    'template_type': template.template_type,
-                    'is_builtin': template.is_builtin,
-                    'config': template.config,
-                    'created_at': template.created_at.isoformat(),
-                    'updated_at': template.updated_at.isoformat(),
-                },
+                'id': template.id,
+                'name': template.name,
+                'description': template.description,
+                'template_type': template.template_type,
+                'is_builtin': template.is_builtin,
+                'config': template.config,
+                'created_at': template.created_at.isoformat(),
+                'updated_at': template.updated_at.isoformat(),
             }
 
         except SafeguardPolicyTemplate.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Policy template {template_id} not found',
-            }
+            raise PolicyTemplateNotFoundError(template_id)
         except Exception as e:
             logger.error(f'Error getting policy template: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def bind_host_policy(host_id: int, template_id: int, created_by=None) -> Dict[str, Any]:
@@ -889,32 +796,20 @@ class PolicyService:
 
             logger.info(f'Policy bound to host {host_id}: template {template_id}')
             return {
-                'success': True,
-                'data': {
-                    'policy_id': policy.id,
-                    'task_id': task.id,
-                    'host_id': host_id,
-                    'template_id': template_id,
-                    'status': policy.status,
-                },
+                'policy_id': policy.id,
+                'task_id': task.id,
+                'host_id': host_id,
+                'template_id': template_id,
+                'status': policy.status,
             }
 
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except SafeguardPolicyTemplate.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Policy template {template_id} not found',
-            }
+            raise PolicyTemplateNotFoundError(template_id)
         except Exception as e:
             logger.error(f'Error binding host policy: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def get_host_policy(host_id: int) -> Dict[str, Any]:
@@ -930,32 +825,23 @@ class PolicyService:
         try:
             policy = HostSafeguardPolicy.objects.select_related('template', 'host').get(host_id=host_id)
             return {
-                'success': True,
-                'data': {
-                    'id': policy.id,
-                    'host_id': policy.host_id,
-                    'host_name': policy.host.hostname,
-                    'template_id': policy.template_id,
-                    'template_name': policy.template.name if policy.template else None,
-                    'config': policy.config,
-                    'config_version': policy.config_version,
-                    'status': policy.status,
-                    'applied_at': policy.applied_at.isoformat() if policy.applied_at else None,
-                    'last_sync': policy.last_sync.isoformat() if policy.last_sync else None,
-                },
+                'id': policy.id,
+                'host_id': policy.host_id,
+                'host_name': policy.host.hostname,
+                'template_id': policy.template_id,
+                'template_name': policy.template.name if policy.template else None,
+                'config': policy.config,
+                'config_version': policy.config_version,
+                'status': policy.status,
+                'applied_at': policy.applied_at.isoformat() if policy.applied_at else None,
+                'last_sync': policy.last_sync.isoformat() if policy.last_sync else None,
             }
 
         except HostSafeguardPolicy.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Policy for host {host_id} not found',
-            }
+            raise HostPolicyNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error getting host policy: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def apply_policy(task_id: int) -> Dict[str, Any]:
@@ -978,22 +864,15 @@ class PolicyService:
             apply_policy_task.delay(task_id)
 
             return {
-                'success': True,
                 'message': 'Policy apply task has been queued',
                 'task_id': task_id,
             }
 
         except PolicyApplyTask.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Task {task_id} not found',
-            }
+            raise TaskNotFoundError(task_id)
         except Exception as e:
             logger.error(f'Error applying policy: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise PolicyApplyError(str(e))
 
     @staticmethod
     def get_task_status(task_id: int) -> Dict[str, Any]:
@@ -1010,33 +889,24 @@ class PolicyService:
             task = PolicyApplyTask.objects.select_related('host', 'policy', 'created_by').get(id=task_id)
 
             return {
-                'success': True,
-                'data': {
-                    'id': task.id,
-                    'host_id': task.host_id,
-                    'policy_id': task.policy_id,
-                    'task_type': task.task_type,
-                    'status': task.status,
-                    'result': task.result,
-                    'error_message': task.error_message,
-                    'created_by': task.created_by.username if task.created_by else None,
-                    'created_at': task.created_at.isoformat(),
-                    'started_at': task.started_at.isoformat() if task.started_at else None,
-                    'completed_at': task.completed_at.isoformat() if task.completed_at else None,
-                },
+                'id': task.id,
+                'host_id': task.host_id,
+                'policy_id': task.policy_id,
+                'task_type': task.task_type,
+                'status': task.status,
+                'result': task.result,
+                'error_message': task.error_message,
+                'created_by': task.created_by.username if task.created_by else None,
+                'created_at': task.created_at.isoformat(),
+                'started_at': task.started_at.isoformat() if task.started_at else None,
+                'completed_at': task.completed_at.isoformat() if task.completed_at else None,
             }
 
         except PolicyApplyTask.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Task {task_id} not found',
-            }
+            raise TaskNotFoundError(task_id)
         except Exception as e:
             logger.error(f'Error getting task status: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
 
 class AuditService:
@@ -1099,19 +969,13 @@ class AuditService:
 
             logger.info(f'Audit log created: {action} - {resource_name}')
             return {
-                'success': True,
-                'data': {
-                    'id': audit_log.id,
-                    'action': audit_log.action,
-                },
+                'id': audit_log.id,
+                'action': audit_log.action,
             }
 
         except Exception as e:
             logger.error(f'Error logging audit action: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise AuditLogCreateError(str(e))
 
     @staticmethod
     def list_audit_logs(
@@ -1186,7 +1050,6 @@ class AuditService:
                 })
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -1195,10 +1058,7 @@ class AuditService:
 
         except Exception as e:
             logger.error(f'Error listing audit logs: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def create_file_monitor_rule(
@@ -1252,26 +1112,17 @@ class AuditService:
 
             logger.info(f'File monitor rule created: {host.hostname} - {path}')
             return {
-                'success': True,
-                'data': {
-                    'id': rule.id,
-                    'host_id': host_id,
-                    'path': path,
-                    'enabled': rule.enabled,
-                },
+                'id': rule.id,
+                'host_id': host_id,
+                'path': path,
+                'enabled': rule.enabled,
             }
 
         except Host.DoesNotExist:
-            return {
-                'success': False,
-                'error': f'Host {host_id} not found',
-            }
+            raise HostNotFoundError(host_id)
         except Exception as e:
             logger.error(f'Error creating file monitor rule: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise FileMonitorRuleCreateError(str(e))
 
     @staticmethod
     def list_file_monitor_rules(
@@ -1331,7 +1182,6 @@ class AuditService:
                 })
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -1340,10 +1190,7 @@ class AuditService:
 
         except Exception as e:
             logger.error(f'Error listing file monitor rules: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def list_file_monitor_events(
@@ -1409,7 +1256,6 @@ class AuditService:
                 })
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -1418,10 +1264,7 @@ class AuditService:
 
         except Exception as e:
             logger.error(f'Error listing file monitor events: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def collect_and_save_system_logs(
@@ -1575,7 +1418,6 @@ class AuditService:
                 })
 
             return {
-                'success': True,
                 'data': data,
                 'page': page,
                 'page_size': page_size,
@@ -1584,10 +1426,7 @@ class AuditService:
 
         except Exception as e:
             logger.error(f'Error getting system logs: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise OperationError(str(e))
 
     @staticmethod
     def collect_file_events(host_id: Optional[int] = None) -> Dict[str, Any]:
@@ -1612,7 +1451,6 @@ class AuditService:
 
             if not rules:
                 return {
-                    'success': True,
                     'message': 'No active monitor rules found',
                     'events': [],
                     'total_events': 0,
@@ -1639,7 +1477,6 @@ class AuditService:
             saved_count = AuditService.save_file_events(all_events)
 
             return {
-                'success': True,
                 'events': all_events,
                 'total_events': len(all_events),
                 'saved_count': saved_count,
@@ -1647,10 +1484,7 @@ class AuditService:
 
         except Exception as e:
             logger.error(f'Error collecting file events: {e}')
-            return {
-                'success': False,
-                'error': str(e),
-            }
+            raise FileMonitorEventCollectError(str(e))
 
     @staticmethod
     def save_file_events(events: List[Dict[str, Any]]) -> int:

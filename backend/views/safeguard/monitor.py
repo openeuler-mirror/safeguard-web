@@ -12,7 +12,7 @@ from backend.models.host import Host
 from backend.serializers.safeguard.monitor import HostMonitorDataSerializer
 from backend.permissions.authority import IsAdmin
 from backend.permissions.base import DataScopePermission
-from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet, ServiceError
 from backend.services.safeguard import MonitorService
 
 
@@ -35,10 +35,11 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
         if not host_id:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id is required')
 
-        result = MonitorService.collect_all_metrics(host_id, save=True)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '采集失败'))
+        try:
+            result = MonitorService.collect_all_metrics(host_id, save=True)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['post'], url_path='batch_collect')
     def batch_collect(self, request):
@@ -49,12 +50,19 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
 
         results = []
         for host_id in host_ids:
-            result = MonitorService.collect_all_metrics(host_id, save=True)
-            results.append({
-                'host_id': host_id,
-                'success': result['success'],
-                'error': result.get('error'),
-            })
+            try:
+                result = MonitorService.collect_all_metrics(host_id, save=True)
+                results.append({
+                    'host_id': host_id,
+                    'success': True,
+                    'data': result,
+                })
+            except ServiceError as e:
+                results.append({
+                    'host_id': host_id,
+                    'success': False,
+                    'error': e.err_msg,
+                })
 
         return SuccessResponse({'results': results})
 
@@ -105,18 +113,18 @@ class HostMonitorDataViewSet(UnifiedModelViewSet):
             except ValueError:
                 pass
 
-        result = MonitorService.get_monitor_history(
-            host_id,
-            start_time=start_datetime,
-            end_time=end_datetime,
-            metric_type=metric_type,
-            page=page,
-            page_size=page_size
-        )
-
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '查询失败'))
+        try:
+            result = MonitorService.get_monitor_history(
+                host_id,
+                start_time=start_datetime,
+                end_time=end_datetime,
+                metric_type=metric_type,
+                page=page,
+                page_size=page_size
+            )
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['get'], url_path='latest')
     def latest(self, request, pk=None):
