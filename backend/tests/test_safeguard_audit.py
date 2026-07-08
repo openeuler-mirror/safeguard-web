@@ -46,3 +46,23 @@ class AuditLogModelTest(APITestCase):
         self.assertEqual(audit_log.ip_address, '192.168.1.1')
         self.assertEqual(audit_log.user_agent, 'TestAgent/1.0')
         self.assertEqual(audit_log.status, 'success')
+
+    def test_audit_log_str(self):
+        """测试审计日志字符串表示"""
+        audit_log = AuditLog.objects.create(
+            user=self.user,
+            action='update',
+            resource_name='测试资源'
+        )
+
+        self.assertIn('update', str(audit_log))
+        self.assertIn('测试资源', str(audit_log))
+
+    def test_audit_log_ordering(self):
+        """测试审计日志按创建时间倒序排列"""
+        log1 = AuditLog.objects.create(user=self.user, action='create')
+        log2 = AuditLog.objects.create(user=self.user, action='update')
+
+        logs = AuditLog.objects.all()
+        self.assertEqual(logs[0], log2)  # 新的在前
+        self.assertEqual(logs[1], log1)
