@@ -348,9 +348,8 @@ class TestVMService(TestCase):
 
     @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_not_found(self, mock_client_class):
-        result = VMService.create_vm_in_libvirt(9999)
-        self.assertFalse(result['success'])
-        self.assertEqual(result['message'], 'VM不存在')
+        with self.assertRaises(VMNotFoundError):
+            VMService.create_vm_in_libvirt(9999)
 
     @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_success(self, mock_client_class):
@@ -363,7 +362,6 @@ class TestVMService(TestCase):
         self.vm.save()
 
         result = VMService.create_vm_in_libvirt(self.vm.id)
-        self.assertTrue(result['success'])
         self.assertEqual(result['message'], 'created')
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')

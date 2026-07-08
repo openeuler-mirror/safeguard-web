@@ -1,7 +1,7 @@
 """DHCP服务"""
 import subprocess
 import logging
-from typing import Optional
+from typing import Optional, Dict
 from backend.models.osdeploy import PXEServerStatus, WhiteList
 from backend.common import OperationError
 

@@ -26,14 +26,14 @@ class VMNotFoundError(ServiceError):
     """虚拟机不存在"""
 
     def __init__(self, vm_id: int):
-        super().__init__(ErrCode.HOST_NOT_FOUND, f"虚拟机 {vm_id} 不存在")
+        super().__init__(ErrCode.VM_NOT_FOUND, f"虚拟机 {vm_id} 不存在")
 
 
 class ClusterNotFoundError(ServiceError):
     """集群不存在"""
 
     def __init__(self, cluster_id: int):
-        super().__init__(ErrCode.HOST_NOT_FOUND, f"集群 {cluster_id} 不存在")
+        super().__init__(ErrCode.CLUSTER_NOT_FOUND, f"集群 {cluster_id} 不存在")
 
 
 class PolicyTemplateNotFoundError(ServiceError):
