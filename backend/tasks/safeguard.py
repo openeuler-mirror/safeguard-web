@@ -110,6 +110,18 @@ def apply_policy_task(self, task_id: int):
             except PolicyApplyTask.DoesNotExist:
                 pass
             raise
+    except Exception as e:
+        # 兜底处理：确保任务状态不会卡在 'running'
+        logger.error(f'Unexpected error executing policy apply task {task_id}: {e}')
+        try:
+            task = PolicyApplyTask.objects.get(id=task_id)
+            task.status = 'failed'
+            task.error_message = str(e)
+            task.completed_at = datetime.now()
+            task.save()
+        except PolicyApplyTask.DoesNotExist:
+            pass
+        raise
 
 
 @shared_task(bind=True, max_retries=2)
@@ -174,6 +186,18 @@ def rollback_policy_task(self, task_id: int):
             except PolicyApplyTask.DoesNotExist:
                 pass
             raise
+    except Exception as e:
+        # 兜底处理：确保任务状态不会卡在 'running'
+        logger.error(f'Unexpected error executing policy rollback task {task_id}: {e}')
+        try:
+            task = PolicyApplyTask.objects.get(id=task_id)
+            task.status = 'failed'
+            task.error_message = str(e)
+            task.completed_at = datetime.now()
+            task.save()
+        except PolicyApplyTask.DoesNotExist:
+            pass
+        raise
 
 
 @shared_task
