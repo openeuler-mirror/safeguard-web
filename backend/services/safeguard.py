@@ -1037,7 +1037,7 @@ class AuditService:
                 data.append({
                     'id': log.id,
                     'user_id': log.user_id,
-                    'user_name': log.user.username if log.user else None,
+                    'user_name': log.user.user if log.user else None,
                     'action': log.action,
                     'resource_type': log.resource_type,
                     'resource_id': log.resource_id,
