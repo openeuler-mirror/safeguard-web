@@ -129,3 +129,17 @@ class AuditServiceTest(APITestCase):
         result = AuditService.list_audit_logs(action='create')
 
         self.assertEqual(result['total'], 2)
+
+    def test_list_audit_logs_filter_by_resource_type(self):
+        """测试按资源类型筛选审计日志"""
+        from backend.services.safeguard import AuditService
+
+        # 创建一些测试日志
+        AuditLog.objects.create(user=self.user, action='create', resource_type='host')
+        AuditLog.objects.create(user=self.user, action='update', resource_type='policy')
+        AuditLog.objects.create(user=self.user, action='create', resource_type='policy')
+
+        # 只查询policy相关
+        result = AuditService.list_audit_logs(resource_type='policy')
+
+        self.assertEqual(result['total'], 2)
