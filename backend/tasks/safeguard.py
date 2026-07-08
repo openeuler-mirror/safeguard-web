@@ -181,11 +181,15 @@ def collect_file_monitor_events():
 
     logger.info('Starting scheduled file monitor events collection')
 
-    result = AuditService.collect_file_events()
-
-    if result['success']:
+    try:
+        result = AuditService.collect_file_events()
         logger.info(f'File monitor events collection completed: {result["total_events"]} events, {result.get("saved_count", 0)} saved')
-    else:
-        logger.error(f'File monitor events collection failed: {result.get("error")}')
-
-    return result
+        return result
+    except Exception as e:
+        logger.error(f'File monitor events collection failed: {e}')
+        return {
+            'events': [],
+            'total_events': 0,
+            'saved_count': 0,
+            'error': str(e),
+        }
