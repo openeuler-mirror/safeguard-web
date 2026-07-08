@@ -4,7 +4,8 @@ Audit Log Middleware
 This middleware automatically logs user operations for audit purposes.
 """
 import logging
-from typing import Optional
+import json
+from typing import Optional, Dict, Any
 from django.http import HttpRequest, HttpResponse
 from django.utils.deprecation import MiddlewareMixin
 
@@ -30,9 +31,141 @@ class AuditLogMiddleware(MiddlewareMixin):
     - Async logging to avoid blocking response
     """
 
+    # 请求方法到操作类型的映射
+    METHOD_ACTION_MAP = {
+        'POST': 'create',
+        'PUT': 'update',
+        'PATCH': 'update',
+        'DELETE': 'delete',
+    }
+
+    # URL路径到资源类型的映射规则
+    PATH_RESOURCE_MAPS = [
+        (r'/api/safeguard/policy/templates', 'policy_template'),
+        (r'/api/safeguard/policy/host', 'host_policy'),
+        (r'/api/safeguard/file-monitor/rules', 'file_monitor_rule'),
+        (r'/api/safeguard/host-info', 'host_info'),
+        (r'/api/safeguard/monitor', 'monitor'),
+        (r'/api/auth/login', 'auth'),
+        (r'/api/auth/logout', 'auth'),
+        (r'/api/users', 'user'),
+        (r'/api/hosts', 'host'),
+    ]
+
     def __init__(self, get_response=None):
         self.get_response = get_response
         super().__init__(get_response)
+
+    def _parse_resource_type(self, path: str) -> str:
+        """
+        从URL路径解析资源类型
+
+        Args:
+            path: URL路径
+
+        Returns:
+            str: 资源类型字符串
+        """
+        import re
+        for pattern, resource_type in self.PATH_RESOURCE_MAPS:
+            if re.search(pattern, path):
+                return resource_type
+
+        # 尝试从路径中提取
+        parts = path.strip('/').split('/')
+        if len(parts) >= 2:
+            return parts[-2]  # 使用倒数第二段作为资源类型
+
+        return 'unknown'
+
+    def _parse_resource_id(self, path: str) -> str:
+        """
+        从URL路径解析资源ID
+
+        Args:
+            path: URL路径
+
+        Returns:
+            str: 资源ID字符串
+        """
+        import re
+        # 查找路径中的数字ID
+        match = re.search(r'/(\d+)/?$', path)
+        if match:
+            return match.group(1)
+        return ''
+
+    def _parse_action(self, request: HttpRequest) -> str:
+        """
+        解析操作类型
+
+        Args:
+            request: Django HTTP请求对象
+
+        Returns:
+            str: 操作类型
+        """
+        path = request.path
+        method = request.method
+
+        # 特殊处理登录登出
+        if '/login' in path:
+            return 'login'
+        if '/logout' in path:
+            return 'logout'
+
+        # 策略下发特殊处理
+        if '/policy/templates' in path and '/apply' in path:
+            return 'policy_apply'
+
+        # 使用方法映射
+        return self.METHOD_ACTION_MAP.get(method, 'config_change')
+
+    def _get_request_body(self, request: HttpRequest) -> Dict[str, Any]:
+        """
+        获取请求体数据（安全解析）
+
+        Args:
+            request: Django HTTP请求对象
+
+        Returns:
+            dict: 请求体数据
+        """
+        try:
+            if hasattr(request, 'body') and request.body:
+                # 尝试解析JSON
+                try:
+                    return json.loads(request.body.decode('utf-8')[:10000])  # 限制大小
+                except json.JSONDecodeError:
+                    # 不是JSON，返回空dict
+                    pass
+        except Exception:
+            pass
+        return {}
+
+    def _get_response_data(self, response: HttpResponse) -> Dict[str, Any]:
+        """
+        从响应中提取有用的数据
+
+        Args:
+            response: Django HTTP响应对象
+
+        Returns:
+            dict: 响应数据
+        """
+        try:
+            if hasattr(response, 'data'):
+                # DRF Response对象
+                data = response.data
+                if isinstance(data, dict):
+                    # 提取资源ID和名称
+                    return {
+                        'id': data.get('id'),
+                        'name': data.get('name'),
+                    }
+        except Exception:
+            pass
+        return {}
 
     def _should_skip(self, request: HttpRequest) -> bool:
         """
