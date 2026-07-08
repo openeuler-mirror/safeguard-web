@@ -66,3 +66,37 @@ class AuditLogModelTest(APITestCase):
         logs = AuditLog.objects.all()
         self.assertEqual(logs[0], log2)  # 新的在前
         self.assertEqual(logs[1], log1)
+
+
+class AuditServiceTest(APITestCase):
+    """审计服务测试"""
+
+    def setUp(self):
+        """创建测试用户"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        AuditLog.objects.all().delete()
+
+    def test_log_action(self):
+        """测试记录操作日志"""
+        from backend.services.safeguard import AuditService
+
+        result = AuditService.log_action(
+            user=self.user,
+            action='create',
+            resource_type='policy',
+            resource_id='1',
+            resource_name='测试策略',
+            ip_address='10.0.0.1',
+            user_agent='TestBrowser/1.0',
+            status='success'
+        )
+
+        # 检查审计日志已创建
+        self.assertEqual(AuditLog.objects.count(), 1)
+        audit_log = AuditLog.objects.first()
+        self.assertEqual(audit_log.action, 'create')
+        self.assertEqual(audit_log.resource_type, 'policy')
