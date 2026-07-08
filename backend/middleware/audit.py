@@ -5,11 +5,13 @@ This middleware automatically logs user operations for audit purposes.
 """
 import logging
 import json
+import threading
 from typing import Optional, Dict, Any
 from django.http import HttpRequest, HttpResponse
 from django.utils.deprecation import MiddlewareMixin
 
 from safeguard_web.settings import AUDIT_LOG_ENABLED, AUDIT_WHITELIST_PATHS
+from backend.services.safeguard import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +256,7 @@ class AuditLogMiddleware(MiddlewareMixin):
         Returns:
             HttpResponse: 原始响应对象
         """
+        # 检查是否应该跳过
         if self._should_skip(request):
             return response
 
@@ -262,10 +265,71 @@ class AuditLogMiddleware(MiddlewareMixin):
             if response.status_code not in [200, 201, 204]:
                 return response
 
-            logger.debug(f'Audit log would be recorded: {request.method} {request.path}')
+            path = request.path
+            method = request.method
+
+            # 解析审计日志字段
+            user = getattr(request, 'user', None)
+            if user and not user.is_authenticated:
+                user = None
+
+            action = self._parse_action(request)
+            resource_type = self._parse_resource_type(path)
+            resource_id = self._parse_resource_id(path)
+            ip_address = self._get_client_ip(request)
+            user_agent = self._get_user_agent(request)
+
+            # 获取请求体作为操作详情
+            action_details = self._get_request_body(request)
+
+            # 从响应获取资源名称等信息
+            response_data = self._get_response_data(response)
+            resource_name = response_data.get('name', '')
+
+            # 如果响应中有ID且URL中没有，使用响应中的ID
+            if not resource_id and response_data.get('id'):
+                resource_id = str(response_data['id'])
+
+            # 记录审计日志（异步）
+            self._log_audit_async(
+                user=user,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                resource_name=resource_name,
+                action_details=action_details,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status='success',
+            )
+
+            logger.debug(f'Audit log recorded: {method} {path} - {action}')
 
         except Exception as e:
             # 审计日志记录失败不影响正常响应
             logger.error(f'Failed to record audit log: {e}', exc_info=True)
 
         return response
+
+    def _log_audit_async(self, **kwargs):
+        """
+        异步记录审计日志
+
+        使用线程池异步执行，避免阻塞响应
+        """
+        try:
+            thread = threading.Thread(target=self._do_log_audit, kwargs=kwargs, daemon=True)
+            thread.start()
+        except Exception as e:
+            logger.error(f'Failed to start async audit log: {e}')
+            # 降级为同步记录
+            self._do_log_audit(**kwargs)
+
+    def _do_log_audit(self, **kwargs):
+        """
+        实际执行审计日志记录
+        """
+        try:
+            AuditService.log_action(**kwargs)
+        except Exception as e:
+            logger.error(f'Failed to write audit log: {e}', exc_info=True)
