@@ -21,7 +21,7 @@ from backend.serializers.safeguard.policy import (
 )
 from backend.permissions.authority import IsAdmin
 from backend.permissions.base import DataScopePermission
-from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, UnifiedModelViewSet, ServiceError
 from backend.services.safeguard import PolicyService
 
 
@@ -66,18 +66,20 @@ class HostSafeguardPolicyViewSet(UnifiedModelViewSet):
         if not host_id or not template_id:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id and template_id are required')
 
-        result = PolicyService.bind_host_policy(host_id, template_id, created_by=request.user)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '绑定失败'))
+        try:
+            result = PolicyService.bind_host_policy(host_id, template_id, created_by=request.user)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['get'], url_path='detail')
     def detail(self, request, pk=None):
         """获取主机策略详情"""
-        result = PolicyService.get_host_policy(pk)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取失败'))
+        try:
+            result = PolicyService.get_host_policy(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
 
 class PolicyApplyTaskViewSet(UnifiedModelViewSet):
@@ -98,15 +100,17 @@ class PolicyApplyTaskViewSet(UnifiedModelViewSet):
     @action(detail=True, methods=['post'], url_path='apply')
     def apply(self, request, pk=None):
         """执行策略下发"""
-        result = PolicyService.apply_policy(pk)
-        if result['success']:
+        try:
+            result = PolicyService.apply_policy(pk)
             return SuccessResponse(result)
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '策略下发失败'))
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=True, methods=['get'], url_path='status')
     def task_status(self, request, pk=None):
         """获取任务状态"""
-        result = PolicyService.get_task_status(pk)
-        if result['success']:
-            return SuccessResponse(result['data'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result.get('error', '获取任务状态失败'))
+        try:
+            result = PolicyService.get_task_status(pk)
+            return SuccessResponse(result)
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
