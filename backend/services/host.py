@@ -1340,12 +1340,12 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            {'message': str}
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -1358,7 +1358,7 @@ class VMService:
             )
             conn = client._get_conn()
             if conn is None:
-                return {'success': False, 'message': 'libvirt 连接失败，无法创建 VM'}
+                raise VMOperationError('libvirt 连接失败，无法创建 VM')
 
             # 生成 Domain XML
             xml = VMService._generate_domain_xml(vm)
@@ -1368,12 +1368,16 @@ class VMService:
             if success:
                 vm.status = 'running'
                 vm.save()
-            return {'success': success, 'message': message}
+            elif not success:
+                raise VMOperationError(message)
+            return {'message': message}
         except ImportError:
-            return {'success': False, 'message': 'libvirt 未安装'}
+            raise VMOperationError('libvirt 未安装')
+        except VMOperationError:
+            raise
         except Exception as e:
             logger.error(f"Failed to create VM {vm_id}: {e}")
-            return {'success': False, 'message': str(e)}
+            raise VMOperationError(str(e))
 
     @staticmethod
     def _generate_domain_xml(vm: VM) -> str:
@@ -1476,7 +1480,6 @@ class VMService:
                 except Exception as e:
                     errors.append(str(e))
             return {
-                "success": True,
                 "created": created_count,
                 "updated": updated_count,
                 "errors": errors,
@@ -1484,7 +1487,7 @@ class VMService:
             }
         except Exception as e:
             logger.error(f"Import hosts from excel failed: {e}")
-            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+            raise HostImportError(str(e))
 
     @staticmethod
     def export_hosts_to_excel(filters: dict = None) -> bytes:
@@ -1530,12 +1533,11 @@ class VMService:
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {"success": False, "message": "主机不存在"}
+            raise HostNotFoundError(host_id)
         from backend.utils.ssh import SSHClient
         with SSHClient(host.ip_address, host.port, host.username, host.password, timeout=60) as client:
             stdout, stderr, exit_code = client.execute_command(command)
             return {
-                "success": exit_code == 0,
                 "message": "命令执行成功" if exit_code == 0 else stderr,
                 "stdout": stdout,
                 "stderr": stderr,
@@ -1561,7 +1563,6 @@ class VMService:
             except Exception as e:
                 failed.append(f"Host {host_id}: {str(e)}")
         return {
-            "success": len(failed) == 0,
             "message": f"更新完成：成功 {updated} 条，失败 {len(failed)} 条",
             "password": new_password,
             "updated": updated,

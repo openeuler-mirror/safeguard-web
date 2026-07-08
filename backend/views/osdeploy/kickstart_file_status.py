@@ -104,10 +104,12 @@ class KickStartViewSet(UnifiedModelViewSet):
     def system_conf(self, request):
         """生成 system.conf 配置文件"""
         output_path = request.data.get('output_path', '/var/www/html/pxe/conf/system.conf')
-        result = KickstartService.generate_system_conf_file(output_path)
-        if result['success']:
+        from backend.common.exceptions import ServiceError
+        try:
+            result = KickstartService.generate_system_conf_file(output_path)
             return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @extend_schema(
         summary="生成网络配置文件",
@@ -118,7 +120,9 @@ class KickStartViewSet(UnifiedModelViewSet):
     def network_conf(self, request):
         """生成 network.conf 配置文件"""
         output_path = request.data.get('output_path', '/var/www/html/pxe/conf/network.conf')
-        result = KickstartService.generate_network_conf_file(output_path)
-        if result['success']:
+        from backend.common.exceptions import ServiceError
+        try:
+            result = KickstartService.generate_network_conf_file(output_path)
             return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)

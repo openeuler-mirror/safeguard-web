@@ -190,7 +190,9 @@ enabled=1
         job_id = request.data.get('job_id')
         if not job_id:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='job_id is required')
-        result = RepoService.query_repo_job_status(job_id)
-        if result['success']:
-            return SuccessResponse(result['job'], errmsg=result['message'])
-        return ErrorResponse(ErrCode.NOT_FOUND, errmsg=result['message'])
+        from backend.common.exceptions import ServiceError
+        try:
+            job = RepoService.query_repo_job_status(job_id)
+            return SuccessResponse(job, errmsg='查询成功')
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)

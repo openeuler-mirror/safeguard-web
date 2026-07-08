@@ -276,25 +276,22 @@ class RepoService:
             job_id: 任务ID
 
         Returns:
-            {"success": bool, "job": dict / None, "message": str}
+            job dict
         """
         from backend.models.task import Task
+        from backend.common.exceptions import JobNotFoundError
         try:
             task = Task.objects.get(job_id=job_id)
             return {
-                "success": True,
-                "job": {
-                    "job_id": task.job_id,
-                    "job_type": task.job_type,
-                    "target": task.target,
-                    "status": task.status,
-                    "progress": task.progress,
-                    "result": task.result,
-                    "error_message": task.error_message,
-                    "created_at": task.created_at.isoformat() if task.created_at else None,
-                    "updated_at": task.updated_at.isoformat() if task.updated_at else None,
-                },
-                "message": "查询成功",
+                "job_id": task.job_id,
+                "job_type": task.job_type,
+                "target": task.target,
+                "status": task.status,
+                "progress": task.progress,
+                "result": task.result,
+                "error_message": task.error_message,
+                "created_at": task.created_at.isoformat() if task.created_at else None,
+                "updated_at": task.updated_at.isoformat() if task.updated_at else None,
             }
         except Task.DoesNotExist:
-            return {"success": False, "job": None, "message": f"任务不存在: {job_id}"}
+            raise JobNotFoundError(job_id)

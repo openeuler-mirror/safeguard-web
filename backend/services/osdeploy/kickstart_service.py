@@ -271,9 +271,10 @@ systemctl enable sshd
         serial_number ip_address hostname ntp_address password
 
         Returns:
-            {"success": bool, "message": str, "path": str, "count": int}
+            {"message": str, "path": str, "count": int}
         """
         import os
+        from backend.common.exceptions import ConfigGenerationError
         try:
             hosts = Host.objects.filter(flag=True)
             dir_path = os.path.dirname(output_path)
@@ -295,14 +296,13 @@ systemctl enable sshd
                 f.writelines(lines)
 
             return {
-                "success": True,
                 "message": "system.conf 生成成功",
                 "path": output_path,
                 "count": len(lines),
             }
         except Exception as e:
             logger.error(f"Generate system.conf failed: {e}")
-            return {"success": False, "message": str(e), "path": output_path, "count": 0}
+            raise ConfigGenerationError(str(e))
 
     @staticmethod
     def generate_network_conf_file(output_path: str = "/var/www/html/pxe/conf/network.conf") -> dict:
@@ -311,9 +311,10 @@ systemctl enable sshd
         读取 flag=True 的主机，包含管理/存储/业务/其他网络配置
 
         Returns:
-            {"success": bool, "message": str, "path": str, "count": int}
+            {"message": str, "path": str, "count": int}
         """
         import os
+        from backend.common.exceptions import ConfigGenerationError
         try:
             hosts = Host.objects.filter(flag=True)
             dir_path = os.path.dirname(output_path)
@@ -384,14 +385,13 @@ systemctl enable sshd
                 f.writelines(lines)
 
             return {
-                "success": True,
                 "message": "network.conf 生成成功",
                 "path": output_path,
                 "count": len(lines),
             }
         except Exception as e:
             logger.error(f"Generate network.conf failed: {e}")
-            return {"success": False, "message": str(e), "path": output_path, "count": 0}
+            raise ConfigGenerationError(str(e))
 
     @staticmethod
     def generate_system_config(hostname: str, timezone: str = "Asia/Shanghai",
