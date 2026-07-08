@@ -207,3 +207,56 @@ class HostViewAdvancedTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["errno"], 0)
         self.assertTrue(Host.objects.filter(hostname="cloud-host").exists())
+
+
+class SafeguardServiceErrorTest(TestCase):
+    """Safeguard 服务错误场景测试"""
+
+    def test_collect_and_save_system_logs_nonexistent_host(self):
+        """测试采集不存在主机的系统日志"""
+        from backend.services.safeguard import AuditService
+        from backend.common.exceptions import HostNotFoundError
+
+        with self.assertRaises(HostNotFoundError):
+            AuditService.collect_and_save_system_logs(99999)
+
+    @patch("backend.services.safeguard.collect_system_logs")
+    def test_collect_and_save_system_logs_collect_failed(self, mock_collect):
+        """测试系统日志采集失败的情况"""
+        from backend.services.safeguard import AuditService
+        from backend.common.exceptions import OperationError
+
+        c = Cluster.objects.create(name="c1")
+        h = Host.objects.create(hostname="h1", ip_address="1.1.1.1", username="root", cluster=c)
+
+        mock_collect.side_effect = Exception("采集失败")
+
+        with self.assertRaises(OperationError):
+            AuditService.collect_and_save_system_logs(h.id)
+
+    @patch("backend.services.safeguard.collect_system_logs")
+    def test_collect_and_save_system_logs_no_success(self, mock_collect):
+        """测试系统日志采集返回 success=False 的情况"""
+        from backend.services.safeguard import AuditService
+
+        c = Cluster.objects.create(name="c1")
+        h = Host.objects.create(hostname="h1", ip_address="1.1.1.1", username="root", cluster=c)
+
+        mock_collect.return_value = {"success": False, "logs": []}
+
+        result = AuditService.collect_and_save_system_logs(h.id, save_to_db=False)
+        self.assertNotIn("success", result)
+
+    @patch("backend.services.safeguard.collect_system_logs")
+    def test_collect_and_save_system_logs_without_success_field(self, mock_collect):
+        """测试系统日志采集返回结果不含 success 字段的情况"""
+        from backend.services.safeguard import AuditService
+
+        c = Cluster.objects.create(name="c1")
+        h = Host.objects.create(hostname="h1", ip_address="1.1.1.1", username="root", cluster=c)
+
+        mock_collect.return_value = {"logs": []}
+
+        result = AuditService.collect_and_save_system_logs(h.id, save_to_db=False)
+        self.assertNotIn("success", result)
+        self.assertEqual(result["logs"], [])
