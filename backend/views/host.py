@@ -210,6 +210,11 @@ class HostViewSet(UnifiedModelViewSet):
         if not host_ids:
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_ids is required')
         result = HostService.batch_update_password(host_ids, new_password, key)
+
+        # 如果全部失败，返回错误响应
+        if result.get('updated', 0) == 0 and len(result.get('failed', [])) > 0:
+            return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=f'批量更新密码全部失败，共 {len(result["failed"])} 个主机')
+
         return SuccessResponse(result)
 class VMViewSet(UnifiedModelViewSet):
     """虚拟机管理视图集"""

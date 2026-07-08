@@ -1292,7 +1292,7 @@ class AuditService:
             # 采集系统日志
             logs_result = collect_system_logs(host, log_sources, num_lines)
 
-            if logs_result.get('success', True) and save_to_db:
+            if logs_result.get('success', False) and save_to_db:
                 from backend.models.audit.system_log import SystemLog
 
                 # 保存日志到数据库
