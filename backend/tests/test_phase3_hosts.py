@@ -26,15 +26,15 @@ class HostServiceAdvancedTest(TestCase):
         h1 = Host.objects.create(hostname="h1", ip_address="1.1.1.1", username="root", password="old", cluster=c)
         h2 = Host.objects.create(hostname="h2", ip_address="1.1.1.2", username="root", password="old", cluster=c)
         result = HostService.batch_update_password([h1.id, h2.id], "newpass123", "key")
-        self.assertTrue(result["success"])
         self.assertEqual(result["updated"], 2)
+        self.assertEqual(len(result["failed"]), 0)
         h1.refresh_from_db()
         self.assertEqual(h1.password, HostService.hash_password("newpass123", "key"))
 
     def test_batch_update_password_nonexistent(self):
         result = HostService.batch_update_password([99999], "newpass")
-        self.assertFalse(result["success"])
         self.assertEqual(result["updated"], 0)
+        self.assertEqual(len(result["failed"]), 1)
 
     @patch("backend.utils.ssh.SSHClient")
     def test_remote_command(self, mock_ssh_class):
@@ -47,7 +47,6 @@ class HostServiceAdvancedTest(TestCase):
         c = Cluster.objects.create(name="c1")
         h = Host.objects.create(hostname="h1", ip_address="1.1.1.1", username="root", password="pass", port=22, cluster=c)
         result = HostService.remote_command(h.id, "ls -l")
-        self.assertTrue(result["success"])
         self.assertEqual(result["exit_code"], 0)
         self.assertEqual(result["stdout"], "stdout")
 
@@ -69,8 +68,8 @@ class HostServiceAdvancedTest(TestCase):
         buffer.seek(0)
 
         result = HostService.import_hosts_from_excel(buffer)
-        self.assertTrue(result["success"])
         self.assertEqual(result["created"], 1)
+        self.assertEqual(len(result["errors"]), 0)
         self.assertTrue(Host.objects.filter(ip_address="1.1.1.1").exists())
 
     def test_import_key_cloud(self):
@@ -106,7 +105,6 @@ class HostServiceAdvancedTest(TestCase):
         buffer.seek(0)
 
         result = HostService.import_key_cloud(buffer)
-        self.assertTrue(result["success"])
         self.assertEqual(result["created"], 1)
         self.assertEqual(result["updated"], 0)
 
@@ -149,7 +147,6 @@ class HostServiceAdvancedTest(TestCase):
         buffer.seek(0)
 
         result = HostService.import_key_cloud(buffer)
-        self.assertTrue(result["success"])
         self.assertEqual(result["created"], 0)
         self.assertEqual(result["updated"], 1)
 
