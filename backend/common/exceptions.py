@@ -64,6 +64,13 @@ class JobNotFoundError(ServiceError):
         super().__init__(ErrCode.NOT_FOUND, f"任务不存在: {job_id}")
 
 
+class ConfigGenerationError(ServiceError):
+    """配置文件生成失败"""
+
+    def __init__(self, message: str):
+        super().__init__(ErrCode.OPERATION_FAILED, message)
+
+
 class HardwareCollectError(ServiceError):
     """硬件信息采集失败"""
 

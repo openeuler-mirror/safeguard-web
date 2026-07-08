@@ -134,10 +134,12 @@ class UsersViewSet(UnifiedModelViewSet):
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg='请上传 Excel 文件')
 
         from backend.services.user import UserService
-        result = UserService.import_users_from_excel(file_obj)
-        if result['success']:
+        from backend.common.exceptions import ServiceError
+        try:
+            result = UserService.import_users_from_excel(file_obj)
             return SuccessResponse(result, errmsg=result['message'])
-        return ErrorResponse(ErrCode.OPERATION_FAILED, errmsg=result['message'])
+        except ServiceError as e:
+            return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
     @action(detail=False, methods=['get'], url_path='export')
     def export_users(self, request):

@@ -66,6 +66,8 @@ class UserService:
         """从 Excel 批量导入用户"""
         import openpyxl
         from io import BytesIO
+        from backend.common.exceptions import ServiceError
+        from backend.common.errcodes import ErrCode
         try:
             wb = openpyxl.load_workbook(BytesIO(file_obj.read()))
             ws = wb.active
@@ -101,14 +103,13 @@ class UserService:
                 except Exception as e:
                     errors.append(str(e))
             return {
-                "success": True,
                 "created": created_count,
                 "updated": updated_count,
                 "errors": errors,
                 "message": f"导入完成：新建 {created_count} 条，更新 {updated_count} 条，错误 {len(errors)} 条",
             }
         except Exception as e:
-            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+            raise ServiceError(ErrCode.OPERATION_FAILED, str(e))
 
     @staticmethod
     def export_users_to_excel():

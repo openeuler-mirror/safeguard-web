@@ -241,7 +241,14 @@ class VMViewSet(UnifiedModelViewSet):
         """启动VM"""
         try:
             result = VMService.start_vm(pk)
-            return SuccessResponse(errmsg=result)
+            response_data = {
+                'message': result.message,
+                'is_simulation': result.is_simulation,
+            }
+            if result.vm:
+                response_data['vm_id'] = result.vm.id
+                response_data['new_status'] = result.new_status
+            return SuccessResponse(response_data, errmsg=result.message)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
@@ -250,7 +257,14 @@ class VMViewSet(UnifiedModelViewSet):
         """停止VM"""
         try:
             result = VMService.stop_vm(pk)
-            return SuccessResponse(errmsg=result)
+            response_data = {
+                'message': result.message,
+                'is_simulation': result.is_simulation,
+            }
+            if result.vm:
+                response_data['vm_id'] = result.vm.id
+                response_data['new_status'] = result.new_status
+            return SuccessResponse(response_data, errmsg=result.message)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
@@ -259,7 +273,14 @@ class VMViewSet(UnifiedModelViewSet):
         """重启VM"""
         try:
             result = VMService.reboot_vm(pk)
-            return SuccessResponse(errmsg=result)
+            response_data = {
+                'message': result.message,
+                'is_simulation': result.is_simulation,
+            }
+            if result.vm:
+                response_data['vm_id'] = result.vm.id
+                response_data['new_status'] = result.new_status
+            return SuccessResponse(response_data, errmsg=result.message)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
@@ -268,7 +289,14 @@ class VMViewSet(UnifiedModelViewSet):
         """暂停VM"""
         try:
             result = VMService.pause_vm(pk)
-            return SuccessResponse(errmsg=result)
+            response_data = {
+                'message': result.message,
+                'is_simulation': result.is_simulation,
+            }
+            if result.vm:
+                response_data['vm_id'] = result.vm.id
+                response_data['new_status'] = result.new_status
+            return SuccessResponse(response_data, errmsg=result.message)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
@@ -277,7 +305,14 @@ class VMViewSet(UnifiedModelViewSet):
         """恢复VM"""
         try:
             result = VMService.resume_vm(pk)
-            return SuccessResponse(errmsg=result)
+            response_data = {
+                'message': result.message,
+                'is_simulation': result.is_simulation,
+            }
+            if result.vm:
+                response_data['vm_id'] = result.vm.id
+                response_data['new_status'] = result.new_status
+            return SuccessResponse(response_data, errmsg=result.message)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
 
