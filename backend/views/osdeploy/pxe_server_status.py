@@ -14,7 +14,7 @@ from backend.common.viewsets import UnifiedModelViewSet
 from backend.services.osdeploy.dhcp_service import DHCPService
 from backend.services.osdeploy.dhcp_relay_service import DHCPRelayService
 from backend.schemas.osdeploy.dhcp_relay import DHCPRelayParams
-from backend.common import SuccessResponse, ErrorResponse, ErrCode
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, ServiceError
 
 
 class PXEServerStatusViewSet(UnifiedModelViewSet):
@@ -38,26 +38,29 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
     @action(['post'], False)
     def start_dhcp(self, request):
         """启动DHCP服务"""
-        result = DHCPService.start_dhcp_service()
-        if result["status"] == "success":
-            return SuccessResponse(result)
-        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        try:
+            result = DHCPService.start_dhcp_service()
+            return SuccessResponse(None, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['post'], False)
     def stop_dhcp(self, request):
         """停止DHCP服务"""
-        result = DHCPService.stop_dhcp_service()
-        if result["status"] == "success":
-            return SuccessResponse(result)
-        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        try:
+            result = DHCPService.stop_dhcp_service()
+            return SuccessResponse(None, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['post'], False)
     def restart_dhcp(self, request):
         """重启DHCP服务"""
-        result = DHCPService.restart_dhcp_service()
-        if result["status"] == "success":
-            return SuccessResponse(result)
-        return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result["message"])
+        try:
+            result = DHCPService.restart_dhcp_service()
+            return SuccessResponse(None, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['get'], False)
     def dhcp_status(self, request):
@@ -72,10 +75,11 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
             params = DHCPRelayParams.model_validate(request.data)
         except Exception as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e))
-        result = DHCPRelayService.configure_relay(params.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse(result)
+        try:
+            result = DHCPRelayService.configure_relay(params.model_dump())
+            return SuccessResponse({"output": result.get("output")}, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['post'], False, url_path='relay-display')
     def dhcp_relay_display(self, request):
@@ -84,10 +88,11 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
             params = DHCPRelayParams.model_validate(request.data)
         except Exception as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e))
-        result = DHCPRelayService.display_relay(params.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse(result)
+        try:
+            result = DHCPRelayService.display_relay(params.model_dump())
+            return SuccessResponse({"output": result.get("output")}, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['post'], False, url_path='relay-undo')
     def dhcp_relay_undo(self, request):
@@ -96,7 +101,8 @@ class PXEServerStatusViewSet(UnifiedModelViewSet):
             params = DHCPRelayParams.model_validate(request.data)
         except Exception as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e))
-        result = DHCPRelayService.undo_relay(params.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse(result)
+        try:
+            result = DHCPRelayService.undo_relay(params.model_dump())
+            return SuccessResponse({"output": result.get("output")}, errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)

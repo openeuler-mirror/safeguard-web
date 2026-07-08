@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 
 from backend.utils.ssh import SSHClient
+from backend.common import HostConnectionError, OperationError
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,11 @@ class DHCPRelayService:
         relay_ip = params.get("dhcp_relay_ip")
 
         if not all([host, username, password, interface, relay_ip]):
-            return {"status": "failed", "message": "缺少必要参数"}
+            raise OperationError("缺少必要参数")
 
         ssh = SSHClient(host=host, port=port, username=username, password=password, timeout=30)
         if not ssh.connect():
-            return {"status": "failed", "message": f"无法连接到主机 {host}"}
+            raise HostConnectionError(f"无法连接到主机 {host}")
 
         try:
             cmds = [
@@ -42,8 +43,8 @@ class DHCPRelayService:
             command = "\n".join(cmds) + "\n"
             stdout, stderr, exit_code = ssh.execute_command(command)
             if exit_code != 0:
-                return {"status": "failed", "message": f"配置失败: {stderr}"}
-            return {"status": "success", "message": "DHCP Relay 配置成功", "output": stdout}
+                raise OperationError(f"配置失败: {stderr}")
+            return {"message": "DHCP Relay 配置成功", "output": stdout}
         finally:
             ssh.close()
 
@@ -57,11 +58,11 @@ class DHCPRelayService:
         interface = params.get("interface_name")
 
         if not all([host, username, password, interface]):
-            return {"status": "failed", "message": "缺少必要参数"}
+            raise OperationError("缺少必要参数")
 
         ssh = SSHClient(host=host, port=port, username=username, password=password, timeout=30)
         if not ssh.connect():
-            return {"status": "failed", "message": f"无法连接到主机 {host}"}
+            raise HostConnectionError(f"无法连接到主机 {host}")
 
         try:
             cmds = [
@@ -74,8 +75,8 @@ class DHCPRelayService:
             command = "\n".join(cmds) + "\n"
             stdout, stderr, exit_code = ssh.execute_command(command)
             if exit_code != 0:
-                return {"status": "failed", "message": f"查询失败: {stderr}"}
-            return {"status": "success", "message": "查询成功", "output": stdout}
+                raise OperationError(f"查询失败: {stderr}")
+            return {"message": "查询成功", "output": stdout}
         finally:
             ssh.close()
 
@@ -90,11 +91,11 @@ class DHCPRelayService:
         relay_ip = params.get("dhcp_relay_ip")
 
         if not all([host, username, password, interface, relay_ip]):
-            return {"status": "failed", "message": "缺少必要参数"}
+            raise OperationError("缺少必要参数")
 
         ssh = SSHClient(host=host, port=port, username=username, password=password, timeout=30)
         if not ssh.connect():
-            return {"status": "failed", "message": f"无法连接到主机 {host}"}
+            raise HostConnectionError(f"无法连接到主机 {host}")
 
         try:
             cmds = [
@@ -111,7 +112,7 @@ class DHCPRelayService:
             command = "\n".join(cmds) + "\n"
             stdout, stderr, exit_code = ssh.execute_command(command)
             if exit_code != 0:
-                return {"status": "failed", "message": f"撤销失败: {stderr}"}
-            return {"status": "success", "message": "DHCP Relay 撤销成功", "output": stdout}
+                raise OperationError(f"撤销失败: {stderr}")
+            return {"message": "DHCP Relay 撤销成功", "output": stdout}
         finally:
             ssh.close()

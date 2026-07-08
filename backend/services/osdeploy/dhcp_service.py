@@ -3,6 +3,7 @@ import subprocess
 import logging
 from typing import Optional
 from backend.models.osdeploy import PXEServerStatus, WhiteList
+from backend.common import OperationError
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class DHCPService:
     _is_running = False
 
     @staticmethod
-    def start_dhcp_service() -> dict:
+    def start_dhcp_service() -> Dict[str, str]:
         """启动DHCP服务"""
         try:
             result = subprocess.run(
@@ -24,10 +25,10 @@ class DHCPService:
             )
             if result.returncode == 0:
                 DHCPService._is_running = True
-                return {"status": "success", "message": "DHCP服务启动成功"}
+                return {"message": "DHCP服务启动成功"}
             else:
                 logger.error(f"启动DHCP服务失败: {result.stderr}")
-                return {"status": "failed", "message": result.stderr or "启动失败"}
+                raise OperationError(result.stderr or "启动失败")
         except FileNotFoundError:
             logger.warning("systemctl 未找到，尝试使用 service 命令")
             try:
@@ -39,18 +40,22 @@ class DHCPService:
                 )
                 if result.returncode == 0:
                     DHCPService._is_running = True
-                    return {"status": "success", "message": "DHCP服务启动成功"}
+                    return {"message": "DHCP服务启动成功"}
                 else:
-                    return {"status": "failed", "message": result.stderr or "启动失败"}
+                    raise OperationError(result.stderr or "启动失败")
+            except OperationError:
+                raise
             except Exception as e:
                 logger.error(f"启动DHCP服务异常: {e}")
-                return {"status": "failed", "message": str(e)}
+                raise OperationError(str(e))
+        except OperationError:
+            raise
         except Exception as e:
             logger.error(f"启动DHCP服务异常: {e}")
-            return {"status": "failed", "message": str(e)}
+            raise OperationError(str(e))
 
     @staticmethod
-    def stop_dhcp_service() -> dict:
+    def stop_dhcp_service() -> Dict[str, str]:
         """停止DHCP服务"""
         try:
             result = subprocess.run(
@@ -61,10 +66,10 @@ class DHCPService:
             )
             if result.returncode == 0:
                 DHCPService._is_running = False
-                return {"status": "success", "message": "DHCP服务停止成功"}
+                return {"message": "DHCP服务停止成功"}
             else:
                 logger.error(f"停止DHCP服务失败: {result.stderr}")
-                return {"status": "failed", "message": result.stderr or "停止失败"}
+                raise OperationError(result.stderr or "停止失败")
         except FileNotFoundError:
             try:
                 result = subprocess.run(
@@ -75,22 +80,24 @@ class DHCPService:
                 )
                 if result.returncode == 0:
                     DHCPService._is_running = False
-                    return {"status": "success", "message": "DHCP服务停止成功"}
+                    return {"message": "DHCP服务停止成功"}
                 else:
-                    return {"status": "failed", "message": result.stderr or "停止失败"}
+                    raise OperationError(result.stderr or "停止失败")
+            except OperationError:
+                raise
             except Exception as e:
                 logger.error(f"停止DHCP服务异常: {e}")
-                return {"status": "failed", "message": str(e)}
+                raise OperationError(str(e))
+        except OperationError:
+            raise
         except Exception as e:
             logger.error(f"停止DHCP服务异常: {e}")
-            return {"status": "failed", "message": str(e)}
+            raise OperationError(str(e))
 
     @staticmethod
-    def restart_dhcp_service() -> dict:
+    def restart_dhcp_service() -> Dict[str, str]:
         """重启DHCP服务"""
-        stop_result = DHCPService.stop_dhcp_service()
-        if stop_result["status"] == "failed":
-            return stop_result
+        DHCPService.stop_dhcp_service()
         return DHCPService.start_dhcp_service()
 
     @staticmethod

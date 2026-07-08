@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from backend.schemas.osdeploy.novnc import NoVNCClient
 from backend.services.osdeploy.novnc_service import NoVNCService
-from backend.common import SuccessResponse, ErrorResponse, ErrCode
+from backend.common import SuccessResponse, ErrorResponse, ErrCode, ServiceError
 
 
 class NoVNCViewSet(viewsets.ViewSet):
@@ -21,10 +21,11 @@ class NoVNCViewSet(viewsets.ViewSet):
         except ValidationError as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
-        result = NoVNCService.install_novnc(config.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse(errmsg=result['message'])
+        try:
+            result = NoVNCService.install_novnc(config.model_dump())
+            return SuccessResponse(errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
 
     @action(['post'], False, url_path='close')
     def close(self, request):
@@ -34,7 +35,8 @@ class NoVNCViewSet(viewsets.ViewSet):
         except ValidationError as e:
             return ErrorResponse(ErrCode.PARAM_ERROR, errmsg=str(e.errors()))
 
-        result = NoVNCService.close_novnc(config.model_dump())
-        if result['status'] == 'failed':
-            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=result['message'])
-        return SuccessResponse(errmsg=result['message'])
+        try:
+            result = NoVNCService.close_novnc(config.model_dump())
+            return SuccessResponse(errmsg=result.get("message"))
+        except ServiceError as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=e.err_msg)
