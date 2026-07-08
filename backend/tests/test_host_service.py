@@ -5,6 +5,14 @@ from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from backend.models.host import Cluster, Host, VM
 from backend.services.host import ClusterService, HostService, VMService
+from backend.common.exceptions import (
+    HostNotFoundError,
+    VMNotFoundError,
+    HardwareCollectError,
+    LLDCollectError,
+    PasswordUpdateError,
+    VMOperationError,
+)
 
 
 class TestClusterService(TestCase):
@@ -132,9 +140,8 @@ class TestHostService(TestCase):
         self.assertTrue(result)
 
     def test_collect_hardware_host_not_found(self):
-        result = HostService.collect_hardware(9999)
-        self.assertFalse(result['success'])
-        self.assertEqual(result['message'], '主机不存在')
+        with self.assertRaises(HostNotFoundError):
+            HostService.collect_hardware(9999)
 
     @patch('backend.services.host.update_host_hardware_info')
     def test_collect_hardware_success(self, mock_update):
@@ -142,18 +149,17 @@ class TestHostService(TestCase):
         self.host.arch_info = '5.4.0-generic'
         self.host.save()
         result = HostService.collect_hardware(self.host.id)
-        self.assertTrue(result['success'])
-        self.assertEqual(result['data']['arch_info'], '5.4.0-generic')
+        self.assertEqual(result['arch_info'], '5.4.0-generic')
 
     @patch('backend.services.host.update_host_hardware_info')
     def test_collect_hardware_failure(self, mock_update):
         mock_update.return_value = False
-        result = HostService.collect_hardware(self.host.id)
-        self.assertFalse(result['success'])
+        with self.assertRaises(HardwareCollectError):
+            HostService.collect_hardware(self.host.id)
 
     def test_collect_lldp_host_not_found(self):
-        result = HostService.collect_lldp(9999)
-        self.assertFalse(result['success'])
+        with self.assertRaises(HostNotFoundError):
+            HostService.collect_lldp(9999)
 
     @patch('backend.services.host.update_host_lldp_info')
     def test_collect_lldp_success(self, mock_update):
@@ -161,17 +167,17 @@ class TestHostService(TestCase):
         self.host.lldp_infos = [{'ifname': 'eth0'}]
         self.host.save()
         result = HostService.collect_lldp(self.host.id)
-        self.assertTrue(result['success'])
+        self.assertEqual(result, [{'ifname': 'eth0'}])
 
     @patch('backend.services.host.update_host_lldp_info')
     def test_collect_lldp_failure(self, mock_update):
         mock_update.return_value = False
-        result = HostService.collect_lldp(self.host.id)
-        self.assertFalse(result['success'])
+        with self.assertRaises(LLDCollectError):
+            HostService.collect_lldp(self.host.id)
 
     def test_collect_all_host_not_found(self):
-        result = HostService.collect_all(9999)
-        self.assertFalse(result['success'])
+        with self.assertRaises(HostNotFoundError):
+            HostService.collect_all(9999)
 
     @patch('backend.services.host.update_host_lldp_info')
     @patch('backend.services.host.update_host_hardware_info')
@@ -179,11 +185,11 @@ class TestHostService(TestCase):
         mock_hw.return_value = True
         mock_lldp.return_value = True
         self.host.lldp_infos = [{'ifname': 'eth0'}]
+        self.host.arch_info = '5.4.0-generic'
         self.host.save()
         result = HostService.collect_all(self.host.id)
-        self.assertTrue(result['success'])
-        self.assertIn('hardware', result['data'])
-        self.assertIn('lldp', result['data'])
+        self.assertIn('hardware', result)
+        self.assertIn('lldp', result)
 
     def test_generate_random_password(self):
         password = HostService.generate_random_password()
@@ -204,18 +210,16 @@ class TestHostService(TestCase):
         self.assertEqual(hash1, hash2)
 
     def test_update_host_password_not_found(self):
-        result = HostService.update_host_password(9999, 'new_password')
-        self.assertFalse(result['success'])
+        with self.assertRaises(HostNotFoundError):
+            HostService.update_host_password(9999, 'new_password')
 
     def test_update_host_password_with_password(self):
         result = HostService.update_host_password(self.host.id, 'new_password')
-        self.assertTrue(result['success'])
-        self.assertEqual(result['password'], 'new_password')
+        self.assertEqual(result, 'new_password')
 
     def test_update_host_password_auto_generate(self):
         result = HostService.update_host_password(self.host.id)
-        self.assertTrue(result['success'])
-        self.assertEqual(len(result['password']), 16)
+        self.assertEqual(len(result), 16)
 
 
 class TestVMService(TestCase):
@@ -265,12 +269,12 @@ class TestVMService(TestCase):
         self.assertTrue(result)
 
     def test_start_vm_not_found(self):
-        result = VMService.start_vm(9999)
-        self.assertFalse(result['success'])
+        with self.assertRaises(VMNotFoundError):
+            VMService.start_vm(9999)
 
     def test_start_vm(self):
         result = VMService.start_vm(self.vm.id)
-        self.assertTrue(result['success'])
+        self.assertIn('成功', result)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
 
@@ -278,13 +282,13 @@ class TestVMService(TestCase):
         self.vm.status = 'running'
         self.vm.save()
         result = VMService.stop_vm(self.vm.id)
-        self.assertTrue(result['success'])
+        self.assertIn('成功', result)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'stopped')
 
     def test_reboot_vm(self):
         result = VMService.reboot_vm(self.vm.id)
-        self.assertTrue(result['success'])
+        self.assertIn('成功', result)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
 
@@ -292,7 +296,7 @@ class TestVMService(TestCase):
         self.vm.status = 'running'
         self.vm.save()
         result = VMService.pause_vm(self.vm.id)
-        self.assertTrue(result['success'])
+        self.assertIn('成功', result)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'paused')
 
@@ -300,36 +304,34 @@ class TestVMService(TestCase):
         self.vm.status = 'paused'
         self.vm.save()
         result = VMService.resume_vm(self.vm.id)
-        self.assertTrue(result['success'])
+        self.assertIn('成功', result)
         self.vm.refresh_from_db()
         self.assertEqual(self.vm.status, 'running')
 
     def test_get_vm_status_not_found(self):
-        result = VMService.get_vm_status(9999)
-        self.assertFalse(result['success'])
+        with self.assertRaises(VMNotFoundError):
+            VMService.get_vm_status(9999)
 
     def test_get_vm_status(self):
         self.vm.status = 'running'
         self.vm.save()
         result = VMService.get_vm_status(self.vm.id)
-        self.assertTrue(result['success'])
-        self.assertEqual(result['status'], 'running')
+        self.assertEqual(result, 'running')
 
     def test_delete_vm_from_libvirt_not_found(self):
-        result = VMService.delete_vm_from_libvirt(9999)
-        self.assertFalse(result['success'])
-        self.assertEqual(result['message'], 'VM不存在')
+        with self.assertRaises(VMNotFoundError):
+            VMService.delete_vm_from_libvirt(9999)
 
     @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_delete_vm_from_libvirt_success(self, mock_client_class):
         mock_client = MagicMock()
         mock_client.stop_domain.return_value = (True, 'stopped')
         mock_client.undefine_domain.return_value = (True, 'undefined')
+        mock_client._get_conn.return_value = MagicMock()
         mock_client_class.return_value = mock_client
 
         result = VMService.delete_vm_from_libvirt(self.vm.id)
-        self.assertTrue(result['success'])
-        self.assertEqual(result['message'], 'undefined')
+        self.assertEqual(result, 'undefined')
 
     @patch('backend.utils.libvirt_client.LibvirtClient')
     def test_create_vm_in_libvirt_not_found(self, mock_client_class):

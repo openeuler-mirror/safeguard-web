@@ -12,6 +12,17 @@ from backend.utils.hardware_collector import (
     update_host_lldp_info,
     collect_all_hardware_info,
 )
+from backend.common.exceptions import (
+    HostNotFoundError,
+    VMNotFoundError,
+    HardwareCollectError,
+    LLDCollectError,
+    PasswordUpdateError,
+    HostImportError,
+    RemoteCommandError,
+    VMOperationError,
+    OperationError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -212,38 +223,44 @@ class HostService:
 
         Returns:
             {
-                'success': bool,
-                'message': str,
-                'data': {...}  # 硬件信息
+                'arch_info': {...},
+                'uptime': {...},
+                'os_version': str,
+                'cpu_info': {...},
+                'disk_info': {...},
+                'memory_info': {...},
+                'network_info': {...}
             }
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            HardwareCollectError: 硬件信息采集失败
         """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {'success': False, 'message': '主机不存在', 'data': None}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
 
         success = update_host_hardware_info(host)
         if success:
-            # 重新获取更新后的数据
             host.refresh_from_db()
+            logger.info(f"Hardware info collected for host {host_id}")
             return {
-                'success': True,
-                'message': '硬件信息采集成功',
-                'data': {
-                    'arch_info': host.arch_info,
-                    'uptime': host.uptime,
-                    'os_version': host.os_version,
-                    'cpu_info': host.cpu_info,
-                    'disk_info': host.disk_info,
-                    'memory_info': host.memory_info,
-                    'network_info': host.network_info,
-                }
+                'arch_info': host.arch_info,
+                'uptime': host.uptime,
+                'os_version': host.os_version,
+                'cpu_info': host.cpu_info,
+                'disk_info': host.disk_info,
+                'memory_info': host.memory_info,
+                'network_info': host.network_info,
             }
         else:
-            return {'success': False, 'message': '硬件信息采集失败', 'data': None}
+            logger.error(f"Failed to collect hardware info for host {host_id}")
+            raise HardwareCollectError('硬件信息采集失败')
 
     @staticmethod
-    def collect_lldp(host_id: int) -> Dict:
+    def collect_lldp(host_id: int) -> List:
         """
         采集 LLDP 拓扑信息
 
@@ -251,30 +268,29 @@ class HostService:
             host_id: 主机ID
 
         Returns:
-            {
-                'success': bool,
-                'message': str,
-                'data': [...]  # LLDP 信息列表
-            }
+            LLDP 信息列表
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            LLDCollectError: LLDP 信息采集失败
         """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {'success': False, 'message': '主机不存在', 'data': None}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
 
         success = update_host_lldp_info(host)
         if success:
             host.refresh_from_db()
-            return {
-                'success': True,
-                'message': 'LLDP 信息采集成功',
-                'data': host.lldp_infos
-            }
+            logger.info(f"LLDP info collected for host {host_id}")
+            return host.lldp_infos
         else:
-            return {'success': False, 'message': 'LLDP 信息采集失败', 'data': None}
+            logger.error(f"Failed to collect LLDP info for host {host_id}")
+            raise LLDCollectError('LLDP 信息采集失败')
 
     @staticmethod
-    def get_host_lldp(host_id: int) -> Dict:
+    def get_host_lldp(host_id: int) -> List:
         """
         获取主机已保存的 LLDP 信息
 
@@ -282,22 +298,18 @@ class HostService:
             host_id: 主机ID
 
         Returns:
-            {
-                'success': bool,
-                'message': str,
-                'data': [...]  # LLDP 信息列表
-            }
+            LLDP 信息列表
+
+        Raises:
+            HostNotFoundError: 主机不存在
         """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {'success': False, 'message': '主机不存在', 'data': None}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
 
-        return {
-            'success': True,
-            'message': 'LLDP 信息获取成功',
-            'data': host.lldp_infos or []
-        }
+        return host.lldp_infos or []
 
     @staticmethod
     def collect_all(host_id: int) -> Dict:
@@ -309,47 +321,53 @@ class HostService:
 
         Returns:
             {
-                'success': bool,
-                'message': str,
-                'data': {
-                    'hardware': {...},
-                    'lldp': [...]
-                }
+                'hardware': {
+                    'arch_info': {...},
+                    'uptime': {...},
+                    'os_version': str,
+                    'cpu_info': {...},
+                    'disk_info': {...},
+                    'memory_info': {...},
+                    'network_info': {...},
+                    'mount_info': {...},
+                    'dmesg_info': {...}
+                },
+                'lldp': [...]
             }
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            HardwareCollectError: 信息采集失败
         """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {'success': False, 'message': '主机不存在', 'data': None}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
 
         try:
-            # 采集硬件信息
             update_host_hardware_info(host)
-            # 采集 LLDP 信息
             update_host_lldp_info(host)
 
             host.refresh_from_db()
+            logger.info(f"All info collected for host {host_id}")
             return {
-                'success': True,
-                'message': '信息采集成功',
-                'data': {
-                    'hardware': {
-                        'arch_info': host.arch_info,
-                        'uptime': host.uptime,
-                        'os_version': host.os_version,
-                        'cpu_info': host.cpu_info,
-                        'disk_info': host.disk_info,
-                        'memory_info': host.memory_info,
-                        'network_info': host.network_info,
-                        'mount_info': host.mount_info,
-                        'dmesg_info': host.dmesg_info,
-                    },
-                    'lldp': host.lldp_infos
-                }
+                'hardware': {
+                    'arch_info': host.arch_info,
+                    'uptime': host.uptime,
+                    'os_version': host.os_version,
+                    'cpu_info': host.cpu_info,
+                    'disk_info': host.disk_info,
+                    'memory_info': host.memory_info,
+                    'network_info': host.network_info,
+                    'mount_info': host.mount_info,
+                    'dmesg_info': host.dmesg_info,
+                },
+                'lldp': host.lldp_infos
             }
         except Exception as e:
             logger.error(f"Failed to collect all info for host {host_id}: {e}")
-            return {'success': False, 'message': str(e), 'data': None}
+            raise HardwareCollectError(str(e))
 
     @staticmethod
     def generate_random_password(length: int = 16) -> str:
@@ -382,7 +400,7 @@ class HostService:
         return hasher.hexdigest()
 
     @staticmethod
-    def update_host_password(host_id: int, new_password: str = None, key: str = "culinux") -> Dict:
+    def update_host_password(host_id: int, new_password: str = None, key: str = "culinux") -> str:
         """
         修改主机密码
 
@@ -392,37 +410,47 @@ class HostService:
             key: 加密密钥
 
         Returns:
-            {
-                'success': bool,
-                'message': str,
-                'password': str  # 新密码
-            }
+            新密码（明文）
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            PasswordUpdateError: 密码更新失败
         """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {'success': False, 'message': '主机不存在', 'password': None}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
 
-        # 如果没有指定新密码，生成随机密码
-        if not new_password:
-            new_password = HostService.generate_random_password()
+        try:
+            if not new_password:
+                new_password = HostService.generate_random_password()
 
-        # 加密密码
-        encrypted_password = HostService.hash_password(new_password, key)
+            encrypted_password = HostService.hash_password(new_password, key)
 
-        # 更新数据库中的密码
-        host.password = encrypted_password
-        host.save()
+            host.password = encrypted_password
+            host.save()
 
-        return {
-            'success': True,
-            'message': '密码更新成功',
-            'password': new_password  # 返回明文密码
-        }
+            logger.info(f"Password updated for host {host_id}")
+            return new_password
+        except Exception as e:
+            logger.error(f"Failed to update password for host {host_id}: {e}")
+            raise PasswordUpdateError(str(e))
 
     @staticmethod
-    def import_hosts_from_excel(file_obj):
-        """从 Excel 导入主机"""
+    def import_hosts_from_excel(file_obj) -> Dict:
+        """从 Excel 导入主机
+
+        Returns:
+            {
+                "created": int,
+                "updated": int,
+                "errors": list
+            }
+
+        Raises:
+            HostImportError: 导入失败
+        """
         import openpyxl
         from io import BytesIO
         try:
@@ -456,19 +484,18 @@ class HostService:
                         updated_count += 1
                 except Exception as e:
                     errors.append(str(e))
+            logger.info(f"Import completed: created {created_count}, updated {updated_count}, errors {len(errors)}")
             return {
-                "success": True,
                 "created": created_count,
                 "updated": updated_count,
-                "errors": errors,
-                "message": f"导入完成：新建 {created_count} 条，更新 {updated_count} 条，错误 {len(errors)} 条",
+                "errors": errors
             }
         except Exception as e:
             logger.error(f"Import hosts from excel failed: {e}")
-            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+            raise HostImportError(str(e))
 
     @staticmethod
-    def import_key_cloud(file_obj):
+    def import_key_cloud(file_obj) -> Dict:
         """从骨干云部署表 Excel 导入主机
 
         支持的中文字段映射：
@@ -482,6 +509,16 @@ class HostService:
         双引擎系统盘分区要求(单位为M)、单引擎系统盘分区要求(单位为M)、
         双引擎推荐操作系统版本、单引擎操作系统、
         存储IP、业务IP、其他IP
+
+        Returns:
+            {
+                "created": int,
+                "updated": int,
+                "errors": list
+            }
+
+        Raises:
+            HostImportError: 导入失败
         """
         import openpyxl
         from io import BytesIO
@@ -543,7 +580,6 @@ class HostService:
                     if not host_data.get("username"):
                         host_data["username"] = "root"
 
-                    # 原始逻辑：同名主机先删除再创建
                     existing = Host.objects.filter(hostname=host_data["hostname"]).first()
                     if existing:
                         existing.delete()
@@ -555,16 +591,15 @@ class HostService:
                 except Exception as e:
                     errors.append(str(e))
 
+            logger.info(f"Import key cloud completed: created {created_count}, updated {updated_count}, errors {len(errors)}")
             return {
-                "success": True,
                 "created": created_count,
                 "updated": updated_count,
-                "errors": errors,
-                "message": f"导入完成：新建 {created_count} 条，覆盖 {updated_count} 条，错误 {len(errors)} 条",
+                "errors": errors
             }
         except Exception as e:
             logger.error(f"Import key cloud failed: {e}")
-            return {"success": False, "message": str(e), "created": 0, "updated": 0, "errors": [str(e)]}
+            raise HostImportError(str(e))
 
     @staticmethod
     def export_hosts_to_excel(filters=None):
@@ -605,26 +640,51 @@ class HostService:
         return buffer.getvalue()
 
     @staticmethod
-    def remote_command(host_id, command):
-        """在远程主机上执行命令"""
+    def remote_command(host_id: int, command: str) -> Dict:
+        """在远程主机上执行命令
+
+        Returns:
+            {
+                "stdout": str,
+                "stderr": str,
+                "exit_code": int
+            }
+
+        Raises:
+            HostNotFoundError: 主机不存在
+            RemoteCommandError: 命令执行失败
+        """
         try:
             host = Host.objects.get(pk=host_id)
         except Host.DoesNotExist:
-            return {"success": False, "message": "主机不存在"}
+            logger.error(f"Host {host_id} not found")
+            raise HostNotFoundError(host_id)
+
         from backend.utils.ssh import SSHClient
         with SSHClient(host.ip_address, host.port, host.username, host.password, timeout=60) as client:
             stdout, stderr, exit_code = client.execute_command(command)
-            return {
-                "success": exit_code == 0,
-                "message": "命令执行成功" if exit_code == 0 else stderr,
-                "stdout": stdout,
-                "stderr": stderr,
-                "exit_code": exit_code,
-            }
+            if exit_code == 0:
+                logger.info(f"Command executed successfully on host {host_id}")
+                return {
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "exit_code": exit_code
+                }
+            else:
+                logger.error(f"Command failed on host {host_id}: {stderr}")
+                raise RemoteCommandError(stderr or "命令执行失败")
 
     @staticmethod
-    def batch_update_password(host_ids, new_password=None, key="culinux"):
-        """批量修改主机密码"""
+    def batch_update_password(host_ids: List[int], new_password: str = None, key: str = "culinux") -> Dict:
+        """批量修改主机密码
+
+        Returns:
+            {
+                "password": str,
+                "updated": int,
+                "failed": list
+            }
+        """
         if not new_password:
             new_password = HostService.generate_random_password()
         encrypted_password = HostService.hash_password(new_password, key)
@@ -640,12 +700,12 @@ class HostService:
                 failed.append(f"Host {host_id} not found")
             except Exception as e:
                 failed.append(f"Host {host_id}: {str(e)}")
+
+        logger.info(f"Batch password update: updated {updated}, failed {len(failed)}")
         return {
-            "success": len(failed) == 0,
-            "message": f"更新完成：成功 {updated} 条，失败 {len(failed)} 条",
             "password": new_password,
             "updated": updated,
-            "failed": failed,
+            "failed": failed
         }
 
 
@@ -707,7 +767,7 @@ class VMService:
             return False
 
     @staticmethod
-    def start_vm(vm_id: int) -> Dict:
+    def start_vm(vm_id: int) -> str:
         """
         启动 VM
 
@@ -715,12 +775,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -733,33 +798,37 @@ class VMService:
             )
             conn = client._get_conn()
             if conn is None:
-                # libvirt 不可用，回退到模拟模式
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM启动成功（模拟模式）'}
+                logger.info(f"VM {vm_id} started (simulation mode)")
+                return 'VM启动成功（模拟模式）'
             success, message = client.start_domain(vm.name)
             client.close()
 
             if success:
                 vm.status = 'running'
                 vm.save()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} started")
+                return message
+            else:
+                logger.error(f"Failed to start VM {vm_id}: {message}")
+                raise VMOperationError(message)
         except ImportError:
-            # libvirt 未安装，回退到模拟模式
             vm.status = 'running'
             vm.save()
-            return {'success': True, 'message': 'VM启动成功（模拟模式）'}
+            logger.info(f"VM {vm_id} started (simulation mode - libvirt not installed)")
+            return 'VM启动成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to start VM {vm_id}: {e}")
-            # 连接失败时回退到模拟模式
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM启动成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} started (simulation mode - connection failed)")
+                return 'VM启动成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
-    def stop_vm(vm_id: int) -> Dict:
+    def stop_vm(vm_id: int) -> str:
         """
         停止 VM（强制关机）
 
@@ -767,12 +836,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -787,28 +861,35 @@ class VMService:
             if conn is None:
                 vm.status = 'stopped'
                 vm.save()
-                return {'success': True, 'message': 'VM停止成功（模拟模式）'}
+                logger.info(f"VM {vm_id} stopped (simulation mode)")
+                return 'VM停止成功（模拟模式）'
             success, message = client.stop_domain(vm.name)
             client.close()
 
             if success:
                 vm.status = 'stopped'
                 vm.save()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} stopped")
+                return message
+            else:
+                logger.error(f"Failed to stop VM {vm_id}: {message}")
+                raise VMOperationError(message)
         except ImportError:
             vm.status = 'stopped'
             vm.save()
-            return {'success': True, 'message': 'VM停止成功（模拟模式）'}
+            logger.info(f"VM {vm_id} stopped (simulation mode - libvirt not installed)")
+            return 'VM停止成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to stop VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'stopped'
                 vm.save()
-                return {'success': True, 'message': 'VM停止成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} stopped (simulation mode - connection failed)")
+                return 'VM停止成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
-    def reboot_vm(vm_id: int) -> Dict:
+    def reboot_vm(vm_id: int) -> str:
         """
         重启 VM
 
@@ -816,12 +897,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -836,28 +922,35 @@ class VMService:
             if conn is None:
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM重启成功（模拟模式）'}
+                logger.info(f"VM {vm_id} rebooted (simulation mode)")
+                return 'VM重启成功（模拟模式）'
             success, message = client.reboot_domain(vm.name)
             client.close()
 
             if success:
                 vm.status = 'running'
                 vm.save()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} rebooted")
+                return message
+            else:
+                logger.error(f"Failed to reboot VM {vm_id}: {message}")
+                raise VMOperationError(message)
         except ImportError:
             vm.status = 'running'
             vm.save()
-            return {'success': True, 'message': 'VM重启成功（模拟模式）'}
+            logger.info(f"VM {vm_id} rebooted (simulation mode - libvirt not installed)")
+            return 'VM重启成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to reboot VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM重启成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} rebooted (simulation mode - connection failed)")
+                return 'VM重启成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
-    def pause_vm(vm_id: int) -> Dict:
+    def pause_vm(vm_id: int) -> str:
         """
         暂停 VM
 
@@ -865,12 +958,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -885,28 +983,35 @@ class VMService:
             if conn is None:
                 vm.status = 'paused'
                 vm.save()
-                return {'success': True, 'message': 'VM暂停成功（模拟模式）'}
+                logger.info(f"VM {vm_id} paused (simulation mode)")
+                return 'VM暂停成功（模拟模式）'
             success, message = client.pause_domain(vm.name)
             client.close()
 
             if success:
                 vm.status = 'paused'
                 vm.save()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} paused")
+                return message
+            else:
+                logger.error(f"Failed to pause VM {vm_id}: {message}")
+                raise VMOperationError(message)
         except ImportError:
             vm.status = 'paused'
             vm.save()
-            return {'success': True, 'message': 'VM暂停成功（模拟模式）'}
+            logger.info(f"VM {vm_id} paused (simulation mode - libvirt not installed)")
+            return 'VM暂停成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to pause VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'paused'
                 vm.save()
-                return {'success': True, 'message': 'VM暂停成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} paused (simulation mode - connection failed)")
+                return 'VM暂停成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
-    def resume_vm(vm_id: int) -> Dict:
+    def resume_vm(vm_id: int) -> str:
         """
         恢复 VM
 
@@ -914,12 +1019,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -934,52 +1044,35 @@ class VMService:
             if conn is None:
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM恢复成功（模拟模式）'}
+                logger.info(f"VM {vm_id} resumed (simulation mode)")
+                return 'VM恢复成功（模拟模式）'
             success, message = client.resume_domain(vm.name)
             client.close()
 
             if success:
                 vm.status = 'running'
                 vm.save()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} resumed")
+                return message
+            else:
+                logger.error(f"Failed to resume VM {vm_id}: {message}")
+                raise VMOperationError(message)
         except ImportError:
             vm.status = 'running'
             vm.save()
-            return {'success': True, 'message': 'VM恢复成功（模拟模式）'}
+            logger.info(f"VM {vm_id} resumed (simulation mode - libvirt not installed)")
+            return 'VM恢复成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to resume VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.status = 'running'
                 vm.save()
-                return {'success': True, 'message': 'VM恢复成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
-
-        try:
-            from backend.utils.libvirt_client import LibvirtClient
-
-            host = vm.host
-            client = LibvirtClient(
-                host=host.ip_address,
-                username=host.username,
-                password=host.password,
-            )
-            success, message = client.resume_domain(vm.name)
-            client.close()
-
-            if success:
-                vm.status = 'running'
-                vm.save()
-            return {'success': success, 'message': message}
-        except ImportError:
-            vm.status = 'running'
-            vm.save()
-            return {'success': True, 'message': 'VM恢复成功（模拟模式）'}
-        except Exception as e:
-            logger.error(f"Failed to resume VM {vm_id}: {e}")
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} resumed (simulation mode - connection failed)")
+                return 'VM恢复成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
-    def get_vm_status(vm_id: int) -> Dict:
+    def get_vm_status(vm_id: int) -> str:
         """
         获取 VM 状态
 
@@ -987,12 +1080,16 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str, 'status': str}
+            VM 状态字符串
+
+        Raises:
+            VMNotFoundError: VM不存在
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在', 'status': None}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -1008,17 +1105,20 @@ class VMService:
 
             if state is not None:
                 libvirt_status = LIBVIRT_STATE_MAP.get(state, 'unknown')
-                return {'success': True, 'message': '查询成功', 'status': libvirt_status}
+                logger.info(f"Got VM {vm_id} status from libvirt: {libvirt_status}")
+                return libvirt_status
             else:
-                return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+                logger.info(f"Got VM {vm_id} status from database: {vm.status}")
+                return vm.status
         except ImportError:
-            return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+            logger.info(f"Got VM {vm_id} status from database (libvirt not installed): {vm.status}")
+            return vm.status
         except Exception as e:
-            logger.error(f"Failed to get VM status {vm_id}: {e}")
-            return {'success': True, 'message': '查询成功（使用数据库状态）', 'status': vm.status}
+            logger.error(f"Failed to get VM status {vm_id} from libvirt, using database: {e}")
+            return vm.status
 
     @staticmethod
-    def delete_vm_from_libvirt(vm_id: int) -> Dict:
+    def delete_vm_from_libvirt(vm_id: int) -> str:
         """
         从 libvirt 删除 VM（先关机再删除定义）
 
@@ -1026,12 +1126,17 @@ class VMService:
             vm_id: VM ID
 
         Returns:
-            {'success': bool, 'message': str}
+            结果消息
+
+        Raises:
+            VMNotFoundError: VM不存在
+            VMOperationError: 操作失败
         """
         try:
             vm = VM.objects.get(pk=vm_id)
         except VM.DoesNotExist:
-            return {'success': False, 'message': 'VM不存在'}
+            logger.error(f"VM {vm_id} not found")
+            raise VMNotFoundError(vm_id)
 
         try:
             from backend.utils.libvirt_client import LibvirtClient
@@ -1045,27 +1150,31 @@ class VMService:
             conn = client._get_conn()
             if conn is None:
                 vm.delete()
-                return {'success': True, 'message': 'VM删除成功（模拟模式）'}
+                logger.info(f"VM {vm_id} deleted (simulation mode)")
+                return 'VM删除成功（模拟模式）'
 
-            # 先尝试关机
             client.stop_domain(vm.name)
-            # 再删除定义
             success, message = client.undefine_domain(vm.name)
             client.close()
 
             if success:
-                # 从数据库删除
                 vm.delete()
-            return {'success': success, 'message': message}
+                logger.info(f"VM {vm_id} deleted from libvirt and database")
+                return message
+            else:
+                logger.error(f"Failed to delete VM {vm_id} from libvirt: {message}")
+                raise VMOperationError(message)
         except ImportError:
             vm.delete()
-            return {'success': True, 'message': 'VM删除成功（模拟模式）'}
+            logger.info(f"VM {vm_id} deleted (simulation mode - libvirt not installed)")
+            return 'VM删除成功（模拟模式）'
         except Exception as e:
             logger.error(f"Failed to delete VM {vm_id}: {e}")
             if 'connection' in str(e).lower() or 'Failed to connect' in str(e):
                 vm.delete()
-                return {'success': True, 'message': 'VM删除成功（模拟模式）'}
-            return {'success': False, 'message': str(e)}
+                logger.info(f"VM {vm_id} deleted (simulation mode - connection failed)")
+                return 'VM删除成功（模拟模式）'
+            raise VMOperationError(str(e))
 
     @staticmethod
     def create_vm_in_libvirt(vm_id: int) -> Dict:
