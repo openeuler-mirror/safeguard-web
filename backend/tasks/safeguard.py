@@ -4,6 +4,8 @@ Safeguard 相关 Celery 任务
 import logging
 from datetime import datetime
 from celery import shared_task
+import paramiko
+from django.db import DatabaseError
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +71,8 @@ def apply_policy_task(self, task_id: int):
                 policy.applied_at = datetime.now()
                 policy.last_sync = datetime.now()
 
-        except Exception as ssh_error:
-            logger.error(f'SSH connection failed for host {host_id}: {ssh_error}')
+        except (paramiko.SSHException, IOError, OSError) as ssh_error:
+            logger.error(f'SSH connection failed for host {task.host_id}: {ssh_error}')
             task.status = 'failed'
             task.error_message = str(ssh_error)
             policy.status = 'failed'
@@ -91,7 +93,8 @@ def apply_policy_task(self, task_id: int):
     except PolicyApplyTask.DoesNotExist:
         logger.error(f'Policy apply task {task_id} not found')
         raise
-    except Exception as e:
+    except (DatabaseError, IOError, OSError) as e:
+        # 只有数据库错误或IO错误才重试，这些可能是暂时的
         logger.error(f'Error executing policy apply task {task_id}: {e}')
         # 重试
         if self.request.retries < self.max_retries:
@@ -104,7 +107,7 @@ def apply_policy_task(self, task_id: int):
                 task.error_message = str(e)
                 task.completed_at = datetime.now()
                 task.save()
-            except:
+            except PolicyApplyTask.DoesNotExist:
                 pass
             raise
 
@@ -155,7 +158,8 @@ def rollback_policy_task(self, task_id: int):
     except PolicyApplyTask.DoesNotExist:
         logger.error(f'Policy apply task {task_id} not found')
         raise
-    except Exception as e:
+    except DatabaseError as e:
+        # 只有数据库错误才重试
         logger.error(f'Error executing policy rollback task {task_id}: {e}')
         # 重试
         if self.request.retries < self.max_retries:
@@ -167,7 +171,7 @@ def rollback_policy_task(self, task_id: int):
                 task.error_message = str(e)
                 task.completed_at = datetime.now()
                 task.save()
-            except:
+            except PolicyApplyTask.DoesNotExist:
                 pass
             raise
 
@@ -181,11 +185,15 @@ def collect_file_monitor_events():
 
     logger.info('Starting scheduled file monitor events collection')
 
-    result = AuditService.collect_file_events()
-
-    if result['success']:
+    try:
+        result = AuditService.collect_file_events()
         logger.info(f'File monitor events collection completed: {result["total_events"]} events, {result.get("saved_count", 0)} saved')
-    else:
-        logger.error(f'File monitor events collection failed: {result.get("error")}')
-
-    return result
+        return result
+    except Exception as e:
+        logger.error(f'File monitor events collection failed: {e}')
+        return {
+            'events': [],
+            'total_events': 0,
+            'saved_count': 0,
+            'error': str(e),
+        }
