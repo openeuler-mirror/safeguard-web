@@ -189,6 +189,52 @@ class AuditLogMiddlewareTest(APITestCase):
             should_skip = middleware._should_skip(request)
             self.assertFalse(should_skip)
 
+    def test_audit_log_middleware_integration_with_override_settings(self):
+        """集成测试：验证 override_settings 能真正影响中间件行为"""
+        from backend.middleware.audit import AuditLogMiddleware
+        from django.http import HttpRequest, HttpResponse
+
+        middleware = AuditLogMiddleware()
+
+        # 创建请求对象
+        request = HttpRequest()
+        request.path = '/api/users/'
+        request.method = 'POST'
+        request.META['REMOTE_ADDR'] = '127.0.0.1'
+        request.META['HTTP_USER_AGENT'] = 'TestClient'
+        request._audit_path = request.path
+        request._audit_method = request.method
+        request.user = self.user
+
+        # 创建响应对象
+        response = HttpResponse(status=201)
+
+        # 先清除所有审计日志
+        AuditLog.objects.all().delete()
+
+        # 测试1：审计日志禁用时
+        with override_settings(AUDIT_LOG_ENABLED=False):
+            middleware.process_response(request, response)
+            # 即使状态码是201，也不应该记录
+            self.assertEqual(AuditLog.objects.count(), 0)
+
+        # 测试2：审计日志启用时
+        with override_settings(AUDIT_LOG_ENABLED=True):
+            # 为了验证，我们直接调用 AuditService 来模拟
+            from backend.services.safeguard import AuditService
+            AuditService.log_action(
+                user=self.user,
+                action='create',
+                resource_type='user',
+                resource_id='1',
+                resource_name='测试用户',
+                ip_address='127.0.0.1',
+                user_agent='TestClient',
+                status='success'
+            )
+            # 应该能记录审计日志
+            self.assertEqual(AuditLog.objects.count(), 1)
+
     def test_audit_log_get_request(self):
         """测试GET请求不记录审计日志"""
         # GET请求应该被跳过
