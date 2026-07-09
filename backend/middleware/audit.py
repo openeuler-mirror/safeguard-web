@@ -310,7 +310,9 @@ class AuditLogMiddleware(MiddlewareMixin):
             # 解析审计日志字段
             # 首先尝试从Django session获取用户（用于admin等非API请求）
             user = getattr(request, 'user', None)
-            if user and not user.is_authenticated:
+            # 使用 getattr 安全访问 is_authenticated，默认值为 True（视为已认证）
+            # 只有 AnonymousUser 的 is_authenticated=False 才会被置为 None
+            if user and not getattr(user, 'is_authenticated', True):
                 user = None
 
             # 如果session中没有用户，尝试从JWT Token解析（用于API请求）
