@@ -93,6 +93,17 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'backend.middleware.audit.AuditLogMiddleware',
+]
+
+# 审计日志配置
+AUDIT_LOG_ENABLED = True
+AUDIT_WHITELIST_PATHS = [
+    '/health',
+    '/static/',
+    '/api/schema/',
+    '/api/docs/',
+    '/favicon.ico',
 ]
 
 ROOT_URLCONF = 'safeguard_web.urls'
