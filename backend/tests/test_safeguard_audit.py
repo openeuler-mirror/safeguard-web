@@ -887,4 +887,40 @@ class MonitorServiceTest(APITestCase):
         data = result['data'][0]
         self.assertIn('cpu_usage', data)
         self.assertIn('load_1m', data)
+
+    def test_get_monitor_history_pagination(self):
+        """测试分页查询 (TC-MON-016)"""
+        # 创建更多测试数据
+        for i in range(15):
+            HostMonitorData.objects.create(
+                host=self.host,
+                cpu_usage=45.0 + i,
+                load_1m=0.5 + i * 0.1,
+            )
+
+        # 查询第二页，每页5条
+        result = MonitorService.get_monitor_history(self.host.id, page=2, page_size=5)
+
+        self.assertEqual(result['total'], 15)
+        self.assertEqual(result['page'], 2)
+        self.assertEqual(result['page_size'], 5)
+        self.assertEqual(len(result['data']), 5)
+
+    def test_get_monitor_history_pagination_params_validation(self):
+        """测试分页参数验证 (TC-MON-017)"""
+        # 创建测试数据
+        for i in range(5):
+            HostMonitorData.objects.create(host=self.host, cpu_usage=45.0 + i)
+
+        # 测试page < 1的情况，应该被标准化为1
+        result = MonitorService.get_monitor_history(self.host.id, page=0, page_size=100)
+        self.assertEqual(result['page'], 1)
+
+        # 测试page_size > 1000的情况，应该被标准化为1000
+        result = MonitorService.get_monitor_history(self.host.id, page=1, page_size=2000)
+        self.assertEqual(result['page_size'], 1000)
+
+        # 测试page_size < 1的情况，应该被标准化为100
+        result = MonitorService.get_monitor_history(self.host.id, page=1, page_size=0)
+        self.assertEqual(result['page_size'], 100)
         self.assertNotIn('memory_total', data)
