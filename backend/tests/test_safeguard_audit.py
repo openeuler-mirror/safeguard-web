@@ -151,14 +151,13 @@ class AuditLogMiddlewareTest(APITestCase):
 
     def setUp(self):
         """创建测试用户并获取JWT token"""
-        # 创建一个管理员权限的用户用于测试
+        # 创建一个用户用于测试
         self.user = Users.objects.create(
             user='testuser',
             password='testpass123',
             nickname='测试用户',
             phone='13800138000',
-            email='test@example.com',
-            is_superuser=True  # 设为超级管理员
+            email='test@example.com'
         )
 
         # 清除审计日志
@@ -174,7 +173,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from django.http import HttpRequest, HttpResponse
 
         # 直接测试中间件的 _should_skip 方法
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
         request = HttpRequest()
         request.path = '/api/test/'
         request.method = 'POST'
@@ -194,7 +197,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from backend.middleware.audit import AuditLogMiddleware
         from django.http import HttpRequest, HttpResponse
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
 
         # 创建请求对象
         request = HttpRequest()
@@ -241,7 +248,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from django.http import HttpRequest, HttpResponse
         from backend.models import Users
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
 
         # 创建 Users 模型实例（没有 is_authenticated 属性）
         user = Users.objects.create(
@@ -283,7 +294,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from django.http import HttpRequest
         from django.contrib.auth.models import AnonymousUser
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
 
         # 创建请求对象
         request = HttpRequest()
@@ -305,7 +320,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from backend.middleware.audit import AuditLogMiddleware
         from django.http import HttpRequest
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
         request = HttpRequest()
         request.path = '/api/users/me/'
         request.method = 'GET'
@@ -318,7 +337,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from backend.middleware.audit import AuditLogMiddleware
         from django.http import HttpRequest
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
         request = HttpRequest()
         request.path = '/api/users/'
 
@@ -334,7 +357,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from backend.middleware.audit import AuditLogMiddleware
         from django.http import HttpRequest
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
         request = HttpRequest()
         request.method = 'POST'
 
@@ -373,7 +400,11 @@ class AuditLogMiddlewareTest(APITestCase):
         from backend.middleware.audit import AuditLogMiddleware
         from django.http import HttpRequest, HttpResponse
 
-        middleware = AuditLogMiddleware()
+        # 创建中间件时传入一个简单的get_response函数
+        def dummy_get_response(request):
+            from django.http import HttpResponse
+            return HttpResponse()
+        middleware = AuditLogMiddleware(dummy_get_response)
 
         # 创建模拟请求
         request = HttpRequest()
@@ -391,24 +422,13 @@ class AuditLogMiddlewareTest(APITestCase):
         response = HttpResponse(status=201)
         response.data = {'id': 1, 'name': '测试策略'}
 
+        # 先清除审计日志
+        AuditLog.objects.all().delete()
+
         # 确保审计日志启用
         with override_settings(AUDIT_LOG_ENABLED=True):
             # 处理响应
             middleware.process_response(request, response)
-
-            # 检查审计日志是否创建（注意：由于是异步的，我们直接检查 AuditService）
-            # 为了测试，我们直接调用 AuditService
-            from backend.services.safeguard import AuditService
-            AuditService.log_action(
-                user=self.user,
-                action='create',
-                resource_type='policy_template',
-                resource_id='1',
-                resource_name='测试策略',
-                ip_address='127.0.0.1',
-                user_agent='TestClient',
-                status='success'
-            )
 
             # 验证审计日志已创建
             self.assertEqual(AuditLog.objects.count(), 1)
