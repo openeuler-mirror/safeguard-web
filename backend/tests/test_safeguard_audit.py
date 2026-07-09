@@ -1091,3 +1091,43 @@ class PolicyServiceTest(APITestCase):
         """测试策略模板不存在 (TC-POL-006)"""
         with self.assertRaises(PolicyTemplateNotFoundError):
             PolicyService.get_policy_template(99999)
+
+    def test_list_policy_templates_success(self):
+        """测试列出策略模板成功 (TC-POL-007)"""
+        SafeguardPolicyTemplate.objects.create(
+            name='模板1',
+            template_type='general',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        SafeguardPolicyTemplate.objects.create(
+            name='模板2',
+            template_type='custom',
+            config={'rules': []},
+            created_by=self.user,
+        )
+
+        result = PolicyService.list_policy_templates()
+
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(len(result['data']), 2)
+
+    def test_list_policy_templates_filter_by_type(self):
+        """测试按类型过滤 (TC-POL-008)"""
+        SafeguardPolicyTemplate.objects.create(
+            name='一般模板',
+            template_type='general',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        SafeguardPolicyTemplate.objects.create(
+            name='自定义模板',
+            template_type='custom',
+            config={'rules': []},
+            created_by=self.user,
+        )
+
+        result = PolicyService.list_policy_templates(template_type='general')
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['name'], '一般模板')
