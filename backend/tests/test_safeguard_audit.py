@@ -597,3 +597,56 @@ class HostInfoServiceTest(APITestCase):
         result = HostInfoService.control_service(self.host.id, 'sshd', 'stop')
 
         self.assertTrue(result['success'])
+
+    @mock.patch('backend.services.safeguard.get_service_logs')
+    def test_get_service_logs(self, mock_get_logs):
+        """测试获取服务日志"""
+        mock_get_logs.return_value = {
+            'success': True,
+            'service': 'sshd',
+            'logs': [
+                {'timestamp': '2024-07-06 10:00:00', 'message': 'Accepted publickey'},
+                {'timestamp': '2024-07-06 10:01:00', 'message': 'Connection closed'},
+            ],
+        }
+
+        result = HostInfoService.get_service_logs(self.host.id, 'sshd', 50)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['logs']), 2)
+
+    @mock.patch('backend.services.safeguard.kill_process')
+    def test_kill_process_success(self, mock_kill):
+        """测试终止进程成功"""
+        mock_kill.return_value = {
+            'success': True,
+            'pid': 1234,
+            'force': False,
+            'message': 'Process killed',
+        }
+
+        result = HostInfoService.kill_process(self.host.id, 1234)
+
+        self.assertTrue(result['success'])
+        mock_kill.assert_called_once_with(self.host, 1234, False)
+
+    def test_kill_process_host_not_found(self):
+        """测试终止进程时主机不存在"""
+        with self.assertRaises(HostNotFoundError):
+            HostInfoService.kill_process(99999, 1234)
+
+    @mock.patch('backend.services.safeguard.collect_system_accounts')
+    def test_get_accounts_info_success(self, mock_collect):
+        """测试获取系统账户信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'accounts': [
+                {'username': 'root', 'uid': 0, 'gid': 0, 'shell': '/bin/bash'},
+                {'username': 'user', 'uid': 1000, 'gid': 1000, 'shell': '/bin/bash'},
+            ],
+        }
+
+        result = HostInfoService.get_accounts_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['accounts']), 2)
