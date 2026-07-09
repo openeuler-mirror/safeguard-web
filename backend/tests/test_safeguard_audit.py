@@ -552,3 +552,48 @@ class HostInfoServiceTest(APITestCase):
 
         self.assertTrue(result['success'])
         self.assertEqual(len(result['processes']), 2)
+
+    @mock.patch('backend.services.safeguard.collect_services')
+    def test_get_services_info_success(self, mock_collect):
+        """测试获取服务信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'services': [
+                {'name': 'sshd', 'status': 'running', 'enabled': True},
+                {'name': 'nginx', 'status': 'running', 'enabled': True},
+            ],
+        }
+
+        result = HostInfoService.get_services_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['services']), 2)
+
+    @mock.patch('backend.services.safeguard.control_service')
+    def test_control_service_start(self, mock_control):
+        """测试启动服务"""
+        mock_control.return_value = {
+            'success': True,
+            'service': 'sshd',
+            'action': 'start',
+            'message': 'Service started',
+        }
+
+        result = HostInfoService.control_service(self.host.id, 'sshd', 'start')
+
+        self.assertTrue(result['success'])
+        mock_control.assert_called_once_with(self.host, 'sshd', 'start')
+
+    @mock.patch('backend.services.safeguard.control_service')
+    def test_control_service_stop(self, mock_control):
+        """测试停止服务"""
+        mock_control.return_value = {
+            'success': True,
+            'service': 'sshd',
+            'action': 'stop',
+            'message': 'Service stopped',
+        }
+
+        result = HostInfoService.control_service(self.host.id, 'sshd', 'stop')
+
+        self.assertTrue(result['success'])
