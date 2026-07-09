@@ -923,4 +923,82 @@ class MonitorServiceTest(APITestCase):
         # 测试page_size < 1的情况，应该被标准化为100
         result = MonitorService.get_monitor_history(self.host.id, page=1, page_size=0)
         self.assertEqual(result['page_size'], 100)
-        self.assertNotIn('memory_total', data)
+
+    def test_get_monitor_history_filter_by_time_range(self):
+        """测试时间范围过滤 (TC-MON-014)"""
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+
+        # 创建测试数据，让Django自动设置时间戳
+        data1 = HostMonitorData.objects.create(host=self.host, cpu_usage=45.0)
+        data2 = HostMonitorData.objects.create(host=self.host, cpu_usage=50.0)
+
+        # 获取data1的时间戳，然后查询data1之后的数据
+        start_time = data1.timestamp - timedelta(seconds=1)
+        end_time = data2.timestamp + timedelta(seconds=1)
+        result = MonitorService.get_monitor_history(self.host.id, start_time=start_time, end_time=end_time)
+
+        # 应该返回2条记录
+        self.assertEqual(result['total'], 2)
+
+    def test_save_monitor_data_success(self):
+        """测试保存监控数据成功 (TC-MON-010)"""
+        data = {
+            'cpu': {
+                'success': True,
+                'cpu_usage': {'usage_percent': 45.5},
+                'load_avg': {'load_1min': 0.8, 'load_5min': 0.6, 'load_15min': 0.5},
+            },
+            'memory': {
+                'success': True,
+                'memory': {'mem_total': 16384, 'mem_used': 4096, 'mem_percent': 25.0},
+            },
+            'network': {
+                'success': True,
+                'total_rx_bytes': 3072000,
+                'total_tx_bytes': 1536000,
+            },
+            'disk': {
+                'success': True,
+                'disks': [{'sectors_read': 1000, 'sectors_written': 2000}],
+            },
+        }
+
+        MonitorService.save_monitor_data(self.host.id, data)
+
+        # 验证数据已保存
+        saved_data = HostMonitorData.objects.filter(host=self.host).first()
+        self.assertIsNotNone(saved_data)
+        self.assertEqual(saved_data.cpu_usage, 45.5)
+        self.assertEqual(saved_data.load_1m, 0.8)
+        self.assertEqual(saved_data.memory_total, 16384)
+        self.assertEqual(saved_data.network_in, 3072000)
+        self.assertEqual(saved_data.network_out, 1536000)
+        self.assertEqual(saved_data.disk_read, 512000)  # 1000 * 512
+        self.assertEqual(saved_data.disk_write, 1024000)  # 2000 * 512
+
+    def test_save_monitor_data_host_not_found(self):
+        """测试保存监控数据时主机不存在"""
+        data = {'cpu': {'success': True}}
+        with self.assertRaises(HostNotFoundError):
+            MonitorService.save_monitor_data(99999, data)
+
+    @mock.patch('backend.services.safeguard.MonitorService.save_monitor_data')
+    def test_batch_save_monitor_data_success(self, mock_save):
+        """测试批量保存成功 (TC-MON-018)"""
+        mock_save.return_value = None
+        host_ids = [self.host.id, self.host.id]
+        data_list = [{'cpu': {'success': True}}, {'cpu': {'success': True}}]
+
+        result = MonitorService.batch_save_monitor_data(host_ids, data_list)
+
+        self.assertEqual(result['success_count'], 2)
+        self.assertEqual(len(result['failed_ids']), 0)
+
+    def test_batch_save_monitor_data_length_mismatch(self):
+        """测试参数长度不匹配 (TC-MON-020)"""
+        host_ids = [self.host.id]
+        data_list = [{'cpu': {'success': True}}, {'cpu': {'success': True}}]
+
+        with self.assertRaises(MonitorDataSaveError):
+            MonitorService.batch_save_monitor_data(host_ids, data_list)
