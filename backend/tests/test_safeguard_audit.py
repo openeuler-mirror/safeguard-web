@@ -1,15 +1,45 @@
 """
-Test Safeguard Audit Middleware
+Test Safeguard Services
 
-测试审计日志中间件功能
+测试 Safeguard 主机安全功能，包括：
+- HostInfoService: 主机信息采集服务
+- MonitorService: 监控数据采集服务
+- PolicyService: 策略管理服务
+- AuditService: 审计日志服务
 """
+from unittest import mock
+from datetime import datetime, timedelta
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.test import override_settings
 
 from backend.models import Users
+from backend.models.host import Host
 from backend.models.audit.audit_log import AuditLog
+from backend.models.safeguard.policy import (
+    SafeguardPolicyTemplate,
+    HostSafeguardPolicy,
+    PolicyApplyTask,
+)
+from backend.models.safeguard.monitor import HostMonitorData
+from backend.models.safeguard.file_monitor import FileMonitorRule, FileMonitorEvent
+from backend.common.exceptions import (
+    HostNotFoundError,
+    HostInfoCollectError,
+    MonitorCollectError,
+    MonitorDataSaveError,
+    PolicyTemplateNotFoundError,
+    HostPolicyNotFoundError,
+    TaskNotFoundError,
+    OperationError,
+)
+from backend.services.safeguard import (
+    HostInfoService,
+    MonitorService,
+    PolicyService,
+    AuditService,
+)
 
 
 class AuditLogModelTest(APITestCase):
@@ -436,3 +466,89 @@ class AuditLogMiddlewareTest(APITestCase):
             self.assertEqual(log.user, self.user)
             self.assertEqual(log.action, 'create')
             self.assertEqual(log.resource_type, 'policy_template')
+
+
+class HostInfoServiceTest(APITestCase):
+    """HostInfoService 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            ssh_port=22,
+            ssh_username='root',
+            ssh_password='testpass',
+            os_type='linux',
+        )
+
+    @mock.patch('backend.services.safeguard.collect_host_hardware')
+    def test_get_system_info_success(self, mock_collect):
+        """测试获取系统信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'hostname': 'test-host',
+            'os': 'Linux',
+            'kernel': '5.4.0',
+            'cpu': {'cores': 4, 'model': 'Intel i7'},
+            'memory': {'total': 16384, 'used': 4096},
+        }
+
+        result = HostInfoService.get_system_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['hostname'], 'test-host')
+        mock_collect.assert_called_once_with(self.host)
+
+    def test_get_system_info_host_not_found(self):
+        """测试主机不存在的情况"""
+        with self.assertRaises(HostNotFoundError):
+            HostInfoService.get_system_info(99999)
+
+    @mock.patch('backend.services.safeguard.collect_host_hardware')
+    def test_get_system_info_collect_failed(self, mock_collect):
+        """测试采集失败的情况"""
+        mock_collect.side_effect = Exception('Connection failed')
+
+        with self.assertRaises(HostInfoCollectError):
+            HostInfoService.get_system_info(self.host.id)
+
+    @mock.patch('backend.services.safeguard.collect_ports')
+    def test_get_ports_info_success(self, mock_collect):
+        """测试获取端口信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'listening_ports': [
+                {'port': 22, 'protocol': 'tcp', 'process': 'sshd'},
+                {'port': 80, 'protocol': 'tcp', 'process': 'nginx'},
+            ],
+            'high_risk_ports': [22],
+        }
+
+        result = HostInfoService.get_ports_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['listening_ports']), 2)
+        mock_collect.assert_called_once_with(self.host)
+
+    @mock.patch('backend.services.safeguard.collect_processes')
+    def test_get_processes_info_success(self, mock_collect):
+        """测试获取进程信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'processes': [
+                {'pid': 1, 'name': 'systemd', 'cpu': 0.1, 'memory': 2.0},
+                {'pid': 1234, 'name': 'nginx', 'cpu': 0.5, 'memory': 3.2},
+            ],
+            'high_resource': [{'pid': 1234, 'name': 'nginx'}],
+        }
+
+        result = HostInfoService.get_processes_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['processes']), 2)
