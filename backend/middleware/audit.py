@@ -10,7 +10,6 @@ from typing import Optional, Dict, Any
 from django.http import HttpRequest, HttpResponse
 from django.utils.deprecation import MiddlewareMixin
 
-from safeguard_web.settings import AUDIT_LOG_ENABLED, AUDIT_WHITELIST_PATHS
 from backend.services.safeguard import AuditService
 from backend.authentication import RedisJWTAuthentication
 
@@ -180,6 +179,8 @@ class AuditLogMiddleware(MiddlewareMixin):
         Returns:
             bool: True表示跳过，False表示需要记录
         """
+        from safeguard_web.settings import AUDIT_LOG_ENABLED, AUDIT_WHITELIST_PATHS
+
         # 如果审计功能未启用，直接跳过
         if not AUDIT_LOG_ENABLED:
             return True
