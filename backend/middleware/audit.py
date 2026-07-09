@@ -5,7 +5,6 @@ This middleware automatically logs user operations for audit purposes.
 """
 import logging
 import json
-import threading
 from typing import Optional, Dict, Any
 from django.http import HttpRequest, HttpResponse
 from django.utils.deprecation import MiddlewareMixin
@@ -31,7 +30,7 @@ class AuditLogMiddleware(MiddlewareMixin):
     - Whitelist support for excluding certain paths
     - Captures request/response details
     - Records IP address and User-Agent
-    - Async logging to avoid blocking response
+    - Synchronous logging to ensure audit integrity
     """
 
     # 请求方法到操作类型的映射
@@ -336,8 +335,9 @@ class AuditLogMiddleware(MiddlewareMixin):
             if not resource_id and response_data.get('id'):
                 resource_id = str(response_data['id'])
 
-            # 记录审计日志（异步）
-            self._log_audit_async(
+            # 记录审计日志（同步执行，确保日志不丢失）
+            # 改为同步是因为：1) DB写入很快 2) 避免进程退出时daemon线程被强制终止导致日志丢失
+            self._do_log_audit(
                 user=user,
                 action=action,
                 resource_type=resource_type,
@@ -356,20 +356,6 @@ class AuditLogMiddleware(MiddlewareMixin):
             logger.error(f'Failed to record audit log: {e}', exc_info=True)
 
         return response
-
-    def _log_audit_async(self, **kwargs):
-        """
-        异步记录审计日志
-
-        使用线程池异步执行，避免阻塞响应
-        """
-        try:
-            thread = threading.Thread(target=self._do_log_audit, kwargs=kwargs, daemon=True)
-            thread.start()
-        except Exception as e:
-            logger.error(f'Failed to start async audit log: {e}')
-            # 降级为同步记录
-            self._do_log_audit(**kwargs)
 
     def _do_log_audit(self, **kwargs):
         """
