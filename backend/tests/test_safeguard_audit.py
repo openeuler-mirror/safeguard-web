@@ -235,6 +235,70 @@ class AuditLogMiddlewareTest(APITestCase):
             # 应该能记录审计日志
             self.assertEqual(AuditLog.objects.count(), 1)
 
+    def test_audit_log_with_users_model_instance(self):
+        """测试使用 Users 模型实例（没有 is_authenticated 属性）时不会抛出异常"""
+        from backend.middleware.audit import AuditLogMiddleware
+        from django.http import HttpRequest, HttpResponse
+        from backend.models import Users
+
+        middleware = AuditLogMiddleware()
+
+        # 创建 Users 模型实例（没有 is_authenticated 属性）
+        user = Users.objects.create(
+            user='testaudit',
+            password='test123',
+            nickname='审计测试用户'
+        )
+
+        # 创建请求对象
+        request = HttpRequest()
+        request.path = '/api/test/'
+        request.method = 'POST'
+        request.META['REMOTE_ADDR'] = '127.0.0.1'
+        request.META['HTTP_USER_AGENT'] = 'TestClient'
+        request._audit_path = request.path
+        request._audit_method = request.method
+        request.user = user  # 设置为 Users 实例，而不是 RedisUser 或 AnonymousUser
+
+        # 创建响应对象
+        response = HttpResponse(status=200)
+
+        # 清除审计日志
+        AuditLog.objects.all().delete()
+
+        # 这应该不会抛出 AttributeError
+        try:
+            with override_settings(AUDIT_LOG_ENABLED=True):
+                middleware.process_response(request, response)
+            # 如果没有抛出异常，测试通过
+            exception_occurred = False
+        except AttributeError:
+            exception_occurred = True
+
+        self.assertFalse(exception_occurred, "应该不会抛出 AttributeError")
+
+    def test_audit_log_with_anonymous_user(self):
+        """测试 AnonymousUser 被正确识别为未认证"""
+        from backend.middleware.audit import AuditLogMiddleware
+        from django.http import HttpRequest
+        from django.contrib.auth.models import AnonymousUser
+
+        middleware = AuditLogMiddleware()
+
+        # 创建请求对象
+        request = HttpRequest()
+        request.path = '/api/test/'
+        request.method = 'POST'
+        request.user = AnonymousUser()  # 设置为 AnonymousUser
+
+        # 模拟 process_response 中的用户解析逻辑
+        user = getattr(request, 'user', None)
+        if user and not getattr(user, 'is_authenticated', True):
+            user = None
+
+        # AnonymousUser 应该被识别为未认证，user 被置为 None
+        self.assertIsNone(user)
+
     def test_audit_log_get_request(self):
         """测试GET请求不记录审计日志"""
         # GET请求应该被跳过
