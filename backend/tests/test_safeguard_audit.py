@@ -1057,3 +1057,37 @@ class PolicyServiceTest(APITestCase):
         self.assertEqual(result['description'], '')
         self.assertEqual(result['template_type'], 'custom')
         self.assertFalse(result['is_builtin'])
+
+    def test_create_policy_template_builtin(self):
+        """测试创建内置策略 (TC-POL-002)"""
+        data = {
+            'name': '内置策略模板',
+            'is_builtin': True,
+        }
+
+        result = PolicyService.create_policy_template(data, created_by=self.user)
+
+        self.assertEqual(result['name'], '内置策略模板')
+        self.assertTrue(result['is_builtin'])
+
+    def test_get_policy_template_success(self):
+        """测试获取策略模板成功 (TC-POL-005)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='获取测试',
+            description='获取测试描述',
+            template_type='general',
+            config={'rules': []},
+            created_by=self.user,
+        )
+
+        result = PolicyService.get_policy_template(template.id)
+
+        self.assertEqual(result['id'], template.id)
+        self.assertEqual(result['name'], '获取测试')
+        self.assertEqual(result['description'], '获取测试描述')
+        self.assertEqual(result['template_type'], 'general')
+
+    def test_get_policy_template_not_found(self):
+        """测试策略模板不存在 (TC-POL-006)"""
+        with self.assertRaises(PolicyTemplateNotFoundError):
+            PolicyService.get_policy_template(99999)
