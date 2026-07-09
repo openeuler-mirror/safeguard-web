@@ -517,3 +517,38 @@ class HostInfoServiceTest(APITestCase):
 
         with self.assertRaises(HostInfoCollectError):
             HostInfoService.get_system_info(self.host.id)
+
+    @mock.patch('backend.services.safeguard.collect_ports')
+    def test_get_ports_info_success(self, mock_collect):
+        """测试获取端口信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'listening_ports': [
+                {'port': 22, 'protocol': 'tcp', 'process': 'sshd'},
+                {'port': 80, 'protocol': 'tcp', 'process': 'nginx'},
+            ],
+            'high_risk_ports': [22],
+        }
+
+        result = HostInfoService.get_ports_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['listening_ports']), 2)
+        mock_collect.assert_called_once_with(self.host)
+
+    @mock.patch('backend.services.safeguard.collect_processes')
+    def test_get_processes_info_success(self, mock_collect):
+        """测试获取进程信息成功"""
+        mock_collect.return_value = {
+            'success': True,
+            'processes': [
+                {'pid': 1, 'name': 'systemd', 'cpu': 0.1, 'memory': 2.0},
+                {'pid': 1234, 'name': 'nginx', 'cpu': 0.5, 'memory': 3.2},
+            ],
+            'high_resource': [{'pid': 1234, 'name': 'nginx'}],
+        }
+
+        result = HostInfoService.get_processes_info(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['processes']), 2)
