@@ -143,3 +143,45 @@ class AuditServiceTest(APITestCase):
         result = AuditService.list_audit_logs(resource_type='policy')
 
         self.assertEqual(result['total'], 2)
+
+
+@override_settings(AUDIT_LOG_ENABLED=True)
+class AuditLogMiddlewareTest(APITestCase):
+    """审计日志中间件测试"""
+
+    def setUp(self):
+        """创建测试用户并获取JWT token"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户',
+            phone='13800138000',
+            email='test@example.com'
+        )
+
+        # 清除审计日志
+        AuditLog.objects.all().delete()
+
+        # 获取JWT token
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_audit_log_disabled(self):
+        """测试审计日志禁用时不记录"""
+        with override_settings(AUDIT_LOG_ENABLED=False):
+            # 发送一个POST请求
+            response = self.client.post('/api/users/', {
+                'user': 'newuser',
+                'password': 'newpass123',
+                'nickname': '新用户'
+            }, format='json')
+
+            # 检查没有审计日志
+            self.assertEqual(AuditLog.objects.count(), 0)
+
+    def test_audit_log_get_request(self):
+        """测试GET请求不记录审计日志"""
+        response = self.client.get('/api/users/me/')
+
+        # 检查没有审计日志
+        self.assertEqual(AuditLog.objects.count(), 0)
