@@ -481,9 +481,9 @@ class HostInfoServiceTest(APITestCase):
         self.host = Host.objects.create(
             hostname='test-host',
             ip_address='192.168.1.100',
-            ssh_port=22,
-            ssh_username='root',
-            ssh_password='testpass',
+            port=22,
+            username='root',
+            password='testpass',
             os_type='linux',
         )
 
