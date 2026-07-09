@@ -1181,3 +1181,30 @@ class PolicyServiceTest(APITestCase):
         """测试绑定策略时模板不存在 (TC-POL-014)"""
         with self.assertRaises(PolicyTemplateNotFoundError):
             PolicyService.bind_host_policy(self.host.id, 99999, created_by=self.user)
+
+    def test_get_host_policy_success(self):
+        """测试获取主机策略成功 (TC-POL-015)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='测试模板',
+            config={'rules': [{'type': 'port', 'action': 'block', 'port': 22}]},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+
+        result = PolicyService.get_host_policy(self.host.id)
+
+        self.assertEqual(result['id'], policy.id)
+        self.assertEqual(result['host_id'], self.host.id)
+        self.assertEqual(result['template_id'], template.id)
+        self.assertEqual(result['status'], 'pending')
+
+    def test_get_host_policy_not_found(self):
+        """测试主机策略不存在 (TC-POL-016)"""
+        with self.assertRaises(HostPolicyNotFoundError):
+            PolicyService.get_host_policy(self.host.id)
