@@ -12,6 +12,7 @@ from django.utils.deprecation import MiddlewareMixin
 
 from safeguard_web.settings import AUDIT_LOG_ENABLED, AUDIT_WHITELIST_PATHS
 from backend.services.safeguard import AuditService
+from backend.authentication import RedisJWTAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +230,44 @@ class AuditLogMiddleware(MiddlewareMixin):
         """
         return request.META.get('HTTP_USER_AGENT', '')[:500]  # 限制长度
 
+    def _get_user_from_jwt(self, request: HttpRequest) -> Optional[Any]:
+        """
+        从JWT Token中解析用户信息
+
+        由于DRF的JWT认证只设置在DRF Request包装器上，不会回写到Django原生HttpRequest.user，
+        因此需要手动解析Authorization header中的JWT Token来获取用户信息。
+
+        Args:
+            request: Django HTTP请求对象
+
+        Returns:
+            Optional[Any]: RedisUser对象或None
+        """
+        try:
+            auth_header = request.META.get('HTTP_AUTHORIZATION')
+            if not auth_header:
+                return None
+
+            # 使用已有的RedisJWTAuthentication来认证
+            auth = RedisJWTAuthentication()
+            # DRF的authenticate方法需要DRF Request对象，但我们这里只有原生HttpRequest
+            # 所以直接复用其header解析和token验证逻辑
+
+            # 解析header: "Bearer <token>"
+            if not auth_header.startswith('Bearer '):
+                return None
+
+            token = auth_header.split(' ')[1]
+
+            # 验证token并获取用户
+            validated_token = auth.get_validated_token(token)
+            user = auth.get_user(validated_token)
+            return user
+
+        except Exception:
+            # JWT解析失败时静默返回None，不影响正常响应
+            return None
+
     def process_request(self, request: HttpRequest):
         """
         请求前处理
@@ -269,9 +308,14 @@ class AuditLogMiddleware(MiddlewareMixin):
             method = request.method
 
             # 解析审计日志字段
+            # 首先尝试从Django session获取用户（用于admin等非API请求）
             user = getattr(request, 'user', None)
             if user and not user.is_authenticated:
                 user = None
+
+            # 如果session中没有用户，尝试从JWT Token解析（用于API请求）
+            if user is None:
+                user = self._get_user_from_jwt(request)
 
             action = self._parse_action(request)
             resource_type = self._parse_resource_type(path)
