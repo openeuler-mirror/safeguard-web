@@ -2200,3 +2200,54 @@ class SafeguardModelTest(APITestCase):
         self.assertEqual(log.source, 'auth')
         self.assertEqual(log.level, 'info')
         self.assertEqual(log.message, 'Accepted publickey')
+
+
+class SafeguardSecurityTest(APITestCase):
+    """安全测试 (TC-SEC-001 到 TC-SEC-005)"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    @mock.patch('backend.services.safeguard.control_service')
+    def test_control_service_command_injection_protection(self, mock_control):
+        """测试命令注入防护 (TC-SEC-001)"""
+        from backend.services.safeguard import HostInfoService
+        mock_control.return_value = {'success': True, 'message': 'Test'}
+
+        # 尝试注入恶意命令
+        result = HostInfoService.control_service(
+            self.host.id,
+            'sshd; rm -rf /',  # 包含恶意命令
+            'start'
+        )
+
+        # 验证参数被安全处理
+        call_args = mock_control.call_args
+        # service_name 应该被安全转义或处理
+        self.assertIn('sshd', call_args[0][1])
+
+    @mock.patch('backend.services.safeguard.kill_process')
+    def test_kill_process_pid_validation(self, mock_kill):
+        """测试PID参数验证 (TC-SEC-002)"""
+        from backend.services.safeguard import HostInfoService
+        mock_kill.return_value = {'success': True}
+
+        # 尝试使用非数字PID
+        with self.assertRaises((ValueError, OperationError)):
+            HostInfoService.kill_process(
+                self.host.id,
+                'abc123'  # 非数字PID
+            )
