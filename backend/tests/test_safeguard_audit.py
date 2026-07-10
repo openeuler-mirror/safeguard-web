@@ -174,6 +174,73 @@ class AuditServiceTest(APITestCase):
 
         self.assertEqual(result['total'], 2)
 
+    def test_log_action_minimal_params(self):
+        """测试最少参数记录 (TC-AUD-002)"""
+        from backend.services.safeguard import AuditService
+
+        AuditService.log_action(
+            user=self.user,
+            action='delete',
+            resource_type='host',
+            resource_id='123',
+        )
+
+        # 验证日志已创建
+        audit_log = AuditLog.objects.first()
+        self.assertEqual(audit_log.action, 'delete')
+        self.assertEqual(audit_log.resource_type, 'host')
+        self.assertEqual(audit_log.resource_id, '123')
+        self.assertEqual(audit_log.ip_address, '')
+        self.assertEqual(audit_log.status, 'success')  # 默认值
+
+    def test_log_action_complete_params(self):
+        """测试完整参数记录 (TC-AUD-003)"""
+        from backend.services.safeguard import AuditService
+
+        AuditService.log_action(
+            user=self.user,
+            action='update',
+            resource_type='policy',
+            resource_id='456',
+            resource_name='安全策略',
+            ip_address='192.168.1.100',
+            user_agent='Mozilla/5.0 Test',
+            status='success',
+            request_id='req-123456',
+        )
+
+        # 验证所有字段正确保存
+        audit_log = AuditLog.objects.first()
+        self.assertEqual(audit_log.action, 'update')
+        self.assertEqual(audit_log.resource_type, 'policy')
+        self.assertEqual(audit_log.resource_id, '456')
+        self.assertEqual(audit_log.resource_name, '安全策略')
+        self.assertEqual(audit_log.ip_address, '192.168.1.100')
+        self.assertEqual(audit_log.user_agent, 'Mozilla/5.0 Test')
+        self.assertEqual(audit_log.status, 'success')
+        self.assertEqual(audit_log.request_id, 'req-123456')
+
+    def test_log_action_with_old_new_values(self):
+        """测试变更前后记录 (TC-AUD-004)"""
+        from backend.services.safeguard import AuditService
+
+        old_value = {'name': '旧策略', 'enabled': False}
+        new_value = {'name': '新策略', 'enabled': True}
+
+        AuditService.log_action(
+            user=self.user,
+            action='update',
+            resource_type='policy',
+            resource_id='789',
+            old_value=old_value,
+            new_value=new_value,
+        )
+
+        # 验证变更内容保存
+        audit_log = AuditLog.objects.first()
+        self.assertEqual(audit_log.old_value, old_value)
+        self.assertEqual(audit_log.new_value, new_value)
+
 
 @override_settings(AUDIT_LOG_ENABLED=True)
 class AuditLogMiddlewareTest(APITestCase):
