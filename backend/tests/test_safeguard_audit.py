@@ -2036,3 +2036,84 @@ class AuditServiceSystemLogTest(APITestCase):
         self.assertEqual(result['page'], 2)
         self.assertEqual(result['page_size'], 5)
         self.assertEqual(len(result['data']), 5)
+
+
+class SafeguardModelTest(APITestCase):
+    """数据模型测试 (TC-MDL-004 到 TC-MDL-010)"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    def test_create_host_monitor_data(self):
+        """测试创建监控数据 (TC-MDL-004)"""
+        from backend.models.safeguard.monitor import HostMonitorData
+        from django.utils import timezone
+
+        monitor_data = HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            load_5m=0.6,
+            load_15m=0.5,
+            memory_total=16384,
+            memory_used=4096,
+            memory_usage=25.0,
+            network_in=1024000,
+            network_out=512000,
+            timestamp=timezone.now(),
+        )
+
+        self.assertEqual(monitor_data.host, self.host)
+        self.assertEqual(monitor_data.cpu_usage, 45.5)
+        self.assertEqual(monitor_data.load_1m, 0.8)
+        self.assertEqual(monitor_data.memory_usage, 25.0)
+
+    def test_create_safeguard_policy_template(self):
+        """测试创建策略模板 (TC-MDL-005)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='测试模板',
+            description='测试描述',
+            template_type='general',
+            is_builtin=False,
+            config={'rules': []},
+            created_by=self.user,
+        )
+
+        self.assertEqual(template.name, '测试模板')
+        self.assertEqual(template.description, '测试描述')
+        self.assertEqual(template.template_type, 'general')
+        self.assertFalse(template.is_builtin)
+
+    def test_create_host_safeguard_policy(self):
+        """测试创建主机策略 (TC-MDL-006)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='测试模板',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+            applied_by=self.user,
+        )
+
+        self.assertEqual(policy.host, self.host)
+        self.assertEqual(policy.template, template)
+        self.assertEqual(policy.config_version, 1)
+        self.assertEqual(policy.status, 'pending')
