@@ -1331,3 +1331,57 @@ class AuditServiceFileMonitorRuleTest(APITestCase):
 
         rule = FileMonitorRule.objects.get(id=result['id'])
         self.assertEqual(rule.monitor_type, 'dir')
+
+    def test_create_file_monitor_rule_recursive(self):
+        """测试递归监控 (TC-AUD-016)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/var/log',
+            monitor_type='dir',
+            recursive=True,
+        )
+
+        rule = FileMonitorRule.objects.get(id=result['id'])
+        self.assertTrue(rule.recursive)
+
+    def test_create_file_monitor_rule_event_types(self):
+        """测试事件类型配置 (TC-AUD-017)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/tmp',
+            monitor_type='dir',
+            watch_create=True,
+            watch_modify=False,
+            watch_delete=True,
+            watch_access=False,
+            watch_perm=True,
+        )
+
+        rule = FileMonitorRule.objects.get(id=result['id'])
+        self.assertTrue(rule.watch_create)
+        self.assertFalse(rule.watch_modify)
+        self.assertTrue(rule.watch_delete)
+        self.assertFalse(rule.watch_access)
+        self.assertTrue(rule.watch_perm)
+
+    def test_create_file_monitor_rule_includes_excludes(self):
+        """测试包含/排除规则 (TC-AUD-018)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/var',
+            monitor_type='dir',
+            includes=['*.log', '*.conf'],
+            excludes=['*.tmp', '*.swp'],
+        )
+
+        rule = FileMonitorRule.objects.get(id=result['id'])
+        self.assertEqual(rule.includes, ['*.log', '*.conf'])
+        self.assertEqual(rule.excludes, ['*.tmp', '*.swp'])
+
+    def test_create_file_monitor_rule_host_not_found(self):
+        """测试创建规则时主机不存在 (TC-AUD-019)"""
+        with self.assertRaises(HostNotFoundError):
+            AuditService.create_file_monitor_rule(
+                host_id=99999,
+                path='/etc/passwd',
+            )
