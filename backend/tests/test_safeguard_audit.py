@@ -1002,3 +1002,58 @@ class MonitorServiceTest(APITestCase):
 
         with self.assertRaises(MonitorDataSaveError):
             MonitorService.batch_save_monitor_data(host_ids, data_list)
+
+
+class PolicyServiceTest(APITestCase):
+    """PolicyService 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    def test_create_policy_template_success(self):
+        """测试创建策略模板成功 (TC-POL-001)"""
+        data = {
+            'name': '测试策略模板',
+            'description': '这是一个测试策略',
+            'template_type': 'custom',
+            'is_builtin': False,
+            'config': {
+                'rules': [
+                    {'type': 'port', 'action': 'block', 'port': 22},
+                    {'type': 'process', 'action': 'allow', 'name': 'sshd'},
+                ],
+            },
+        }
+
+        result = PolicyService.create_policy_template(data, created_by=self.user)
+
+        self.assertEqual(result['name'], '测试策略模板')
+        self.assertEqual(result['description'], '这是一个测试策略')
+        self.assertEqual(result['template_type'], 'custom')
+        self.assertFalse(result['is_builtin'])
+
+    def test_create_policy_template_minimal(self):
+        """测试最少数据创建 (TC-POL-003)"""
+        data = {
+            'name': '最小策略模板',
+        }
+
+        result = PolicyService.create_policy_template(data, created_by=self.user)
+
+        self.assertEqual(result['name'], '最小策略模板')
+        self.assertEqual(result['description'], '')
+        self.assertEqual(result['template_type'], 'custom')
+        self.assertFalse(result['is_builtin'])
