@@ -2162,3 +2162,41 @@ class SafeguardModelTest(APITestCase):
         self.assertEqual(rule.monitor_type, 'file')
         self.assertTrue(rule.watch_create)
         self.assertTrue(rule.enabled)
+
+    def test_create_file_monitor_event(self):
+        """测试创建文件监控事件 (TC-MDL-009)"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+        from django.utils import timezone
+        event = FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=rule,
+            event_type='modify',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+
+        self.assertEqual(event.host, self.host)
+        self.assertEqual(event.rule, rule)
+        self.assertEqual(event.event_type, 'modify')
+
+    def test_create_system_log(self):
+        """测试创建系统日志 (TC-MDL-010)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        log = SystemLog.objects.create(
+            host=self.host,
+            source='auth',
+            level='info',
+            message='Accepted publickey',
+            raw_line='Jul 10 10:00:00 host sshd[1234]: Accepted publickey',
+            timestamp=timezone.now(),
+        )
+
+        self.assertEqual(log.host, self.host)
+        self.assertEqual(log.source, 'auth')
+        self.assertEqual(log.level, 'info')
+        self.assertEqual(log.message, 'Accepted publickey')
