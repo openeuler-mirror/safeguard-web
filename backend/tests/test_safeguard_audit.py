@@ -1242,3 +1242,35 @@ class PolicyServiceTest(APITestCase):
         """测试任务不存在 (TC-POL-018)"""
         with self.assertRaises(TaskNotFoundError):
             PolicyService.apply_policy(99999)
+
+    def test_get_task_status_success(self):
+        """测试获取任务状态成功 (TC-POL-019)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='任务状态测试',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        result = PolicyService.get_task_status(task.id)
+
+        self.assertEqual(result['id'], task.id)
+        self.assertEqual(result['status'], 'pending')
+
+    def test_get_task_status_not_found(self):
+        """测试获取任务状态时任务不存在"""
+        with self.assertRaises(TaskNotFoundError):
+            PolicyService.get_task_status(99999)
