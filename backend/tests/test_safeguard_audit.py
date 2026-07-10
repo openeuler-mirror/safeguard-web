@@ -241,6 +241,91 @@ class AuditServiceTest(APITestCase):
         self.assertEqual(audit_log.old_value, old_value)
         self.assertEqual(audit_log.new_value, new_value)
 
+    def test_list_audit_logs_filter_by_user(self):
+        """测试按用户过滤审计日志 (TC-AUD-006)"""
+        from backend.services.safeguard import AuditService
+
+        # 创建另一个用户
+        user2 = Users.objects.create(
+            user='testuser2',
+            password='testpass123',
+            nickname='测试用户2'
+        )
+
+        # 创建一些测试日志
+        AuditLog.objects.create(user=self.user, action='create', resource_type='host')
+        AuditLog.objects.create(user=self.user, action='update', resource_type='policy')
+        AuditLog.objects.create(user=user2, action='delete', resource_type='host')
+
+        # 只查询user1的日志
+        result = AuditService.list_audit_logs(user=self.user)
+
+        self.assertEqual(result['total'], 2)
+
+    def test_list_audit_logs_filter_by_status(self):
+        """测试按状态过滤 (TC-AUD-009)"""
+        from backend.services.safeguard import AuditService
+
+        # 创建一些测试日志
+        AuditLog.objects.create(user=self.user, action='create', resource_type='host', status='success')
+        AuditLog.objects.create(user=self.user, action='update', resource_type='policy', status='success')
+        AuditLog.objects.create(user=self.user, action='delete', resource_type='host', status='failed')
+
+        # 只查询success状态的日志
+        result = AuditService.list_audit_logs(status='success')
+
+        self.assertEqual(result['total'], 2)
+
+    def test_list_audit_logs_filter_by_time_range(self):
+        """测试时间范围过滤 (TC-AUD-010)"""
+        from backend.services.safeguard import AuditService
+        from django.utils import timezone
+        from datetime import timedelta
+
+        now = timezone.now()
+
+        # 创建一些测试日志
+        AuditLog.objects.create(user=self.user, action='create', resource_type='host')
+        AuditLog.objects.create(user=self.user, action='update', resource_type='policy')
+
+        # 查询时间范围内的日志
+        start_time = now - timedelta(hours=1)
+        end_time = now + timedelta(hours=1)
+        result = AuditService.list_audit_logs(start_time=start_time, end_time=end_time)
+
+        self.assertEqual(result['total'], 2)
+
+    def test_list_audit_logs_pagination(self):
+        """测试审计日志分页 (TC-AUD-011)"""
+        from backend.services.safeguard import AuditService
+
+        # 创建更多日志
+        for i in range(15):
+            AuditLog.objects.create(user=self.user, action='create', resource_type='host')
+
+        # 查询第二页，每页5条
+        result = AuditService.list_audit_logs(page=2, page_size=5)
+
+        self.assertEqual(result['total'], 15)
+        self.assertEqual(result['page'], 2)
+        self.assertEqual(result['page_size'], 5)
+        self.assertEqual(len(result['data']), 5)
+
+    def test_list_audit_logs_order_by_desc(self):
+        """测试倒序排列 (TC-AUD-012)"""
+        from backend.services.safeguard import AuditService
+
+        # 创建日志
+        log1 = AuditLog.objects.create(user=self.user, action='create', resource_type='host')
+        log2 = AuditLog.objects.create(user=self.user, action='update', resource_type='policy')
+
+        # 查询日志
+        result = AuditService.list_audit_logs()
+
+        # 新的应该在前
+        self.assertEqual(result['data'][0]['id'], log2.id)
+        self.assertEqual(result['data'][1]['id'], log1.id)
+
 
 @override_settings(AUDIT_LOG_ENABLED=True)
 class AuditLogMiddlewareTest(APITestCase):
