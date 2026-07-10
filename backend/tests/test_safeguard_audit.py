@@ -721,3 +721,56 @@ class MonitorServiceTest(APITestCase):
         self.assertEqual(result['memory']['mem_total'], 16384)
         self.assertEqual(result['memory']['mem_percent'], 25.0)
         mock_collect.assert_called_once_with(self.host)
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    def test_collect_cpu_metrics_failed(self, mock_collect):
+        """测试采集失败 (TC-MON-003)"""
+        mock_collect.side_effect = Exception('SSH connection failed')
+
+        with self.assertRaises(MonitorCollectError):
+            MonitorService.collect_cpu_metrics(self.host.id)
+
+    @mock.patch('backend.services.safeguard.collect_network_metrics')
+    def test_collect_network_metrics_success(self, mock_collect):
+        """测试采集网络数据成功 (TC-MON-006)"""
+        mock_collect.return_value = {
+            'success': True,
+            'interfaces': [
+                {'name': 'eth0', 'rx_bytes': 1024000, 'tx_bytes': 512000},
+                {'name': 'eth1', 'rx_bytes': 2048000, 'tx_bytes': 1024000},
+            ],
+            'total_rx_bytes': 3072000,
+            'total_tx_bytes': 1536000,
+        }
+
+        result = MonitorService.collect_network_metrics(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['interfaces']), 2)
+        self.assertEqual(result['total_rx_bytes'], 3072000)
+        mock_collect.assert_called_once_with(self.host)
+
+    @mock.patch('backend.services.safeguard.collect_disk_metrics')
+    def test_collect_disk_metrics_success(self, mock_collect):
+        """测试采集磁盘数据成功 (TC-MON-008)"""
+        mock_collect.return_value = {
+            'success': True,
+            'disks': [
+                {
+                    'device': '/dev/sda1',
+                    'mount_point': '/',
+                    'total': 104857600,
+                    'used': 52428800,
+                    'percent': 50.0,
+                    'sectors_read': 1000,
+                    'sectors_written': 2000,
+                },
+            ],
+        }
+
+        result = MonitorService.collect_disk_metrics(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(len(result['disks']), 1)
+        self.assertEqual(result['disks'][0]['percent'], 50.0)
+        mock_collect.assert_called_once_with(self.host)
