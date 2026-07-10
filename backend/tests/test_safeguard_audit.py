@@ -1547,3 +1547,78 @@ class AuditServiceFileMonitorEventTest(APITestCase):
 
         self.assertEqual(result['total'], 1)
         self.assertEqual(result['data'][0]['event_type'], 'modify')
+
+    @mock.patch('backend.services.safeguard.collect_file_events')
+    def test_collect_file_events_success(self, mock_collect):
+        """测试采集监控事件 (TC-AUD-026)"""
+        mock_collect.return_value = {
+            'success': True,
+            'events': [
+                {
+                    'rule_id': self.rule.id,
+                    'event_type': 'modify',
+                    'path': '/etc/passwd',
+                    'details': {},
+                },
+            ],
+        }
+
+        result = AuditService.collect_file_events(host_id=self.host.id)
+
+        self.assertIn('events', result)
+        self.assertIn('total_events', result)
+
+    def test_collect_file_events_no_rules(self):
+        """测试无启用规则时采集 (TC-AUD-027)"""
+        # 禁用规则
+        self.rule.enabled = False
+        self.rule.save()
+
+        result = AuditService.collect_file_events(host_id=self.host.id)
+
+        self.assertEqual(result['message'], 'No active monitor rules found')
+        self.assertEqual(result['total_events'], 0)
+
+    def test_save_file_events_success(self):
+        """测试保存监控事件 (TC-AUD-028)"""
+        events = [
+            {
+                'rule_id': self.rule.id,
+                'event_type': 'modify',
+                'path': '/etc/passwd',
+                'details': {'size': 1024},
+            },
+            {
+                'rule_id': self.rule.id,
+                'event_type': 'access',
+                'path': '/etc/passwd',
+                'details': {},
+            },
+        ]
+
+        saved_count = AuditService.save_file_events(events)
+
+        self.assertEqual(saved_count, 2)
+        self.assertEqual(FileMonitorEvent.objects.count(), 2)
+
+    def test_save_file_events_partial_failure(self):
+        """测试部分事件保存失败 (TC-AUD-029)"""
+        events = [
+            {
+                'rule_id': self.rule.id,  # 有效规则
+                'event_type': 'modify',
+                'path': '/etc/passwd',
+                'details': {},
+            },
+            {
+                'rule_id': 99999,  # 无效规则
+                'event_type': 'delete',
+                'path': '/etc/group',
+                'details': {},
+            },
+        ]
+
+        saved_count = AuditService.save_file_events(events)
+
+        self.assertEqual(saved_count, 1)  # 只保存了有效规则的事件
+        self.assertEqual(FileMonitorEvent.objects.count(), 1)

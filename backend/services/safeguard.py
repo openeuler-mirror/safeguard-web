@@ -1494,6 +1494,7 @@ class AuditService:
         Returns:
             保存的事件数量
         """
+        from django.utils import timezone
         from backend.models.safeguard.file_monitor import FileMonitorEvent
 
         saved_count = 0
@@ -1511,6 +1512,7 @@ class AuditService:
                                 event_type=event.get('event_type', 'unknown'),
                                 path=event.get('path', ''),
                                 details=event.get('details', {}),
+                                timestamp=timezone.now(),
                             )
                             saved_count += 1
                 except Exception as e:
