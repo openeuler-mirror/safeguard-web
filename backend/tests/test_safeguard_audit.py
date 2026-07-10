@@ -774,3 +774,153 @@ class MonitorServiceTest(APITestCase):
         self.assertEqual(len(result['disks']), 1)
         self.assertEqual(result['disks'][0]['percent'], 50.0)
         mock_collect.assert_called_once_with(self.host)
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    @mock.patch('backend.services.safeguard.collect_memory_metrics')
+    @mock.patch('backend.services.safeguard.collect_network_metrics')
+    @mock.patch('backend.services.safeguard.collect_disk_metrics')
+    def test_collect_all_metrics_success(self, mock_disk, mock_network, mock_memory, mock_cpu):
+        """测试全量采集成功 (TC-MON-021)"""
+        mock_cpu.return_value = {
+            'success': True,
+            'cpu_usage': {'usage_percent': 45.5},
+            'load_avg': {'load_1min': 0.8, 'load_5min': 0.6, 'load_15min': 0.5},
+        }
+        mock_memory.return_value = {
+            'success': True,
+            'memory': {'mem_total': 16384, 'mem_used': 4096, 'mem_percent': 25.0},
+        }
+        mock_network.return_value = {
+            'success': True,
+            'total_rx_bytes': 3072000,
+            'total_tx_bytes': 1536000,
+        }
+        mock_disk.return_value = {
+            'success': True,
+            'disks': [{'sectors_read': 1000, 'sectors_written': 2000}],
+        }
+
+        result = MonitorService.collect_all_metrics(self.host.id, save=False)
+
+        self.assertTrue(result['cpu']['success'])
+        self.assertTrue(result['memory']['success'])
+        self.assertTrue(result['network']['success'])
+        self.assertTrue(result['disk']['success'])
+        self.assertFalse(result['saved'])
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    @mock.patch('backend.services.safeguard.collect_memory_metrics')
+    @mock.patch('backend.services.safeguard.collect_network_metrics')
+    @mock.patch('backend.services.safeguard.collect_disk_metrics')
+    def test_collect_all_metrics_with_save(self, mock_disk, mock_network, mock_memory, mock_cpu):
+        """测试采集并保存 (TC-MON-022)"""
+        mock_cpu.return_value = {
+            'success': True,
+            'cpu_usage': {'usage_percent': 45.5},
+            'load_avg': {'load_1min': 0.8, 'load_5min': 0.6, 'load_15min': 0.5},
+        }
+        mock_memory.return_value = {
+            'success': True,
+            'memory': {'mem_total': 16384, 'mem_used': 4096, 'mem_percent': 25.0},
+        }
+        mock_network.return_value = {
+            'success': True,
+            'total_rx_bytes': 3072000,
+            'total_tx_bytes': 1536000,
+        }
+        mock_disk.return_value = {
+            'success': True,
+            'disks': [{'sectors_read': 1000, 'sectors_written': 2000}],
+        }
+
+        result = MonitorService.collect_all_metrics(self.host.id, save=True)
+
+        self.assertTrue(result['saved'])
+
+    def test_get_monitor_history_success(self):
+        """测试查询历史数据成功 (TC-MON-013)"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            load_5m=0.6,
+            load_15m=0.5,
+            memory_total=16384,
+            memory_used=4096,
+            memory_usage=25.0,
+        )
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=50.0,
+            load_1m=1.2,
+            load_5m=1.0,
+            load_15m=0.8,
+            memory_total=16384,
+            memory_used=8192,
+            memory_usage=50.0,
+        )
+
+        result = MonitorService.get_monitor_history(self.host.id)
+
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(len(result['data']), 2)
+
+    def test_get_monitor_history_filter_by_metric_type(self):
+        """测试按指标类型过滤 (TC-MON-015)"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            load_5m=0.6,
+            load_15m=0.5,
+            memory_total=16384,
+            memory_used=4096,
+            memory_usage=25.0,
+        )
+
+        # 只查询CPU指标
+        result = MonitorService.get_monitor_history(self.host.id, metric_type='cpu')
+
+        self.assertEqual(result['total'], 1)
+        data = result['data'][0]
+        self.assertIn('cpu_usage', data)
+        self.assertIn('load_1m', data)
+
+    def test_get_monitor_history_pagination(self):
+        """测试分页查询 (TC-MON-016)"""
+        # 创建更多测试数据
+        for i in range(15):
+            HostMonitorData.objects.create(
+                host=self.host,
+                cpu_usage=45.0 + i,
+                load_1m=0.5 + i * 0.1,
+            )
+
+        # 查询第二页，每页5条
+        result = MonitorService.get_monitor_history(self.host.id, page=2, page_size=5)
+
+        self.assertEqual(result['total'], 15)
+        self.assertEqual(result['page'], 2)
+        self.assertEqual(result['page_size'], 5)
+        self.assertEqual(len(result['data']), 5)
+
+    def test_get_monitor_history_pagination_params_validation(self):
+        """测试分页参数验证 (TC-MON-017)"""
+        # 创建测试数据
+        for i in range(5):
+            HostMonitorData.objects.create(host=self.host, cpu_usage=45.0 + i)
+
+        # 测试page < 1的情况，应该被标准化为1
+        result = MonitorService.get_monitor_history(self.host.id, page=0, page_size=100)
+        self.assertEqual(result['page'], 1)
+
+        # 测试page_size > 1000的情况，应该被标准化为1000
+        result = MonitorService.get_monitor_history(self.host.id, page=1, page_size=2000)
+        self.assertEqual(result['page_size'], 1000)
+
+        # 测试page_size < 1的情况，应该被标准化为100
+        result = MonitorService.get_monitor_history(self.host.id, page=1, page_size=0)
+        self.assertEqual(result['page_size'], 100)
+        self.assertNotIn('memory_total', data)
