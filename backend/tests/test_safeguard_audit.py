@@ -650,3 +650,74 @@ class HostInfoServiceTest(APITestCase):
 
         self.assertTrue(result['success'])
         self.assertEqual(len(result['accounts']), 2)
+
+
+class MonitorServiceTest(APITestCase):
+    """MonitorService 测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    def test_collect_cpu_metrics_success(self, mock_collect):
+        """测试采集CPU数据成功 (TC-MON-001)"""
+        mock_collect.return_value = {
+            'success': True,
+            'cpu_usage': {
+                'usage_percent': 45.5,
+                'cores': 4,
+            },
+            'load_avg': {
+                'load_1min': 0.8,
+                'load_5min': 0.6,
+                'load_15min': 0.5,
+            },
+        }
+
+        result = MonitorService.collect_cpu_metrics(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['cpu_usage']['usage_percent'], 45.5)
+        self.assertEqual(result['load_avg']['load_1min'], 0.8)
+        mock_collect.assert_called_once_with(self.host)
+
+    def test_collect_cpu_metrics_host_not_found(self):
+        """测试主机不存在 (TC-MON-002)"""
+        with self.assertRaises(HostNotFoundError):
+            MonitorService.collect_cpu_metrics(99999)
+
+    @mock.patch('backend.services.safeguard.collect_memory_metrics')
+    def test_collect_memory_metrics_success(self, mock_collect):
+        """测试采集内存数据成功 (TC-MON-004)"""
+        mock_collect.return_value = {
+            'success': True,
+            'memory': {
+                'mem_total': 16384,
+                'mem_used': 4096,
+                'mem_percent': 25.0,
+            },
+            'swap': {
+                'swap_total': 8192,
+                'swap_used': 2048,
+            },
+        }
+
+        result = MonitorService.collect_memory_metrics(self.host.id)
+
+        self.assertTrue(result['success'])
+        self.assertEqual(result['memory']['mem_total'], 16384)
+        self.assertEqual(result['memory']['mem_percent'], 25.0)
+        mock_collect.assert_called_once_with(self.host)
