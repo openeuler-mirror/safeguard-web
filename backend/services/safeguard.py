@@ -961,7 +961,7 @@ class AuditService:
                 old_value=old_value or {},
                 new_value=new_value or {},
                 ip_address=ip_address,
-                user_agent=user_agent,
+                user_agent=user_agent or '',
                 status=status,
                 error_message=error_message,
             )

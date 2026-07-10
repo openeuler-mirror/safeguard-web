@@ -2023,6 +2023,12 @@ def _kill_process(client: SSHClient, pid: int, force: bool = False) -> Dict[str,
             except (ValueError, TypeError):
                 result['message'] = f"Invalid pid: {pid}"
                 return result
+
+        # Protect init process (PID 1)
+        if pid == 1:
+            result['message'] = "Cannot kill init process (PID 1)"
+            return result
+
         # 检查进程是否存在
         check_cmd = f"ps -p {pid} -o pid= 2>/dev/null"
         stdout, stderr, exit_code = client.execute_command(check_cmd)
