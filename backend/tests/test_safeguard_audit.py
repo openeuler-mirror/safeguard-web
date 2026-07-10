@@ -1208,3 +1208,37 @@ class PolicyServiceTest(APITestCase):
         """测试主机策略不存在 (TC-POL-016)"""
         with self.assertRaises(HostPolicyNotFoundError):
             PolicyService.get_host_policy(self.host.id)
+
+    @mock.patch('backend.tasks.safeguard.apply_policy_task')
+    def test_apply_policy_success(self, mock_apply_task):
+        """测试触发策略下发成功 (TC-POL-017)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='下发测试',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        result = PolicyService.apply_policy(task.id)
+
+        self.assertEqual(result['task_id'], task.id)
+        self.assertIn('Policy apply task has been queued', result['message'])
+        mock_apply_task.delay.assert_called_once_with(task.id)
+
+    def test_apply_policy_task_not_found(self):
+        """测试任务不存在 (TC-POL-018)"""
+        with self.assertRaises(TaskNotFoundError):
+            PolicyService.apply_policy(99999)
