@@ -1446,3 +1446,84 @@ class AuditServiceFileMonitorRuleTest(APITestCase):
         result = AuditService.list_file_monitor_rules(enabled=False)
         self.assertEqual(result['total'], 1)
         self.assertEqual(result['data'][0]['id'], rule2.id)
+
+
+class AuditServiceFileMonitorEventTest(APITestCase):
+    """AuditService 文件监控事件测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+        self.rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+
+    def test_list_file_monitor_events_success(self):
+        """测试列出监控事件 (TC-AUD-023)"""
+        from django.utils import timezone
+        # 创建测试事件
+        FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=self.rule,
+            event_type='modify',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+        FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=self.rule,
+            event_type='access',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+
+        result = AuditService.list_file_monitor_events()
+
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(len(result['data']), 2)
+
+    def test_list_file_monitor_events_filter_by_host(self):
+        """测试按主机过滤事件 (TC-AUD-024)"""
+        from django.utils import timezone
+        # 创建另一个主机
+        host2 = Host.objects.create(
+            hostname='test-host2',
+            ip_address='192.168.1.101',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+        rule2 = FileMonitorRule.objects.create(
+            host=host2,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+
+        # 创建事件
+        FileMonitorEvent.objects.create(
+            host=self.host, rule=self.rule, event_type='modify', timestamp=timezone.now()
+        )
+        FileMonitorEvent.objects.create(
+            host=host2, rule=rule2, event_type='create', timestamp=timezone.now()
+        )
+
+        # 查询 host1 的事件
+        result = AuditService.list_file_monitor_events(host_id=self.host.id)
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['host_id'], self.host.id)
