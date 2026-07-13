@@ -1773,3 +1773,114 @@ class AuditServiceSystemLogTest(APITestCase):
 
         # 验证日志被保存（使用当前时间）
         self.assertEqual(SystemLog.objects.count(), 1)
+
+    def test_get_system_logs_success(self):
+        """测试查询系统日志 (TC-AUD-036)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        # 创建测试日志
+        SystemLog.objects.create(
+            host=self.host,
+            source='auth',
+            level='info',
+            message='Accepted publickey',
+            timestamp=timezone.now(),
+        )
+        SystemLog.objects.create(
+            host=self.host,
+            source='syslog',
+            level='warning',
+            message='Disk space low',
+            timestamp=timezone.now(),
+        )
+
+        result = AuditService.get_system_logs()
+
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(len(result['data']), 2)
+
+    def test_get_system_logs_filter_by_host(self):
+        """测试按主机过滤系统日志 (TC-AUD-037)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        # 创建另一个主机
+        host2 = Host.objects.create(
+            hostname='test-host2',
+            ip_address='192.168.1.101',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+        # 创建日志
+        SystemLog.objects.create(
+            host=self.host, source='auth', level='info', message='Log 1', timestamp=timezone.now()
+        )
+        SystemLog.objects.create(
+            host=host2, source='auth', level='info', message='Log 2', timestamp=timezone.now()
+        )
+
+        # 查询 host1 的日志
+        result = AuditService.get_system_logs(host_id=self.host.id)
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['host_id'], self.host.id)
+
+    def test_get_system_logs_filter_by_source(self):
+        """测试按日志源过滤 (TC-AUD-038)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        # 创建日志
+        SystemLog.objects.create(
+            host=self.host, source='auth', level='info', message='Auth log', timestamp=timezone.now()
+        )
+        SystemLog.objects.create(
+            host=self.host, source='syslog', level='info', message='Sys log', timestamp=timezone.now()
+        )
+
+        # 查询 auth 日志
+        result = AuditService.get_system_logs(source='auth')
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['source'], 'auth')
+
+    def test_get_system_logs_filter_by_level(self):
+        """测试按级别过滤 (TC-AUD-039)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        # 创建日志
+        SystemLog.objects.create(
+            host=self.host, source='auth', level='info', message='Info log', timestamp=timezone.now()
+        )
+        SystemLog.objects.create(
+            host=self.host, source='auth', level='error', message='Error log', timestamp=timezone.now()
+        )
+
+        # 查询 error 日志
+        result = AuditService.get_system_logs(level='error')
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['level'], 'error')
+
+    def test_get_system_logs_pagination(self):
+        """测试系统日志分页 (TC-AUD-040)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        # 创建更多日志
+        for i in range(15):
+            SystemLog.objects.create(
+                host=self.host,
+                source='auth',
+                level='info',
+                message=f'Log {i}',
+                timestamp=timezone.now(),
+            )
+
+        # 查询第二页，每页5条
+        result = AuditService.get_system_logs(page=2, page_size=5)
+
+        self.assertEqual(result['total'], 15)
+        self.assertEqual(result['page'], 2)
+        self.assertEqual(result['page_size'], 5)
+        self.assertEqual(len(result['data']), 5)
