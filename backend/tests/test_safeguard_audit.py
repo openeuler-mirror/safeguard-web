@@ -1385,3 +1385,64 @@ class AuditServiceFileMonitorRuleTest(APITestCase):
                 host_id=99999,
                 path='/etc/passwd',
             )
+
+    def test_list_file_monitor_rules_success(self):
+        """测试列出监控规则 (TC-AUD-020)"""
+        # 创建一些测试规则
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/ssh',
+            monitor_type='dir',
+        )
+
+        result = AuditService.list_file_monitor_rules()
+
+        self.assertEqual(result['total'], 2)
+        self.assertEqual(len(result['data']), 2)
+
+    def test_list_file_monitor_rules_filter_by_host(self):
+        """测试按主机过滤规则 (TC-AUD-021)"""
+        # 创建另一个主机
+        host2 = Host.objects.create(
+            hostname='test-host2',
+            ip_address='192.168.1.101',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+        # 创建规则
+        FileMonitorRule.objects.create(host=self.host, path='/etc/passwd', monitor_type='file')
+        FileMonitorRule.objects.create(host=host2, path='/etc/passwd', monitor_type='file')
+
+        # 只查询 host1 的规则
+        result = AuditService.list_file_monitor_rules(host_id=self.host.id)
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['host_id'], self.host.id)
+
+    def test_list_file_monitor_rules_filter_by_enabled(self):
+        """测试按启用状态过滤规则 (TC-AUD-022)"""
+        # 创建规则
+        rule1 = FileMonitorRule.objects.create(
+            host=self.host, path='/etc/passwd', monitor_type='file', enabled=True
+        )
+        rule2 = FileMonitorRule.objects.create(
+            host=self.host, path='/etc/group', monitor_type='file', enabled=False
+        )
+
+        # 查询启用的规则
+        result = AuditService.list_file_monitor_rules(enabled=True)
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['id'], rule1.id)
+
+        # 查询禁用的规则
+        result = AuditService.list_file_monitor_rules(enabled=False)
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['id'], rule2.id)
