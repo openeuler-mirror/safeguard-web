@@ -1622,3 +1622,104 @@ class AuditServiceFileMonitorEventTest(APITestCase):
 
         self.assertEqual(saved_count, 1)  # 只保存了有效规则的事件
         self.assertEqual(FileMonitorEvent.objects.count(), 1)
+
+
+class AuditServiceSystemLogTest(APITestCase):
+    """AuditService 系统日志测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_success(self, mock_collect):
+        """测试采集系统日志成功 (TC-AUD-030)"""
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [
+                {
+                    'source': 'auth',
+                    'level': 'info',
+                    'message': 'Accepted publickey',
+                    'timestamp': 'Jul 10 10:00:00',
+                    'raw_line': 'Jul 10 10:00:00 host sshd[1234]: Accepted publickey',
+                },
+            ],
+        }
+
+        result = AuditService.collect_and_save_system_logs(self.host.id)
+
+        self.assertIn('logs', result)
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_with_sources(self, mock_collect):
+        """测试指定日志源 (TC-AUD-031)"""
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [],
+        }
+
+        AuditService.collect_and_save_system_logs(
+            self.host.id,
+            log_sources=['auth', 'syslog'],
+        )
+
+        # 验证调用参数
+        call_args = mock_collect.call_args
+        self.assertEqual(call_args[0][1], ['auth', 'syslog'])
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_with_num_lines(self, mock_collect):
+        """测试指定行数 (TC-AUD-032)"""
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [],
+        }
+
+        AuditService.collect_and_save_system_logs(
+            self.host.id,
+            num_lines=200,
+        )
+
+        # 验证调用参数
+        call_args = mock_collect.call_args
+        self.assertEqual(call_args[0][2], 200)
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_no_save(self, mock_collect):
+        """测试不保存到数据库 (TC-AUD-033)"""
+        from backend.models.audit.system_log import SystemLog
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [
+                {
+                    'source': 'auth',
+                    'level': 'info',
+                    'message': 'Test log',
+                    'timestamp': 'Jul 10 10:00:00',
+                    'raw_line': 'Test log line',
+                },
+            ],
+        }
+
+        SystemLog.objects.all().delete()  # 清空日志
+
+        result = AuditService.collect_and_save_system_logs(
+            self.host.id,
+            save_to_db=False,
+        )
+
+        # 验证没有保存到数据库
+        self.assertEqual(SystemLog.objects.count(), 0)
