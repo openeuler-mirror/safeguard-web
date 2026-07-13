@@ -1723,3 +1723,53 @@ class AuditServiceSystemLogTest(APITestCase):
 
         # 验证没有保存到数据库
         self.assertEqual(SystemLog.objects.count(), 0)
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_timestamp_parsing(self, mock_collect):
+        """测试时间戳解析 (TC-AUD-034)"""
+        from backend.models.audit.system_log import SystemLog
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [
+                {
+                    'source': 'auth',
+                    'level': 'info',
+                    'message': 'Test log',
+                    'timestamp': 'Jul 10 10:00:00',
+                    'raw_line': 'Jul 10 10:00:00 host sshd[1234]: Test',
+                },
+            ],
+        }
+
+        AuditService.collect_and_save_system_logs(self.host.id)
+
+        # 验证日志被保存
+        self.assertEqual(SystemLog.objects.count(), 1)
+        log = SystemLog.objects.first()
+        self.assertEqual(log.timestamp.month, 7)
+        self.assertEqual(log.timestamp.day, 10)
+        self.assertEqual(log.timestamp.hour, 10)
+        self.assertEqual(log.timestamp.minute, 0)
+
+    @mock.patch('backend.services.safeguard.collect_system_logs')
+    def test_collect_and_save_system_logs_timestamp_parsing_failed(self, mock_collect):
+        """测试时间戳解析失败 (TC-AUD-035)"""
+        from backend.models.audit.system_log import SystemLog
+        from django.utils import timezone
+        mock_collect.return_value = {
+            'success': True,
+            'logs': [
+                {
+                    'source': 'auth',
+                    'level': 'info',
+                    'message': 'Test log',
+                    'timestamp': 'Invalid Date Format',
+                    'raw_line': 'Invalid date log line',
+                },
+            ],
+        }
+
+        AuditService.collect_and_save_system_logs(self.host.id)
+
+        # 验证日志被保存（使用当前时间）
+        self.assertEqual(SystemLog.objects.count(), 1)
