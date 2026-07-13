@@ -2117,3 +2117,48 @@ class SafeguardModelTest(APITestCase):
         self.assertEqual(policy.template, template)
         self.assertEqual(policy.config_version, 1)
         self.assertEqual(policy.status, 'pending')
+
+    def test_create_policy_apply_task(self):
+        """测试创建下发任务 (TC-MDL-007)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='测试模板',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        self.assertEqual(task.host, self.host)
+        self.assertEqual(task.policy, policy)
+        self.assertEqual(task.task_type, 'apply')
+        self.assertEqual(task.status, 'pending')
+
+    def test_create_file_monitor_rule(self):
+        """测试创建文件监控规则 (TC-MDL-008)"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            watch_create=True,
+            watch_modify=True,
+            watch_delete=True,
+            enabled=True,
+        )
+
+        self.assertEqual(rule.host, self.host)
+        self.assertEqual(rule.path, '/etc/passwd')
+        self.assertEqual(rule.monitor_type, 'file')
+        self.assertTrue(rule.watch_create)
+        self.assertTrue(rule.enabled)
