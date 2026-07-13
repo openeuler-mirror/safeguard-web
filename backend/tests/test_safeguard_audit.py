@@ -2251,3 +2251,38 @@ class SafeguardSecurityTest(APITestCase):
                 self.host.id,
                 'abc123'  # 非数字PID
             )
+
+    def test_init_process_protection(self):
+        """测试init进程保护 (TC-SEC-003)"""
+        from backend.services.safeguard import HostInfoService
+
+        # 尝试终止PID 1 (init进程)
+        with self.assertRaises(OperationError):
+            HostInfoService.kill_process(
+                self.host.id,
+                1,
+                force=True
+            )
+
+    def test_audit_log_integrity(self):
+        """测试审计日志完整性 (TC-SEC-005)"""
+        from backend.services.safeguard import AuditService
+
+        # 执行一些会记录日志的操作
+        AuditService.log_action(
+            user=self.user,
+            action='create',
+            resource_type='policy',
+            resource_id='1',
+            resource_name='测试策略',
+        )
+
+        # 验证日志完整记录
+        audit_log = AuditLog.objects.first()
+        self.assertIsNotNone(audit_log)
+        self.assertEqual(audit_log.user, self.user)
+        self.assertEqual(audit_log.action, 'create')
+        self.assertEqual(audit_log.resource_type, 'policy')
+        self.assertEqual(audit_log.resource_id, '1')
+        self.assertEqual(audit_log.resource_name, '测试策略')
+        self.assertIsNotNone(audit_log.created_at)
