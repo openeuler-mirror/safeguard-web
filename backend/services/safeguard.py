@@ -894,12 +894,11 @@ class PolicyService:
                 'policy_id': task.policy_id,
                 'task_type': task.task_type,
                 'status': task.status,
-                'result': task.result,
-                'error_message': task.error_message,
-                'created_by': task.created_by.username if task.created_by else None,
+                'message': task.message,
+                'created_by': task.created_by.user if task.created_by else None,
                 'created_at': task.created_at.isoformat(),
                 'started_at': task.started_at.isoformat() if task.started_at else None,
-                'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+                'finished_at': task.finished_at.isoformat() if task.finished_at else None,
             }
 
         except PolicyApplyTask.DoesNotExist:

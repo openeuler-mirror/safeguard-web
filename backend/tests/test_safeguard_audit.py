@@ -779,7 +779,7 @@ class MonitorServiceTest(APITestCase):
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
     @mock.patch('backend.services.safeguard.collect_disk_metrics')
-    def test_collect_all_metrics_success(self, mock_disk, mock_network, mock_memory, mock_cpu):
+    def test_collect_all_metrics_success(self, mock_cpu, mock_memory, mock_network, mock_disk):
         """测试全量采集成功 (TC-MON-021)"""
         mock_cpu.return_value = {
             'success': True,
@@ -812,7 +812,7 @@ class MonitorServiceTest(APITestCase):
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
     @mock.patch('backend.services.safeguard.collect_disk_metrics')
-    def test_collect_all_metrics_with_save(self, mock_disk, mock_network, mock_memory, mock_cpu):
+    def test_collect_all_metrics_with_save(self, mock_cpu, mock_memory, mock_network, mock_disk):
         """测试采集并保存 (TC-MON-022)"""
         mock_cpu.return_value = {
             'success': True,
@@ -1242,3 +1242,35 @@ class PolicyServiceTest(APITestCase):
         """测试任务不存在 (TC-POL-018)"""
         with self.assertRaises(TaskNotFoundError):
             PolicyService.apply_policy(99999)
+
+    def test_get_task_status_success(self):
+        """测试获取任务状态成功 (TC-POL-019)"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='任务状态测试',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=template,
+            config=template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        result = PolicyService.get_task_status(task.id)
+
+        self.assertEqual(result['id'], task.id)
+        self.assertEqual(result['status'], 'pending')
+
+    def test_get_task_status_not_found(self):
+        """测试获取任务状态时任务不存在"""
+        with self.assertRaises(TaskNotFoundError):
+            PolicyService.get_task_status(99999)
