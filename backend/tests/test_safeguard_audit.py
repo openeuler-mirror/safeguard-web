@@ -1274,3 +1274,60 @@ class PolicyServiceTest(APITestCase):
         """测试获取任务状态时任务不存在"""
         with self.assertRaises(TaskNotFoundError):
             PolicyService.get_task_status(99999)
+
+
+class AuditServiceFileMonitorRuleTest(APITestCase):
+    """AuditService 文件监控规则测试"""
+
+    def setUp(self):
+        """创建测试数据"""
+        self.user = Users.objects.create(
+            user='testuser',
+            password='testpass123',
+            nickname='测试用户'
+        )
+        self.host = Host.objects.create(
+            hostname='test-host',
+            ip_address='192.168.1.100',
+            port=22,
+            username='root',
+            password='testpass',
+            os_type='linux',
+        )
+
+    def test_create_file_monitor_rule_success(self):
+        """测试创建文件监控规则成功 (TC-AUD-013)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/etc/passwd',
+            monitor_type='file',
+            watch_create=True,
+            watch_modify=True,
+            watch_delete=True,
+        )
+
+        self.assertEqual(result['host_id'], self.host.id)
+        self.assertEqual(result['path'], '/etc/passwd')
+        self.assertTrue(result['enabled'])
+
+    def test_create_file_monitor_rule_type_file(self):
+        """测试文件类型监控 (TC-AUD-014)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/etc/ssh/sshd_config',
+            monitor_type='file',
+        )
+
+        rule = FileMonitorRule.objects.get(id=result['id'])
+        self.assertEqual(rule.monitor_type, 'file')
+
+    def test_create_file_monitor_rule_type_dir(self):
+        """测试目录类型监控 (TC-AUD-015)"""
+        result = AuditService.create_file_monitor_rule(
+            host_id=self.host.id,
+            path='/etc',
+            monitor_type='dir',
+        )
+
+        rule = FileMonitorRule.objects.get(id=result['id'])
+        self.assertEqual(rule.monitor_type, 'dir')
