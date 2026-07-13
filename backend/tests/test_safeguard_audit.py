@@ -1527,3 +1527,23 @@ class AuditServiceFileMonitorEventTest(APITestCase):
 
         self.assertEqual(result['total'], 1)
         self.assertEqual(result['data'][0]['host_id'], self.host.id)
+
+    def test_list_file_monitor_events_filter_by_event_type(self):
+        """测试按事件类型过滤 (TC-AUD-025)"""
+        from django.utils import timezone
+        # 创建事件
+        FileMonitorEvent.objects.create(
+            host=self.host, rule=self.rule, event_type='modify', timestamp=timezone.now()
+        )
+        FileMonitorEvent.objects.create(
+            host=self.host, rule=self.rule, event_type='delete', timestamp=timezone.now()
+        )
+        FileMonitorEvent.objects.create(
+            host=self.host, rule=self.rule, event_type='create', timestamp=timezone.now()
+        )
+
+        # 只查询 modify 事件
+        result = AuditService.list_file_monitor_events(event_type='modify')
+
+        self.assertEqual(result['total'], 1)
+        self.assertEqual(result['data'][0]['event_type'], 'modify')
