@@ -393,3 +393,56 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
         """测试获取历史监控数据缺少host_id"""
         response = self.client.get('/api/safeguard/monitor-data/history/')
         self.assertNotEqual(response.data['errno'], 0)
+
+    def test_get_monitor_history_with_filters(self):
+        """测试获取历史监控数据带过滤条件"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            memory_total=16384,
+            memory_used=4096,
+        )
+
+        response = self.client.get(
+            '/api/safeguard/monitor-data/history/',
+            {'host_id': self.host.id, 'metric_type': 'cpu', 'page': 1, 'page_size': 10}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_get_latest_monitor_data(self):
+        """测试获取最新监控数据"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            memory_total=16384,
+            memory_used=4096,
+        )
+
+        response = self.client.get(
+            f'/api/safeguard/monitor-data/{self.host.id}/latest/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIsNotNone(response.data['data'])
+
+    def test_get_latest_monitor_data_not_found(self):
+        """测试获取不存在主机的最新监控数据"""
+        response = self.client.get('/api/safeguard/monitor-data/99999/latest/')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_list_monitor_data(self):
+        """测试列出监控数据（TC-API-012）"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            memory_total=16384,
+            memory_used=4096,
+        )
+
+        response = self.client.get('/api/safeguard/monitor-data/')
+        self.assertEqual(response.data['errno'], 0)
