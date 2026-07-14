@@ -214,11 +214,20 @@ class HostInfoService:
             操作结果字典
         """
         try:
+            # Validate inputs first as a safeguard
+            allowed_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
+            if action not in allowed_actions:
+                raise OperationError(f"Invalid action: {action}")
+            if not service_name or not all(c.isalnum() or c in '-_.' for c in service_name):
+                raise OperationError(f"Invalid service name: {service_name}")
+
             host = Host.objects.get(id=host_id)
             result = control_service(host, service_name, action)
             return result
         except Host.DoesNotExist:
             raise HostNotFoundError(host_id)
+        except OperationError:
+            raise
         except Exception as e:
             logger.error(f'Error controlling service {service_name} for host {host_id}: {e}')
             raise HostInfoCollectError(str(e))
