@@ -913,3 +913,63 @@ class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
             {'monitor_type': 'file'}
         )
         self.assertEqual(response.data['errno'], 0)
+
+
+class FileMonitorEventViewSetTest(SafeguardViewSetTestBase):
+    """FileMonitorEventViewSet 测试"""
+
+    def setUp(self):
+        super().setUp()
+        self.rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+
+    def test_list_file_monitor_events(self):
+        """测试列出监控事件"""
+        FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=self.rule,
+            event_type='modify',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+        FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=self.rule,
+            event_type='access',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+
+        response = self.client.get('/api/safeguard/file-monitor-events/')
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
+        self.assertGreaterEqual(len(results), 2)
+
+    def test_list_file_monitor_events_with_filters(self):
+        """测试带过滤条件列出监控事件"""
+        FileMonitorEvent.objects.create(
+            host=self.host,
+            rule=self.rule,
+            event_type='modify',
+            path='/etc/passwd',
+            timestamp=timezone.now(),
+        )
+
+        # 按主机过滤
+        response = self.client.get(
+            '/api/safeguard/file-monitor-events/',
+            {'host': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+        # 按事件类型过滤
+        response = self.client.get(
+            '/api/safeguard/file-monitor-events/',
+            {'event_type': 'modify'}
+        )
+        self.assertEqual(response.data['errno'], 0)
