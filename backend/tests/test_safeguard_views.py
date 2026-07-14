@@ -94,3 +94,73 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
             {'host_id': 99999}
         )
         self.assertNotEqual(response.data['errno'], 0)
+
+    @mock.patch('backend.services.safeguard.collect_ports')
+    def test_get_ports_info_success(self, mock_collect):
+        """测试获取端口信息成功（TC-API-002）"""
+        mock_collect.return_value = {
+            'success': True,
+            'listening_ports': [
+                {'port': 22, 'protocol': 'tcp', 'process': 'sshd'},
+            ],
+            'high_risk_ports': [],
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/ports-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    @mock.patch('backend.services.safeguard.collect_processes')
+    def test_get_processes_info_success(self, mock_collect):
+        """测试获取进程信息成功（TC-API-003）"""
+        mock_collect.return_value = {
+            'success': True,
+            'processes': [
+                {'pid': 1, 'name': 'systemd', 'cpu': 0.1, 'memory': 2.0},
+            ],
+            'high_resource': [],
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/processes-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    @mock.patch('backend.services.safeguard.collect_services')
+    def test_get_services_info_success(self, mock_collect):
+        """测试获取服务信息成功（TC-API-004）"""
+        mock_collect.return_value = {
+            'success': True,
+            'services': [
+                {'name': 'sshd', 'status': 'running', 'enabled': True},
+            ],
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/services-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    @mock.patch('backend.services.safeguard.collect_system_accounts')
+    def test_get_accounts_info_success(self, mock_collect):
+        """测试获取账户信息成功（TC-API-005）"""
+        mock_collect.return_value = {
+            'success': True,
+            'accounts': [
+                {'username': 'root', 'uid': 0, 'gid': 0, 'shell': '/bin/bash'},
+            ],
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/accounts-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
