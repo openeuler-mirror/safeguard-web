@@ -40,7 +40,7 @@ class SystemLogViewSet(UnifiedModelViewSet):
 
     def get_queryset(self):
         queryset = SystemLog.objects.select_related('host').all().order_by('-timestamp')
-        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+        return queryset
 
     @action(detail=False, methods=['post'], url_path='collect')
     def collect_logs(self, request):
