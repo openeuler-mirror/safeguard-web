@@ -164,3 +164,68 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         )
         self.assertEqual(response.data['errno'], 0)
         self.assertTrue(response.data['data']['success'])
+
+    @mock.patch('backend.services.safeguard.control_service')
+    def test_service_control_success(self, mock_control):
+        """测试服务控制成功（TC-API-006）"""
+        mock_control.return_value = {
+            'success': True,
+            'service': 'sshd',
+            'action': 'start',
+            'message': 'Service started',
+        }
+
+        data = {
+            'host_id': self.host.id,
+            'service_name': 'sshd',
+            'action': 'start'
+        }
+        response = self.client.post(
+            '/api/safeguard/host-info/service-control/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    def test_service_control_missing_params(self):
+        """测试服务控制缺少参数"""
+        data = {'host_id': self.host.id}
+        response = self.client.post(
+            '/api/safeguard/host-info/service-control/',
+            data,
+            format='json'
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_service_control_invalid_action(self):
+        """测试无效的action参数"""
+        data = {
+            'host_id': self.host.id,
+            'service_name': 'sshd',
+            'action': 'invalid'
+        }
+        response = self.client.post(
+            '/api/safeguard/host-info/service-control/',
+            data,
+            format='json'
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    @mock.patch('backend.services.safeguard.get_service_logs')
+    def test_get_service_logs_success(self, mock_get_logs):
+        """测试获取服务日志成功（TC-API-007）"""
+        mock_get_logs.return_value = {
+            'success': True,
+            'service': 'sshd',
+            'logs': [
+                {'timestamp': '2024-07-06 10:00:00', 'message': 'Accepted publickey'},
+            ],
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/service-logs/',
+            {'host_id': self.host.id, 'service_name': 'sshd'}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
