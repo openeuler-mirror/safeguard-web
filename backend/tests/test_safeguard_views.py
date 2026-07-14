@@ -976,7 +976,7 @@ class FileMonitorEventViewSetTest(SafeguardViewSetTestBase):
 
 
 class AuditLogViewSetTest(SafeguardViewSetTestBase):
-    """AuditLogViewSet 测试（TC-API-030到TC-API-031）"""
+    """AuditLogViewSet 测试"""
 
     def setUp(self):
         super().setUp()
@@ -997,7 +997,7 @@ class AuditLogViewSetTest(SafeguardViewSetTestBase):
         )
 
     def test_list_audit_logs(self):
-        """测试列出审计日志（TC-API-030）"""
+        """测试列出审计日志"""
         response = self.client.get('/api/safeguard/audit-logs/')
         self.assertEqual(response.data['errno'], 0)
         results = response.data['data']
@@ -1006,7 +1006,7 @@ class AuditLogViewSetTest(SafeguardViewSetTestBase):
         self.assertGreaterEqual(len(results), 2)
 
     def test_retrieve_audit_log(self):
-        """测试获取单个审计日志（TC-API-031）"""
+        """测试获取单个审计日志"""
         log = AuditLog.objects.create(
             user=self.user,
             action='delete',
@@ -1032,5 +1032,64 @@ class AuditLogViewSetTest(SafeguardViewSetTestBase):
         response = self.client.get(
             '/api/safeguard/audit-logs/',
             {'resource_type': 'host'}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+
+class SystemLogViewSetTest(SafeguardViewSetTestBase):
+    """SystemLogViewSet 测试"""
+
+    def test_list_system_logs(self):
+        """测试列出系统日志"""
+        SystemLog.objects.create(
+            host=self.host,
+            source='auth',
+            level='info',
+            message='Accepted publickey',
+            timestamp=timezone.now(),
+        )
+        SystemLog.objects.create(
+            host=self.host,
+            source='syslog',
+            level='warning',
+            message='Disk space low',
+            timestamp=timezone.now(),
+        )
+
+        response = self.client.get('/api/safeguard/system-logs/')
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
+        self.assertGreaterEqual(len(results), 2)
+
+    def test_list_system_logs_with_filters(self):
+        """测试带过滤条件列出系统日志"""
+        SystemLog.objects.create(
+            host=self.host,
+            source='auth',
+            level='info',
+            message='Accepted publickey',
+            timestamp=timezone.now(),
+        )
+
+        # 按主机过滤
+        response = self.client.get(
+            '/api/safeguard/system-logs/',
+            {'host': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+        # 按日志源过滤
+        response = self.client.get(
+            '/api/safeguard/system-logs/',
+            {'source': 'auth'}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+        # 按级别过滤
+        response = self.client.get(
+            '/api/safeguard/system-logs/',
+            {'level': 'info'}
         )
         self.assertEqual(response.data['errno'], 0)
