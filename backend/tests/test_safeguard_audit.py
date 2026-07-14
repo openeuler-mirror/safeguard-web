@@ -1796,6 +1796,67 @@ class AuditServiceFileMonitorEventTest(APITestCase):
         self.assertEqual(saved_count, 1)  # 只保存了有效规则的事件
         self.assertEqual(FileMonitorEvent.objects.count(), 1)
 
+    def test_save_file_events_with_timestamp(self):
+        """测试保存事件时使用事件中的时间戳而非当前时间"""
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+
+        # 创建一个过去的时间戳
+        past_time = timezone.now() - timedelta(hours=2)
+        past_time_str = past_time.isoformat()
+
+        events = [
+            {
+                'rule_id': self.rule.id,
+                'event_type': 'modify',
+                'path': '/etc/passwd',
+                'timestamp': past_time_str,
+                'details': {},
+            },
+        ]
+
+        saved_count = AuditService.save_file_events(events)
+
+        self.assertEqual(saved_count, 1)
+        saved_event = FileMonitorEvent.objects.first()
+        self.assertIsNotNone(saved_event)
+
+        # 验证时间戳接近我们设置的过去时间（允许一些偏差）
+        time_diff = abs((saved_event.timestamp - past_time).total_seconds())
+        self.assertLess(time_diff, 1, "Timestamp should be preserved from the event")
+
+    def test_save_file_events_fallback_timestamp(self):
+        """测试当事件没有时间戳或时间戳无效时使用当前时间作为回退"""
+        from django.utils import timezone
+
+        events = [
+            # 没有 timestamp 字段
+            {
+                'rule_id': self.rule.id,
+                'event_type': 'modify',
+                'path': '/etc/passwd',
+                'details': {},
+            },
+            # timestamp 格式无效
+            {
+                'rule_id': self.rule.id,
+                'event_type': 'access',
+                'path': '/etc/group',
+                'timestamp': 'invalid-timestamp',
+                'details': {},
+            },
+        ]
+
+        saved_count = AuditService.save_file_events(events)
+
+        self.assertEqual(saved_count, 2)
+        saved_events = FileMonitorEvent.objects.all()
+
+        # 验证两个事件都使用了合理的时间戳（接近当前时间）
+        for event in saved_events:
+            time_diff = abs((event.timestamp - timezone.now()).total_seconds())
+            self.assertLess(time_diff, 5, "Should use current time as fallback")
+
 
 class AuditServiceSystemLogTest(APITestCase):
     """AuditService 系统日志测试"""
