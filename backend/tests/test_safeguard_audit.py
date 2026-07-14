@@ -971,6 +971,11 @@ class MonitorServiceTest(APITestCase):
         self.assertTrue(result['disk']['success'])
         self.assertFalse(result['saved'])
 
+        mock_cpu.assert_called_once_with(self.host)
+        mock_memory.assert_called_once_with(self.host)
+        mock_network.assert_called_once_with(self.host)
+        mock_disk.assert_called_once_with(self.host)
+
     @mock.patch('backend.services.safeguard.collect_cpu_metrics')
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
@@ -999,6 +1004,11 @@ class MonitorServiceTest(APITestCase):
         result = MonitorService.collect_all_metrics(self.host.id, save=True)
 
         self.assertTrue(result['saved'])
+
+        mock_cpu.assert_called_once_with(self.host)
+        mock_memory.assert_called_once_with(self.host)
+        mock_network.assert_called_once_with(self.host)
+        mock_disk.assert_called_once_with(self.host)
 
     def test_get_monitor_history_success(self):
         """测试查询历史数据成功 (TC-MON-013)"""
