@@ -279,3 +279,117 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
             {'host_id': self.host.id}
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
+    """HostMonitorDataViewSet 测试（TC-API-012到TC-API-014）"""
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    @mock.patch('backend.services.safeguard.collect_memory_metrics')
+    @mock.patch('backend.services.safeguard.collect_network_metrics')
+    @mock.patch('backend.services.safeguard.collect_disk_metrics')
+    def test_collect_monitor_data_success(
+        self, mock_disk, mock_network, mock_memory, mock_cpu
+    ):
+        """测试采集监控数据成功（TC-API-014）"""
+        mock_cpu.return_value = {
+            'success': True,
+            'cpu_usage': {'usage_percent': 45.5},
+            'load_avg': {'load_1min': 0.8, 'load_5min': 0.6, 'load_15min': 0.5},
+        }
+        mock_memory.return_value = {
+            'success': True,
+            'memory': {'mem_total': 16384, 'mem_used': 4096, 'mem_percent': 25.0},
+        }
+        mock_network.return_value = {
+            'success': True,
+            'total_rx_bytes': 1024000,
+            'total_tx_bytes': 512000,
+        }
+        mock_disk.return_value = {
+            'success': True,
+            'disks': [{'sectors_read': 1000, 'sectors_written': 2000}],
+        }
+
+        data = {'host_id': self.host.id}
+        response = self.client.post(
+            '/api/safeguard/monitor-data/collect/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_collect_monitor_data_missing_host_id(self):
+        """测试采集监控数据缺少host_id"""
+        response = self.client.post(
+            '/api/safeguard/monitor-data/collect/',
+            {},
+            format='json'
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    @mock.patch('backend.services.safeguard.collect_cpu_metrics')
+    @mock.patch('backend.services.safeguard.collect_memory_metrics')
+    @mock.patch('backend.services.safeguard.collect_network_metrics')
+    @mock.patch('backend.services.safeguard.collect_disk_metrics')
+    def test_batch_collect_monitor_data(
+        self, mock_disk, mock_network, mock_memory, mock_cpu
+    ):
+        """测试批量采集监控数据"""
+        mock_cpu.return_value = {
+            'success': True,
+            'cpu_usage': {'usage_percent': 45.5},
+            'load_avg': {'load_1min': 0.8, 'load_5min': 0.6, 'load_15min': 0.5},
+        }
+        mock_memory.return_value = {
+            'success': True,
+            'memory': {'mem_total': 16384, 'mem_used': 4096, 'mem_percent': 25.0},
+        }
+        mock_network.return_value = {
+            'success': True,
+            'total_rx_bytes': 1024000,
+            'total_tx_bytes': 512000,
+        }
+        mock_disk.return_value = {
+            'success': True,
+            'disks': [{'sectors_read': 1000, 'sectors_written': 2000}],
+        }
+
+        data = {'host_ids': [self.host.id]}
+        response = self.client.post(
+            '/api/safeguard/monitor-data/batch_collect/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertIn('results', response.data['data'])
+
+    def test_get_monitor_history_success(self):
+        """测试获取历史监控数据成功（TC-API-013）"""
+        # 创建测试数据
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=45.5,
+            load_1m=0.8,
+            memory_total=16384,
+            memory_used=4096,
+        )
+        HostMonitorData.objects.create(
+            host=self.host,
+            cpu_usage=50.0,
+            load_1m=1.2,
+            memory_total=16384,
+            memory_used=8192,
+        )
+
+        response = self.client.get(
+            '/api/safeguard/monitor-data/history/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertGreaterEqual(response.data['data']['total'], 2)
+
+    def test_get_monitor_history_missing_host_id(self):
+        """测试获取历史监控数据缺少host_id"""
+        response = self.client.get('/api/safeguard/monitor-data/history/')
+        self.assertNotEqual(response.data['errno'], 0)
