@@ -930,7 +930,7 @@ class MonitorServiceTest(APITestCase):
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
     @mock.patch('backend.services.safeguard.collect_disk_metrics')
-    def test_collect_all_metrics_success(self, mock_cpu, mock_memory, mock_network, mock_disk):
+    def test_collect_all_metrics_success(self, mock_disk, mock_network, mock_memory, mock_cpu):
         """测试全量采集成功 (TC-MON-021)"""
         mock_cpu.return_value = {
             'success': True,
@@ -963,7 +963,7 @@ class MonitorServiceTest(APITestCase):
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
     @mock.patch('backend.services.safeguard.collect_disk_metrics')
-    def test_collect_all_metrics_with_save(self, mock_cpu, mock_memory, mock_network, mock_disk):
+    def test_collect_all_metrics_with_save(self, mock_disk, mock_network, mock_memory, mock_cpu):
         """测试采集并保存 (TC-MON-022)"""
         mock_cpu.return_value = {
             'success': True,
