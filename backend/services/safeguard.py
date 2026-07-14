@@ -260,11 +260,24 @@ class HostInfoService:
             操作结果字典
         """
         try:
+            # Validate pid is an integer
+            if not isinstance(pid, int):
+                try:
+                    pid = int(pid)
+                except (ValueError, TypeError):
+                    raise OperationError(f"Invalid pid: {pid}")
+
+            # Protect init process (PID 1)
+            if pid == 1:
+                raise OperationError("Cannot kill init process (PID 1)")
+
             host = Host.objects.get(id=host_id)
             result = kill_process(host, pid, force)
             return result
         except Host.DoesNotExist:
             raise HostNotFoundError(host_id)
+        except OperationError:
+            raise
         except Exception as e:
             logger.error(f'Error killing process {pid} on host {host_id}: {e}')
             raise HostInfoCollectError(str(e))

@@ -2074,6 +2074,19 @@ def kill_process(host: Host, pid: int, force: bool = False) -> Dict[str, Any]:
     }
 
     try:
+        # Validate pid is an integer
+        if not isinstance(pid, int):
+            try:
+                pid = int(pid)
+            except (ValueError, TypeError):
+                result['message'] = f"Invalid pid: {pid}"
+                return result
+
+        # Protect init process (PID 1)
+        if pid == 1:
+            result['message'] = "Cannot kill init process (PID 1)"
+            return result
+
         with SSHClient(
             host=host.ip_address,
             port=host.port,
