@@ -514,3 +514,77 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
         """测试获取不存在的策略模板"""
         response = self.client.get('/api/safeguard/policy-templates/99999/')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_policy_template(self):
+        """测试更新策略模板（TC-API-018）"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='Original Name',
+            template_type='general',
+            created_by=self.user,
+        )
+
+        data = {
+            'name': 'Updated Name',
+            'description': '更新描述',
+        }
+        response = self.client.put(
+            f'/api/safeguard/policy-templates/{template.pk}/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'Updated Name')
+
+    def test_partial_update_policy_template(self):
+        """测试部分更新策略模板"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='Original Name',
+            template_type='general',
+            created_by=self.user,
+        )
+
+        data = {'description': '新描述'}
+        response = self.client.patch(
+            f'/api/safeguard/policy-templates/{template.pk}/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_delete_policy_template(self):
+        """测试删除策略模板（TC-API-019）"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='Delete Test',
+            template_type='general',
+            created_by=self.user,
+        )
+
+        response = self.client.delete(
+            f'/api/safeguard/policy-templates/{template.pk}/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertFalse(
+            SafeguardPolicyTemplate.objects.filter(pk=template.pk).exists()
+        )
+
+    def test_list_policy_templates_with_filters(self):
+        """测试带过滤条件列出策略模板"""
+        SafeguardPolicyTemplate.objects.create(
+            name='General Template',
+            template_type='general',
+            is_builtin=True,
+            created_by=self.user,
+        )
+        SafeguardPolicyTemplate.objects.create(
+            name='Custom Template',
+            template_type='custom',
+            is_builtin=False,
+            created_by=self.user,
+        )
+
+        # 按类型过滤
+        response = self.client.get(
+            '/api/safeguard/policy-templates/',
+            {'template_type': 'general'}
+        )
+        self.assertEqual(response.data['errno'], 0)
