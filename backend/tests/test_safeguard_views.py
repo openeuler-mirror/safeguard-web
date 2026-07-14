@@ -973,3 +973,64 @@ class FileMonitorEventViewSetTest(SafeguardViewSetTestBase):
             {'event_type': 'modify'}
         )
         self.assertEqual(response.data['errno'], 0)
+
+
+class AuditLogViewSetTest(SafeguardViewSetTestBase):
+    """AuditLogViewSet 测试（TC-API-030到TC-API-031）"""
+
+    def setUp(self):
+        super().setUp()
+        # 创建一些审计日志
+        AuditLog.objects.create(
+            user=self.user,
+            action='create',
+            resource_type='policy',
+            resource_id='1',
+            resource_name='Test Policy',
+        )
+        AuditLog.objects.create(
+            user=self.user,
+            action='update',
+            resource_type='host',
+            resource_id='1',
+            resource_name='Test Host',
+        )
+
+    def test_list_audit_logs(self):
+        """测试列出审计日志（TC-API-030）"""
+        response = self.client.get('/api/safeguard/audit-logs/')
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
+        self.assertGreaterEqual(len(results), 2)
+
+    def test_retrieve_audit_log(self):
+        """测试获取单个审计日志（TC-API-031）"""
+        log = AuditLog.objects.create(
+            user=self.user,
+            action='delete',
+            resource_type='policy',
+            resource_id='2',
+            resource_name='Test Policy 2',
+        )
+
+        response = self.client.get(f'/api/safeguard/audit-logs/{log.pk}/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['action'], 'delete')
+
+    def test_list_audit_logs_with_filters(self):
+        """测试带过滤条件列出审计日志"""
+        # 按操作类型过滤
+        response = self.client.get(
+            '/api/safeguard/audit-logs/',
+            {'action': 'create'}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+        # 按资源类型过滤
+        response = self.client.get(
+            '/api/safeguard/audit-logs/',
+            {'resource_type': 'host'}
+        )
+        self.assertEqual(response.data['errno'], 0)
