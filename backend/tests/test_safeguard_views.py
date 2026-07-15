@@ -446,3 +446,71 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
 
         response = self.client.get('/api/safeguard/monitor-data/')
         self.assertEqual(response.data['errno'], 0)
+
+
+class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
+    """SafeguardPolicyTemplateViewSet 测试（TC-API-015到TC-API-019）"""
+
+    def test_list_policy_templates(self):
+        """测试列出策略模板（TC-API-015）"""
+        SafeguardPolicyTemplate.objects.create(
+            name='Template 1',
+            template_type='general',
+            created_by=self.user,
+        )
+        SafeguardPolicyTemplate.objects.create(
+            name='Template 2',
+            template_type='custom',
+            created_by=self.user,
+        )
+
+        response = self.client.get('/api/safeguard/policy-templates/')
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
+        self.assertGreaterEqual(len(results), 2)
+
+    def test_create_policy_template_success(self):
+        """测试创建策略模板成功（TC-API-016）"""
+        data = {
+            'name': 'New Policy Template',
+            'description': '测试策略模板',
+            'template_type': 'custom',
+            'config': {'rules': [{'type': 'port', 'action': 'block', 'port': 22}]},
+        }
+        response = self.client.post(
+            '/api/safeguard/policy-templates/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'New Policy Template')
+
+    def test_create_policy_template_minimal(self):
+        """测试最少数据创建策略模板"""
+        data = {'name': 'Minimal Template'}
+        response = self.client.post(
+            '/api/safeguard/policy-templates/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'Minimal Template')
+
+    def test_retrieve_policy_template(self):
+        """测试获取单个策略模板（TC-API-017）"""
+        template = SafeguardPolicyTemplate.objects.create(
+            name='Retrieve Test',
+            template_type='general',
+            created_by=self.user,
+        )
+
+        response = self.client.get(f'/api/safeguard/policy-templates/{template.pk}/')
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['name'], 'Retrieve Test')
+
+    def test_retrieve_policy_template_not_found(self):
+        """测试获取不存在的策略模板"""
+        response = self.client.get('/api/safeguard/policy-templates/99999/')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
