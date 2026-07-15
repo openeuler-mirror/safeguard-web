@@ -1093,3 +1093,50 @@ class SystemLogViewSetTest(SafeguardViewSetTestBase):
             {'level': 'info'}
         )
         self.assertEqual(response.data['errno'], 0)
+
+
+@override_settings(AUDIT_LOG_ENABLED=False)
+class SafeguardViewPermissionDeniedTest(APITestCase):
+    """测试非管理员用户无权访问safeguard资源"""
+
+    def setUp(self):
+        """创建普通用户（非管理员）"""
+        # 创建普通用户角色
+        self.normal_auth = Authority.objects.create(
+            authority_id=890,
+            authority_name='普通用户'
+        )
+        # 创建普通用户
+        self.user = Users.objects.create(
+            user='normaluser',
+            password='testpass123',
+            nickname='普通用户'
+        )
+        UserAuthority.objects.create(user=self.user, authority=self.normal_auth)
+        refresh = RefreshToken.for_user(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+    def test_non_admin_cannot_access_host_info(self):
+        """测试非管理员不能访问主机信息"""
+        response = self.client.get('/api/safeguard/host-info/system-info/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_access_policy_templates(self):
+        """测试非管理员不能访问策略模板"""
+        response = self.client.get('/api/safeguard/policy-templates/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_access_monitor_data(self):
+        """测试非管理员不能访问监控数据"""
+        response = self.client.get('/api/safeguard/monitor-data/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_access_file_monitor_rules(self):
+        """测试非管理员不能访问文件监控规则"""
+        response = self.client.get('/api/safeguard/file-monitor-rules/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_admin_cannot_access_audit_logs(self):
+        """测试非管理员不能访问审计日志"""
+        response = self.client.get('/api/safeguard/audit-logs/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
