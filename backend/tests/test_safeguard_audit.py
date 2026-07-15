@@ -2303,19 +2303,22 @@ class SafeguardSecurityTest(APITestCase):
         )
 
     @mock.patch('backend.services.safeguard.control_service')
-    def test_control_service_command_injection_protection(self, mock_control):
-        """测试命令注入防护 (TC-SEC-001)"""
+    def test_control_service_host_info_layer_validation(self, mock_control):
+        """测试 HostInfoService 层的输入校验 (TC-SEC-001 第一层防护)"""
         from backend.services.safeguard import HostInfoService
         from backend.common.exceptions import OperationError
         mock_control.return_value = {'success': True, 'message': 'Test'}
 
-        # 测试1：验证包含命令注入字符的服务名被拒绝
+        # 测试1：验证包含命令注入字符的服务名被拒绝（HostInfoService 层）
         with self.assertRaises(OperationError):
             HostInfoService.control_service(
                 self.host.id,
                 'sshd; rm -rf /',  # 包含恶意命令
                 'start'
             )
+
+        # 验证底层的 control_service 没有被调用（因为在校验层就被拦截了）
+        mock_control.assert_not_called()
 
         # 测试2：验证其他命令注入字符也被拒绝
         malicious_service_names = [
@@ -2329,10 +2332,21 @@ class SafeguardSecurityTest(APITestCase):
         ]
 
         for malicious_name in malicious_service_names:
+            mock_control.reset_mock()
             with self.assertRaises(OperationError, msg=f"Should reject: {malicious_name}"):
                 HostInfoService.control_service(self.host.id, malicious_name, 'start')
+            # 验证每次都没有调用底层函数
+            mock_control.assert_not_called()
 
-        # 测试3：验证有效的服务名可以正常通过
+        # 测试3：验证无效的 action 也被拒绝
+        invalid_actions = ['invalid', 'hack', '; rm -rf /', '']
+        for invalid_action in invalid_actions:
+            mock_control.reset_mock()
+            with self.assertRaises(OperationError, msg=f"Should reject action: {invalid_action}"):
+                HostInfoService.control_service(self.host.id, 'sshd', invalid_action)
+            mock_control.assert_not_called()
+
+        # 测试4：验证有效的服务名和 action 可以正常通过
         valid_service_names = [
             'sshd',
             'nginx',
@@ -2340,19 +2354,21 @@ class SafeguardSecurityTest(APITestCase):
             'apache2.service',
             'my_service',
         ]
+        valid_actions = ['start', 'stop', 'restart', 'reload', 'enable', 'disable']
 
         for valid_name in valid_service_names:
-            # 重置 mock
-            mock_control.reset_mock()
-            mock_control.return_value = {'success': True, 'message': 'Test'}
+            for valid_action in valid_actions:
+                mock_control.reset_mock()
+                mock_control.return_value = {'success': True, 'message': 'Test'}
 
-            result = HostInfoService.control_service(self.host.id, valid_name, 'start')
+                result = HostInfoService.control_service(self.host.id, valid_name, valid_action)
 
-            # 验证调用了底层的 control_service
-            mock_control.assert_called_once()
-            call_args = mock_control.call_args
-            # 验证传递的服务名没有被修改
-            self.assertEqual(call_args[0][1], valid_name)
+                # 验证调用了底层的 control_service
+                mock_control.assert_called_once()
+                call_args = mock_control.call_args
+                # 验证传递的参数正确
+                self.assertEqual(call_args[0][1], valid_name)
+                self.assertEqual(call_args[0][2], valid_action)
 
     @mock.patch('backend.utils.hardware_collector.SSHClient')
     def test_kill_process_pid_validation(self, mock_ssh):
