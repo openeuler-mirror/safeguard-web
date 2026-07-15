@@ -49,3 +49,48 @@ class SafeguardViewSetTestBase(APITestCase):
             password='testpass',
             os_type='linux',
         )
+
+
+class HostInfoViewSetTest(SafeguardViewSetTestBase):
+    """HostInfoViewSet 测试（TC-API-001到TC-API-011）"""
+
+    @mock.patch('backend.services.safeguard.collect_host_hardware')
+    def test_get_system_info_success(self, mock_collect):
+        """测试获取系统信息成功（TC-API-001）"""
+        mock_collect.return_value = {
+            'success': True,
+            'hostname': 'test-host',
+            'os': 'Linux',
+            'kernel': '5.4.0',
+            'cpu': {'cores': 4, 'model': 'Intel i7'},
+            'memory': {'total': 16384, 'used': 4096},
+        }
+
+        response = self.client.get(
+            '/api/safeguard/host-info/system-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    def test_get_system_info_missing_host_id(self):
+        """测试缺少host_id参数（TC-API-010）"""
+        response = self.client.get('/api/safeguard/host-info/system-info/')
+        self.assertNotEqual(response.data['errno'], 0)
+        self.assertIn('host_id', response.data['errmsg'])
+
+    def test_get_system_info_invalid_host_id(self):
+        """测试无效的host_id参数（TC-API-010）"""
+        response = self.client.get(
+            '/api/safeguard/host-info/system-info/',
+            {'host_id': 'invalid'}
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_get_system_info_host_not_found(self):
+        """测试主机不存在（TC-API-010）"""
+        response = self.client.get(
+            '/api/safeguard/host-info/system-info/',
+            {'host_id': 99999}
+        )
+        self.assertNotEqual(response.data['errno'], 0)
