@@ -229,3 +229,53 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         )
         self.assertEqual(response.data['errno'], 0)
         self.assertTrue(response.data['data']['success'])
+
+    @mock.patch('backend.services.safeguard.kill_process')
+    def test_kill_process_success(self, mock_kill):
+        """测试终止进程成功（TC-API-008）"""
+        mock_kill.return_value = {
+            'success': True,
+            'pid': 1234,
+            'force': False,
+            'message': 'Process killed',
+        }
+
+        data = {'host_id': self.host.id, 'pid': 1234}
+        response = self.client.post(
+            '/api/safeguard/host-info/kill-process/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['success'])
+
+    def test_kill_process_invalid_pid(self):
+        """测试无效的pid参数（TC-API-011）"""
+        data = {'host_id': self.host.id, 'pid': 'invalid'}
+        response = self.client.post(
+            '/api/safeguard/host-info/kill-process/',
+            data,
+            format='json'
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_kill_process_missing_params(self):
+        """测试终止进程缺少参数"""
+        data = {'host_id': self.host.id}
+        response = self.client.post(
+            '/api/safeguard/host-info/kill-process/',
+            data,
+            format='json'
+        )
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_host_info_unauthenticated(self):
+        """测试未认证访问（TC-API-009）"""
+        # 清除认证
+        self.client.credentials()
+
+        response = self.client.get(
+            '/api/safeguard/host-info/system-info/',
+            {'host_id': self.host.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
