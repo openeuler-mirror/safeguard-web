@@ -52,8 +52,6 @@ class SafeguardViewSetTestBase(APITestCase):
 
 
 class HostInfoViewSetTest(SafeguardViewSetTestBase):
-    """HostInfoViewSet 测试（TC-API-001到TC-API-011）"""
-
     @mock.patch('backend.services.safeguard.collect_host_hardware')
     def test_get_system_info_success(self, mock_collect):
         """测试获取系统信息成功（TC-API-001）"""
@@ -282,8 +280,6 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
 
 class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
-    """HostMonitorDataViewSet 测试（TC-API-012到TC-API-014）"""
-
     @mock.patch('backend.services.safeguard.collect_cpu_metrics')
     @mock.patch('backend.services.safeguard.collect_memory_metrics')
     @mock.patch('backend.services.safeguard.collect_network_metrics')
@@ -449,8 +445,6 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
 
 
 class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
-    """SafeguardPolicyTemplateViewSet 测试（TC-API-015到TC-API-019）"""
-
     def test_list_policy_templates(self):
         """测试列出策略模板（TC-API-015）"""
         SafeguardPolicyTemplate.objects.create(
@@ -592,8 +586,6 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
 
 @override_settings(AUDIT_LOG_ENABLED=False)
 class HostSafeguardPolicyViewSetTest(SafeguardViewSetTestBase):
-    """HostSafeguardPolicyViewSet 测试（TC-API-020到TC-API-021）"""
-
     def setUp(self):
         super().setUp()
         self.template = SafeguardPolicyTemplate.objects.create(
@@ -665,4 +657,78 @@ class HostSafeguardPolicyViewSetTest(SafeguardViewSetTestBase):
         )
 
         response = self.client.get('/api/safeguard/host-policies/')
+        self.assertEqual(response.data['errno'], 0)
+
+
+class PolicyApplyTaskViewSetTest(SafeguardViewSetTestBase):
+    def setUp(self):
+        super().setUp()
+        self.template = SafeguardPolicyTemplate.objects.create(
+            name='Task Test Template',
+            config={'rules': []},
+            created_by=self.user,
+        )
+        self.policy = HostSafeguardPolicy.objects.create(
+            host=self.host,
+            template=self.template,
+            config=self.template.config.copy(),
+            config_version=1,
+            status='pending',
+        )
+
+    @mock.patch('backend.tasks.safeguard.apply_policy_task')
+    def test_apply_policy_success(self, mock_apply_task):
+        """测试执行策略下发成功（TC-API-022）"""
+        mock_apply_task.delay.return_value = None
+
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=self.policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        response = self.client.post(
+            f'/api/safeguard/policy-tasks/{task.pk}/apply/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_apply_policy_task_not_found(self):
+        """测试执行不存在的策略任务"""
+        response = self.client.post('/api/safeguard/policy-tasks/99999/apply/')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_get_task_status(self):
+        """测试获取任务状态（TC-API-023）"""
+        task = PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=self.policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        response = self.client.get(
+            f'/api/safeguard/policy-tasks/{task.pk}/status/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['status'], 'pending')
+
+    def test_get_task_status_not_found(self):
+        """测试获取不存在的任务状态"""
+        response = self.client.get('/api/safeguard/policy-tasks/99999/status/')
+        self.assertNotEqual(response.data['errno'], 0)
+
+    def test_list_policy_tasks(self):
+        """测试列出策略任务"""
+        PolicyApplyTask.objects.create(
+            host=self.host,
+            policy=self.policy,
+            task_type='apply',
+            status='pending',
+            created_by=self.user,
+        )
+
+        response = self.client.get('/api/safeguard/policy-tasks/')
         self.assertEqual(response.data['errno'], 0)
