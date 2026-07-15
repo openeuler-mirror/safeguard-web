@@ -2245,19 +2245,53 @@ class SafeguardSecurityTest(APITestCase):
     def test_control_service_command_injection_protection(self, mock_control):
         """测试命令注入防护 (TC-SEC-001)"""
         from backend.services.safeguard import HostInfoService
+        from backend.common.exceptions import OperationError
         mock_control.return_value = {'success': True, 'message': 'Test'}
 
-        # 尝试注入恶意命令
-        result = HostInfoService.control_service(
-            self.host.id,
-            'sshd; rm -rf /',  # 包含恶意命令
-            'start'
-        )
+        # 测试1：验证包含命令注入字符的服务名被拒绝
+        with self.assertRaises(OperationError):
+            HostInfoService.control_service(
+                self.host.id,
+                'sshd; rm -rf /',  # 包含恶意命令
+                'start'
+            )
 
-        # 验证参数被安全处理
-        call_args = mock_control.call_args
-        # 检查是否调用了control_service
-        mock_control.assert_called_once()
+        # 测试2：验证其他命令注入字符也被拒绝
+        malicious_service_names = [
+            'sshd && rm -rf /',
+            'sshd || rm -rf /',
+            'sshd | rm -rf /',
+            'sshd `rm -rf /`',
+            'sshd $(rm -rf /)',
+            'sshd; cat /etc/passwd',
+            'sshd & cat /etc/passwd',
+        ]
+
+        for malicious_name in malicious_service_names:
+            with self.assertRaises(OperationError, msg=f"Should reject: {malicious_name}"):
+                HostInfoService.control_service(self.host.id, malicious_name, 'start')
+
+        # 测试3：验证有效的服务名可以正常通过
+        valid_service_names = [
+            'sshd',
+            'nginx',
+            'mysql-server',
+            'apache2.service',
+            'my_service',
+        ]
+
+        for valid_name in valid_service_names:
+            # 重置 mock
+            mock_control.reset_mock()
+            mock_control.return_value = {'success': True, 'message': 'Test'}
+
+            result = HostInfoService.control_service(self.host.id, valid_name, 'start')
+
+            # 验证调用了底层的 control_service
+            mock_control.assert_called_once()
+            call_args = mock_control.call_args
+            # 验证传递的服务名没有被修改
+            self.assertEqual(call_args[0][1], valid_name)
 
     @mock.patch('backend.utils.hardware_collector.SSHClient')
     def test_kill_process_pid_validation(self, mock_ssh):
@@ -2286,6 +2320,33 @@ class SafeguardSecurityTest(APITestCase):
         result = _kill_process(mock_client, 1)
         self.assertFalse(result['success'])
         self.assertIn('Cannot kill init process', result['message'])
+
+    @mock.patch('backend.utils.hardware_collector.SSHClient')
+    def test_control_service_hardware_collector_validation(self, mock_ssh):
+        """测试 hardware_collector.control_service 的命令注入防护"""
+        from backend.utils.hardware_collector import control_service
+
+        # Mock SSH client
+        mock_client = MagicMock()
+        mock_client.execute_command.return_value = ('', '', 0)
+        mock_ssh.return_value.__enter__.return_value = mock_client
+
+        # 测试1：验证包含命令注入字符的服务名被拒绝
+        result = control_service(self.host, 'sshd; rm -rf /', 'start')
+        self.assertFalse(result['success'])
+        self.assertIn('Invalid service name', result['message'])
+
+        # 测试2：验证无效的 action 被拒绝
+        result = control_service(self.host, 'sshd', 'invalid-action')
+        self.assertFalse(result['success'])
+        self.assertIn('Invalid action', result['message'])
+
+        # 测试3：验证有效的服务名可以正常通过
+        result = control_service(self.host, 'sshd', 'start')
+        self.assertTrue(result['success'])
+        # 验证命令被正确构建（使用 shlex.quote）
+        call_args = mock_client.execute_command.call_args
+        self.assertEqual(call_args[0][0], 'systemctl start sshd 2>&1')
 
     def test_audit_log_integrity(self):
         """测试审计日志完整性 (TC-SEC-005)"""
