@@ -786,6 +786,18 @@ class HostInfoServiceTest(APITestCase):
         with self.assertRaises(HostNotFoundError):
             HostInfoService.kill_process(99999, 1234)
 
+    def test_kill_process_invalid_pid(self):
+        """测试终止进程时PID无效"""
+        from backend.common.exceptions import OperationError
+        with self.assertRaises(OperationError):
+            HostInfoService.kill_process(self.host.id, 'abc123')
+
+    def test_kill_process_init_process(self):
+        """测试终止init进程(PID 1)"""
+        from backend.common.exceptions import OperationError
+        with self.assertRaises(OperationError):
+            HostInfoService.kill_process(self.host.id, 1)
+
     @mock.patch('backend.services.safeguard.collect_system_accounts')
     def test_get_accounts_info_success(self, mock_collect):
         """测试获取系统账户信息成功"""
