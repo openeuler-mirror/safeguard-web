@@ -1517,7 +1517,24 @@ class AuditService:
             保存的事件数量
         """
         from django.utils import timezone
+        from django.utils.dateparse import parse_datetime
         from backend.models.safeguard.file_monitor import FileMonitorEvent
+
+        def parse_event_timestamp(event: Dict[str, Any]):
+            """解析事件中的时间戳，如果解析失败则使用当前时间"""
+            timestamp_str = event.get('timestamp')
+            if timestamp_str:
+                try:
+                    parsed = parse_datetime(timestamp_str)
+                    if parsed:
+                        # 如果是 naive datetime，添加 timezone
+                        if timezone.is_naive(parsed):
+                            return timezone.make_aware(parsed)
+                        return parsed
+                except (ValueError, TypeError):
+                    pass
+            # 解析失败或没有时间戳时，使用当前时间
+            return timezone.now()
 
         saved_count = 0
         try:
@@ -1534,7 +1551,7 @@ class AuditService:
                                 event_type=event.get('event_type', 'unknown'),
                                 path=event.get('path', ''),
                                 details=event.get('details', {}),
-                                timestamp=timezone.now(),
+                                timestamp=parse_event_timestamp(event),
                             )
                             saved_count += 1
                 except Exception as e:
