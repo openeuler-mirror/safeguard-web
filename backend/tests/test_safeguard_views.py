@@ -54,7 +54,7 @@ class SafeguardViewSetTestBase(APITestCase):
 class HostInfoViewSetTest(SafeguardViewSetTestBase):
     @mock.patch('backend.services.safeguard.collect_host_hardware')
     def test_get_system_info_success(self, mock_collect):
-        """测试获取系统信息成功（TC-API-001）"""
+        """测试获取系统信息成功"""
         mock_collect.return_value = {
             'success': True,
             'hostname': 'test-host',
@@ -72,13 +72,13 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         self.assertTrue(response.data['data']['success'])
 
     def test_get_system_info_missing_host_id(self):
-        """测试缺少host_id参数（TC-API-010）"""
+        """测试缺少host_id参数"""
         response = self.client.get('/api/safeguard/host-info/system-info/')
         self.assertNotEqual(response.data['errno'], 0)
         self.assertIn('host_id', response.data['errmsg'])
 
     def test_get_system_info_invalid_host_id(self):
-        """测试无效的host_id参数（TC-API-010）"""
+        """测试无效的host_id参数"""
         response = self.client.get(
             '/api/safeguard/host-info/system-info/',
             {'host_id': 'invalid'}
@@ -86,7 +86,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         self.assertNotEqual(response.data['errno'], 0)
 
     def test_get_system_info_host_not_found(self):
-        """测试主机不存在（TC-API-010）"""
+        """测试主机不存在"""
         response = self.client.get(
             '/api/safeguard/host-info/system-info/',
             {'host_id': 99999}
@@ -95,7 +95,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.collect_ports')
     def test_get_ports_info_success(self, mock_collect):
-        """测试获取端口信息成功（TC-API-002）"""
+        """测试获取端口信息成功"""
         mock_collect.return_value = {
             'success': True,
             'listening_ports': [
@@ -113,7 +113,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.collect_processes')
     def test_get_processes_info_success(self, mock_collect):
-        """测试获取进程信息成功（TC-API-003）"""
+        """测试获取进程信息成功"""
         mock_collect.return_value = {
             'success': True,
             'processes': [
@@ -131,7 +131,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.collect_services')
     def test_get_services_info_success(self, mock_collect):
-        """测试获取服务信息成功（TC-API-004）"""
+        """测试获取服务信息成功"""
         mock_collect.return_value = {
             'success': True,
             'services': [
@@ -148,7 +148,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.collect_system_accounts')
     def test_get_accounts_info_success(self, mock_collect):
-        """测试获取账户信息成功（TC-API-005）"""
+        """测试获取账户信息成功"""
         mock_collect.return_value = {
             'success': True,
             'accounts': [
@@ -165,7 +165,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.control_service')
     def test_service_control_success(self, mock_control):
-        """测试服务控制成功（TC-API-006）"""
+        """测试服务控制成功"""
         mock_control.return_value = {
             'success': True,
             'service': 'sshd',
@@ -212,7 +212,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.get_service_logs')
     def test_get_service_logs_success(self, mock_get_logs):
-        """测试获取服务日志成功（TC-API-007）"""
+        """测试获取服务日志成功"""
         mock_get_logs.return_value = {
             'success': True,
             'service': 'sshd',
@@ -230,7 +230,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.services.safeguard.kill_process')
     def test_kill_process_success(self, mock_kill):
-        """测试终止进程成功（TC-API-008）"""
+        """测试终止进程成功"""
         mock_kill.return_value = {
             'success': True,
             'pid': 1234,
@@ -248,7 +248,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         self.assertTrue(response.data['data']['success'])
 
     def test_kill_process_invalid_pid(self):
-        """测试无效的pid参数（TC-API-011）"""
+        """测试无效的pid参数"""
         data = {'host_id': self.host.id, 'pid': 'invalid'}
         response = self.client.post(
             '/api/safeguard/host-info/kill-process/',
@@ -268,7 +268,7 @@ class HostInfoViewSetTest(SafeguardViewSetTestBase):
         self.assertNotEqual(response.data['errno'], 0)
 
     def test_host_info_unauthenticated(self):
-        """测试未认证访问（TC-API-009）"""
+        """测试未认证访问"""
         # 清除认证
         self.client.credentials()
 
@@ -287,7 +287,7 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
     def test_collect_monitor_data_success(
         self, mock_disk, mock_network, mock_memory, mock_cpu
     ):
-        """测试采集监控数据成功（TC-API-014）"""
+        """测试采集监控数据成功"""
         mock_cpu.return_value = {
             'success': True,
             'cpu_usage': {'usage_percent': 45.5},
@@ -361,7 +361,7 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
         self.assertIn('results', response.data['data'])
 
     def test_get_monitor_history_success(self):
-        """测试获取历史监控数据成功（TC-API-013）"""
+        """测试获取历史监控数据成功"""
         # 创建测试数据
         HostMonitorData.objects.create(
             host=self.host,
@@ -430,7 +430,7 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
         self.assertNotEqual(response.data['errno'], 0)
 
     def test_list_monitor_data(self):
-        """测试列出监控数据（TC-API-012）"""
+        """测试列出监控数据"""
         # 创建测试数据
         HostMonitorData.objects.create(
             host=self.host,
@@ -446,7 +446,7 @@ class HostMonitorDataViewSetTest(SafeguardViewSetTestBase):
 
 class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
     def test_list_policy_templates(self):
-        """测试列出策略模板（TC-API-015）"""
+        """测试列出策略模板"""
         SafeguardPolicyTemplate.objects.create(
             name='Template 1',
             template_type='general',
@@ -466,7 +466,7 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
         self.assertGreaterEqual(len(results), 2)
 
     def test_create_policy_template_success(self):
-        """测试创建策略模板成功（TC-API-016）"""
+        """测试创建策略模板成功"""
         data = {
             'name': 'New Policy Template',
             'description': '测试策略模板',
@@ -493,7 +493,7 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
         self.assertEqual(response.data['data']['name'], 'Minimal Template')
 
     def test_retrieve_policy_template(self):
-        """测试获取单个策略模板（TC-API-017）"""
+        """测试获取单个策略模板"""
         template = SafeguardPolicyTemplate.objects.create(
             name='Retrieve Test',
             template_type='general',
@@ -510,7 +510,7 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_policy_template(self):
-        """测试更新策略模板（TC-API-018）"""
+        """测试更新策略模板"""
         template = SafeguardPolicyTemplate.objects.create(
             name='Original Name',
             template_type='general',
@@ -546,7 +546,7 @@ class SafeguardPolicyTemplateViewSetTest(SafeguardViewSetTestBase):
         self.assertEqual(response.data['errno'], 0)
 
     def test_delete_policy_template(self):
-        """测试删除策略模板（TC-API-019）"""
+        """测试删除策略模板"""
         template = SafeguardPolicyTemplate.objects.create(
             name='Delete Test',
             template_type='general',
@@ -595,7 +595,7 @@ class HostSafeguardPolicyViewSetTest(SafeguardViewSetTestBase):
         )
 
     def test_bind_host_policy_success(self):
-        """测试绑定主机策略成功（TC-API-020）"""
+        """测试绑定主机策略成功"""
         data = {
             'host_id': self.host.id,
             'template_id': self.template.id,
@@ -632,7 +632,7 @@ class HostSafeguardPolicyViewSetTest(SafeguardViewSetTestBase):
         self.assertNotEqual(response.data['errno'], 0)
 
     def test_get_host_policy_detail(self):
-        """测试获取主机策略详情（TC-API-021）"""
+        """测试获取主机策略详情"""
         policy = HostSafeguardPolicy.objects.create(
             host=self.host,
             template=self.template,
@@ -678,7 +678,7 @@ class PolicyApplyTaskViewSetTest(SafeguardViewSetTestBase):
 
     @mock.patch('backend.tasks.safeguard.apply_policy_task')
     def test_apply_policy_success(self, mock_apply_task):
-        """测试执行策略下发成功（TC-API-022）"""
+        """测试执行策略下发成功"""
         mock_apply_task.delay.return_value = None
 
         task = PolicyApplyTask.objects.create(
@@ -700,7 +700,7 @@ class PolicyApplyTaskViewSetTest(SafeguardViewSetTestBase):
         self.assertNotEqual(response.data['errno'], 0)
 
     def test_get_task_status(self):
-        """测试获取任务状态（TC-API-023）"""
+        """测试获取任务状态"""
         task = PolicyApplyTask.objects.create(
             host=self.host,
             policy=self.policy,
@@ -736,7 +736,6 @@ class PolicyApplyTaskViewSetTest(SafeguardViewSetTestBase):
 
 class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
     def test_list_file_monitor_rules(self):
-        """测试列出监控规则（TC-API-024）"""
         FileMonitorRule.objects.create(
             host=self.host,
             path='/etc/passwd',
@@ -756,7 +755,7 @@ class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
         self.assertGreaterEqual(len(results), 2)
 
     def test_create_file_monitor_rule_success(self):
-        """测试创建监控规则成功（TC-API-025）"""
+        """测试创建监控规则成功"""
         data = {
             'host': self.host.id,
             'path': '/etc/ssh/sshd_config',
@@ -785,7 +784,7 @@ class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
         self.assertEqual(response.data['errno'], 0)
 
     def test_update_file_monitor_rule(self):
-        """测试更新监控规则（TC-API-026）"""
+        """测试更新监控规则"""
         rule = FileMonitorRule.objects.create(
             host=self.host,
             path='/etc/passwd',
@@ -803,5 +802,114 @@ class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
             f'/api/safeguard/file-monitor-rules/{rule.pk}/',
             data,
             format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_partial_update_file_monitor_rule(self):
+        """测试部分更新监控规则"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            enabled=True,
+        )
+
+        data = {'enabled': False}
+        response = self.client.patch(
+            f'/api/safeguard/file-monitor-rules/{rule.pk}/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_delete_file_monitor_rule(self):
+        """测试删除监控规则"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+
+        response = self.client.delete(
+            f'/api/safeguard/file-monitor-rules/{rule.pk}/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertFalse(
+            FileMonitorRule.objects.filter(pk=rule.pk).exists()
+        )
+
+    def test_start_monitor_rule(self):
+        """测试启用监控规则"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            enabled=False,
+        )
+
+        response = self.client.post(
+            f'/api/safeguard/file-monitor-rules/{rule.pk}/start-monitor/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertTrue(response.data['data']['enabled'])
+
+    def test_stop_monitor_rule(self):
+        """测试禁用监控规则"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            enabled=True,
+        )
+
+        response = self.client.post(
+            f'/api/safeguard/file-monitor-rules/{rule.pk}/stop-monitor/'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertFalse(response.data['data']['enabled'])
+
+    @mock.patch('backend.services.safeguard.collect_file_events')
+    def test_collect_file_events(self, mock_collect):
+        """测试收集文件监控事件"""
+        mock_collect.return_value = {
+            'success': True,
+            'events': [],
+            'total_events': 0,
+        }
+
+        data = {'host_id': self.host.id}
+        response = self.client.post(
+            '/api/safeguard/file-monitor-rules/collect-events/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_list_file_monitor_rules_with_filters(self):
+        """测试带过滤条件列出监控规则"""
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            enabled=True,
+        )
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/',
+            monitor_type='dir',
+            enabled=False,
+        )
+
+        # 按启用状态过滤
+        response = self.client.get(
+            '/api/safeguard/file-monitor-rules/',
+            {'enabled': 'true'}
+        )
+        self.assertEqual(response.data['errno'], 0)
+
+        # 按类型过滤
+        response = self.client.get(
+            '/api/safeguard/file-monitor-rules/',
+            {'monitor_type': 'file'}
         )
         self.assertEqual(response.data['errno'], 0)
