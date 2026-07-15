@@ -732,3 +732,76 @@ class PolicyApplyTaskViewSetTest(SafeguardViewSetTestBase):
 
         response = self.client.get('/api/safeguard/policy-tasks/')
         self.assertEqual(response.data['errno'], 0)
+
+
+class FileMonitorRuleViewSetTest(SafeguardViewSetTestBase):
+    def test_list_file_monitor_rules(self):
+        """测试列出监控规则（TC-API-024）"""
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+        FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/',
+            monitor_type='dir',
+        )
+
+        response = self.client.get('/api/safeguard/file-monitor-rules/')
+        self.assertEqual(response.data['errno'], 0)
+        results = response.data['data']
+        if isinstance(results, dict):
+            results = results.get('results', [])
+        self.assertGreaterEqual(len(results), 2)
+
+    def test_create_file_monitor_rule_success(self):
+        """测试创建监控规则成功（TC-API-025）"""
+        data = {
+            'host': self.host.id,
+            'path': '/etc/ssh/sshd_config',
+            'monitor_type': 'file',
+            'watch_create': True,
+            'watch_modify': True,
+            'watch_delete': True,
+        }
+        response = self.client.post(
+            '/api/safeguard/file-monitor-rules/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
+        self.assertEqual(response.data['data']['path'], '/etc/ssh/sshd_config')
+
+    def test_retrieve_file_monitor_rule(self):
+        """测试获取单个监控规则"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+        )
+
+        response = self.client.get(f'/api/safeguard/file-monitor-rules/{rule.pk}/')
+        self.assertEqual(response.data['errno'], 0)
+
+    def test_update_file_monitor_rule(self):
+        """测试更新监控规则（TC-API-026）"""
+        rule = FileMonitorRule.objects.create(
+            host=self.host,
+            path='/etc/passwd',
+            monitor_type='file',
+            watch_modify=False,
+        )
+
+        data = {
+            'host': self.host.id,
+            'path': '/etc/passwd',
+            'monitor_type': 'file',
+            'watch_modify': True,
+        }
+        response = self.client.put(
+            f'/api/safeguard/file-monitor-rules/{rule.pk}/',
+            data,
+            format='json'
+        )
+        self.assertEqual(response.data['errno'], 0)
