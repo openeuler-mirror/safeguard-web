@@ -42,7 +42,7 @@ class SafeguardPolicyTemplateViewSet(UnifiedModelViewSet):
         return SafeguardPolicyTemplateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(created_by_id=self.request.user.id)
 
 
 class HostSafeguardPolicyViewSet(UnifiedModelViewSet):
@@ -55,7 +55,7 @@ class HostSafeguardPolicyViewSet(UnifiedModelViewSet):
 
     def get_queryset(self):
         queryset = HostSafeguardPolicy.objects.select_related('host', 'template').all().order_by('-created_at')
-        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+        return queryset
 
     @action(detail=False, methods=['post'], url_path='bind')
     def bind(self, request):
@@ -67,7 +67,7 @@ class HostSafeguardPolicyViewSet(UnifiedModelViewSet):
             return ErrorResponse(ErrCode.PARAMETER_MISSING, errmsg='host_id and template_id are required')
 
         try:
-            result = PolicyService.bind_host_policy(host_id, template_id, created_by=request.user)
+            result = PolicyService.bind_host_policy(host_id, template_id, created_by_id=request.user.id)
             return SuccessResponse(result)
         except ServiceError as e:
             return ErrorResponse(e.err_code, errmsg=e.err_msg)
@@ -92,10 +92,10 @@ class PolicyApplyTaskViewSet(UnifiedModelViewSet):
 
     def get_queryset(self):
         queryset = PolicyApplyTask.objects.select_related('host', 'policy', 'created_by').all().order_by('-created_at')
-        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+        return queryset
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(created_by_id=self.request.user.id)
 
     @action(detail=True, methods=['post'], url_path='apply')
     def apply(self, request, pk=None):

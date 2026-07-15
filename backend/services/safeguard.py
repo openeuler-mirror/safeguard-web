@@ -773,14 +773,15 @@ class PolicyService:
             raise OperationError(str(e))
 
     @staticmethod
-    def bind_host_policy(host_id: int, template_id: int, created_by=None) -> Dict[str, Any]:
+    def bind_host_policy(host_id: int, template_id: int, created_by=None, created_by_id=None) -> Dict[str, Any]:
         """
         为主机绑定安全策略
 
         Args:
             host_id: 主机ID
             template_id: 策略模板ID
-            created_by: 操作人
+            created_by: 操作人对象
+            created_by_id: 操作人ID
 
         Returns:
             绑定结果
@@ -808,13 +809,17 @@ class PolicyService:
                     policy.save()
 
                 # 创建下发任务
-                task = PolicyApplyTask.objects.create(
-                    host=host,
-                    policy=policy,
-                    task_type='apply',
-                    status='pending',
-                    created_by=created_by,
-                )
+                task_kwargs = {
+                    'host': host,
+                    'policy': policy,
+                    'task_type': 'apply',
+                    'status': 'pending',
+                }
+                if created_by:
+                    task_kwargs['created_by'] = created_by
+                elif created_by_id:
+                    task_kwargs['created_by_id'] = created_by_id
+                task = PolicyApplyTask.objects.create(**task_kwargs)
 
             logger.info(f'Policy bound to host {host_id}: template {template_id}')
             return {

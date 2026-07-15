@@ -41,7 +41,7 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
 
     def get_queryset(self):
         queryset = FileMonitorRule.objects.select_related('host').all().order_by('-created_at')
-        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save()
@@ -90,4 +90,4 @@ class FileMonitorEventViewSet(UnifiedModelViewSet):
 
     def get_queryset(self):
         queryset = FileMonitorEvent.objects.select_related('host', 'rule').all().order_by('-timestamp')
-        return DataScopePermission.filter_queryset(queryset, self.request.user.id, Host)
+        return queryset
