@@ -56,6 +56,73 @@ const routes = [
     component: () => import('@/views/Hosts.vue'),
     meta: { requiresAuth: true }
   },
+  // ========== 主机详情子路由 ==========
+  {
+    path: '/hosts/:id/dashboard',
+    name: 'HostDashboard',
+    component: () => import('@/views/hosts/HostDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/ports',
+    name: 'HostPorts',
+    component: () => import('@/views/hosts/HostPorts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/processes',
+    name: 'HostProcesses',
+    component: () => import('@/views/hosts/HostProcesses.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/services',
+    name: 'HostServices',
+    component: () => import('@/views/hosts/HostServices.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/monitor',
+    name: 'HostMonitor',
+    component: () => import('@/views/hosts/HostMonitor.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/monitor-history',
+    name: 'HostMonitorHistory',
+    component: () => import('@/views/hosts/HostMonitorHistory.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/file-monitor',
+    name: 'HostFileMonitor',
+    component: () => import('@/views/hosts/FileMonitorRules.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/file-events',
+    name: 'HostFileEvents',
+    component: () => import('@/views/hosts/FileMonitorEvents.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/accounts',
+    name: 'HostAccounts',
+    component: () => import('@/views/hosts/HostAccounts.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/system-logs',
+    name: 'HostSystemLogs',
+    component: () => import('@/views/hosts/SystemLogs.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/hosts/:id/safeguard/policy',
+    name: 'HostSafeguardPolicy',
+    component: () => import('@/views/hosts/safeguard/HostSafeguardPolicy.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/vms',
     name: 'VMs',
