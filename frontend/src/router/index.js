@@ -196,7 +196,7 @@ const routes = [
     component: () => import('@/views/osdeploy/OutIpSN.vue'),
     meta: { requiresAuth: true }
   },
-  // Network 模块
+  // Network模块
   {
     path: '/network/lbs',
     name: 'NetworkLoadBalancers',
@@ -227,25 +227,57 @@ const routes = [
     component: () => import('@/views/network/HealthMonitors.vue'),
     meta: { requiresAuth: true }
   },
-  // Security 模块
+  // Security模块
   {
     path: '/security/safeguards',
     name: 'SecuritySafeguards',
     component: () => import('@/views/security/Safeguards.vue'),
     meta: { requiresAuth: true }
   },
-  // Task 模块
+  // Task模块
   {
     path: '/tasks',
     name: 'Tasks',
     component: () => import('@/views/Tasks.vue'),
     meta: { requiresAuth: true }
   },
-  // OSmigrate 模块
+  // OSmigrate模块
   {
     path: '/osmigrate/migrations',
     name: 'Migrations',
     component: () => import('@/views/osmigrate/Migrations.vue'),
+    meta: { requiresAuth: true }
+  },
+  // ========== Safeguard管理路由 ==========
+  {
+    path: '/safeguard/policy-templates',
+    name: 'SafeguardPolicyTemplates',
+    component: () => import('@/views/safeguard/PolicyTemplates.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/safeguard/policy-templates/:id',
+    name: 'SafeguardPolicyTemplateDetail',
+    component: () => import('@/views/safeguard/PolicyTemplateDetail.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/safeguard/policy-tasks',
+    name: 'SafeguardPolicyTasks',
+    component: () => import('@/views/safeguard/PolicyTasks.vue'),
+    meta: { requiresAuth: true }
+  },
+  // ========== 审计日志路由 ==========
+  {
+    path: '/audit/logs',
+    name: 'AuditLogs',
+    component: () => import('@/views/audit/AuditLogs.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/audit/dashboard',
+    name: 'AuditDashboard',
+    component: () => import('@/views/audit/AuditDashboard.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -268,7 +300,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (requiresAuth && !isAuthenticated) {
     if (hasToken) {
-      // 有 token 但没有用户信息，才获取
+      // 有 token 但没有用户信息，才获取用户
       if (!hasUser) {
         try {
           await store.dispatch('auth/fetchUser')
