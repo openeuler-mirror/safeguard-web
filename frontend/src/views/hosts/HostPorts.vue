@@ -1,0 +1,114 @@
+<template>
+  <div class="host-ports">
+    <div class="page-header">
+      <button class="btn-back" @click="goBack">← 返回</button>
+      <h2>{{ host?.hostname || '主机' }} - 端口信息</h2>
+      <button class="btn-refresh" @click="loadPortsInfo" :disabled="loading">刷新</button>
+    </div>
+
+    <PortList :ports="ports" :loading="loading" :error="error" />
+  </div>
+</template>
+
+<script>
+import { getHost } from '@/api/host'
+import { getPortsInfo } from '@/api/safeguard/host-info'
+import PortList from '@/components/safeguard/PortList.vue'
+
+export default {
+  name: 'HostPorts',
+  components: { PortList },
+  data() {
+    return {
+      hostId: null,
+      host: null,
+      ports: [],
+      loading: false,
+      error: ''
+    }
+  },
+  mounted() {
+    this.hostId = this.$route.params.id
+    if (this.hostId) {
+      this.loadData()
+    }
+  },
+  methods: {
+    async loadData() {
+      this.loading = true
+      this.error = ''
+      try {
+        const hostRes = await getHost(this.hostId)
+        this.host = hostRes
+        await this.loadPortsInfo()
+      } catch (e) {
+        this.error = e.message || '加载数据失败'
+      } finally {
+        this.loading = false
+      }
+    },
+    async loadPortsInfo() {
+      try {
+        const res = await getPortsInfo(this.hostId)
+        this.ports = res?.ports || []
+      } catch (e) {
+        this.error = e.message || '获取端口信息失败'
+      }
+    },
+    goBack() {
+      this.$router.push(`/hosts/${this.hostId}/dashboard`)
+    }
+  }
+}
+</script>
+
+<style scoped>
+.host-ports {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 100px);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.btn-back {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background: #eee;
+}
+
+.btn-refresh {
+  padding: 8px 16px;
+  background: #409eff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: #66b1ff;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>
