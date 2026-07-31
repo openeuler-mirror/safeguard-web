@@ -50,4 +50,20 @@ describe('StatusBadge.vue', () => {
     })
   })
 
+  describe('渲染 online 状态', () => {
+    it('online状态应显示"在线"文本和status-online样式', () => {
+      const wrapper = createWrapper({ type: 'online' })
+      expect(wrapper.text()).toBe('在线')
+      expect(wrapper.classes()).toContain('status-online')
+    })
+  })
+
+  describe('渲染 offline 状态', () => {
+    it('offline状态应显示"离线"文本和status-offline样式', () => {
+      const wrapper = createWrapper({ type: 'offline' })
+      expect(wrapper.text()).toBe('离线')
+      expect(wrapper.classes()).toContain('status-offline')
+    })
+  })
+
 })
