@@ -115,4 +115,56 @@ describe('audit API 测试', () => {
     })
   })
 
+  describe('getAuditStats 正确调用统计接口', () => {
+    it('应调用正确的统计URL', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await getAuditStats()
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/audit/stats/',
+        { params: undefined }
+      )
+    })
+  })
+
+  describe('getAuditStats 正确传递时间范围参数', () => {
+    it('应调用正确的URL并传递时间范围参数', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const params = {
+        start_time: '2024-01-01',
+        end_time: '2024-01-02'
+      }
+
+      await getAuditStats(params)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/audit/stats/',
+        { params }
+      )
+    })
+  })
+
+  describe('正确处理 API 错误响应', () => {
+    it('getAuditLogs 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getAuditLogs()).rejects.toThrow('API Error')
+    })
+
+    it('getAuditLog 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getAuditLog(mockLogId)).rejects.toThrow('API Error')
+    })
+
+    it('getAuditStats 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getAuditStats()).rejects.toThrow('API Error')
+    })
+  })
 })
