@@ -84,7 +84,9 @@ export default {
   props: {
     services: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
-    error: { type: String, default: '' }
+    error: { type: String, default: '' },
+    onControl: { type: Function, default: null },
+    onGetLogs: { type: Function, default: null }
   },
   data() {
     return {
@@ -126,7 +128,9 @@ export default {
       if (!this.selectedService || !this.selectedAction) return
       this.actioning = true
       try {
-        await this.$emit('control', this.selectedService.name, this.selectedAction)
+        if (this.onControl) {
+          await this.onControl(this.selectedService.name, this.selectedAction)
+        }
         this.closeActionDialog()
       } catch (e) {
         alert(e.message || '操作失败')
@@ -151,7 +155,10 @@ export default {
       this.logsLoading = true
       this.logsError = ''
       try {
-        const logs = await this.$emit('get-logs', this.selectedService.name)
+        let logs = '(暂无日志)'
+        if (this.onGetLogs) {
+          logs = await this.onGetLogs(this.selectedService.name)
+        }
         this.serviceLogs = logs || '(暂无日志)'
       } catch (e) {
         this.logsError = e.message || '获取日志失败'

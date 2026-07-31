@@ -10,8 +10,8 @@
       :services="services"
       :loading="loading"
       :error="error"
-      @control="handleControlService"
-      @get-logs="handleGetServiceLogs"
+      :on-control="handleControlService"
+      :on-get-logs="handleGetServiceLogs"
     />
   </div>
 </template>
