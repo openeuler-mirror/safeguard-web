@@ -148,6 +148,7 @@ export default {
     },
     async loadHistoryData() {
       try {
+        this.error = ''
         const res = await getMonitorHistory(this.hostId, { range: this.timeRange })
         this.historyData = res?.history || []
       } catch (e) {

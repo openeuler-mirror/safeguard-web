@@ -159,6 +159,7 @@ export default {
     },
     async loadRules() {
       try {
+        this.error = ''
         const res = await getFileMonitorRules({ host_id: this.hostId })
         this.rules = res?.results || res || []
       } catch (e) {
@@ -185,7 +186,7 @@ export default {
       this.errors = {}
       this.form = {
         path: rule.path,
-        monitor_types: rule.monitor_types || [],
+        monitor_types: [...(rule.monitor_types || [])],
         enabled: rule.enabled !== false,
         description: rule.description || ''
       }

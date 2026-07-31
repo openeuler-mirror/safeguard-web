@@ -10,7 +10,7 @@
       :processes="processes"
       :loading="loading"
       :error="error"
-      @kill="handleKillProcess"
+      :on-kill="handleKillProcess"
     />
   </div>
 </template>

@@ -70,7 +70,8 @@ export default {
   props: {
     processes: { type: Array, default: () => [] },
     loading: { type: Boolean, default: false },
-    error: { type: String, default: '' }
+    error: { type: String, default: '' },
+    onKill: { type: Function, default: null }
   },
   data() {
     return {
@@ -95,7 +96,9 @@ export default {
       if (!this.selectedProcess) return
       this.killing = true
       try {
-        await this.$emit('kill', this.selectedProcess.pid, this.forceKill)
+        if (this.onKill) {
+          await this.onKill(this.selectedProcess.pid, this.forceKill)
+        }
         this.closeKillDialog()
       } catch (e) {
         alert(e.message || '终止进程失败')

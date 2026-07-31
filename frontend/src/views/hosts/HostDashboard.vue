@@ -118,7 +118,8 @@
 
 <script>
 import { getHost } from '@/api/host'
-import { getSystemInfo, getRealTimeMonitor } from '@/api/safeguard/host-info'
+import { getSystemInfo } from '@/api/safeguard/host-info'
+import { getRealTimeMonitor } from '@/api/safeguard/monitor'
 import MetricCard from '@/components/safeguard/MetricCard.vue'
 
 export default {

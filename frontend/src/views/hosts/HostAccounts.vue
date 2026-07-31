@@ -79,6 +79,7 @@ export default {
     },
     async loadAccountsInfo() {
       try {
+        this.error = ''
         const res = await getAccountsInfo(this.hostId)
         this.accounts = res?.accounts || []
       } catch (e) {

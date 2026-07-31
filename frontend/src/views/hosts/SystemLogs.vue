@@ -65,6 +65,7 @@ export default {
     },
     async loadLogs() {
       try {
+        this.error = ''
         const params = {}
         if (this.logLevel) params.level = this.logLevel
         const res = await getSystemLogs(this.hostId, params)

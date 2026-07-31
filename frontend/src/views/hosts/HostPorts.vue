@@ -49,6 +49,7 @@ export default {
     },
     async loadPortsInfo() {
       try {
+        this.error = ''
         const res = await getPortsInfo(this.hostId)
         this.ports = res?.ports || []
       } catch (e) {
