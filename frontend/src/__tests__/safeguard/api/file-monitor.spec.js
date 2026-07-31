@@ -145,4 +145,63 @@ describe('file-monitor API 测试', () => {
       )
     })
   })
+
+  describe('collectFileMonitorEvents 正确传递主机ID', () => {
+    it('应调用正确的URL并传递主机ID', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await collectFileMonitorEvents(mockHostId)
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/safeguard/file-monitor/collect-events/',
+        { host_id: mockHostId }
+      )
+    })
+  })
+
+  describe('正确处理 API 错误响应', () => {
+    it('getFileMonitorRules 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getFileMonitorRules()).rejects.toThrow('API Error')
+    })
+
+    it('createFileMonitorRule 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+      const ruleData = { host_id: mockHostId, path: '/etc' }
+
+      await expect(createFileMonitorRule(ruleData)).rejects.toThrow('API Error')
+    })
+
+    it('updateFileMonitorRule 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.put.mockRejectedValue(mockError)
+      const ruleData = { path: '/etc/updated' }
+
+      await expect(updateFileMonitorRule(mockRuleId, ruleData)).rejects.toThrow('API Error')
+    })
+
+    it('deleteFileMonitorRule 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.delete.mockRejectedValue(mockError)
+
+      await expect(deleteFileMonitorRule(mockRuleId)).rejects.toThrow('API Error')
+    })
+
+    it('getFileMonitorEvents 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getFileMonitorEvents()).rejects.toThrow('API Error')
+    })
+
+    it('collectFileMonitorEvents 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(collectFileMonitorEvents(mockHostId)).rejects.toThrow('API Error')
+    })
+  })
 })
