@@ -150,4 +150,76 @@ describe('policy API 测试', () => {
       )
     })
   })
+
+  describe('applyPolicy 正确传递模板ID和主机ID列表', () => {
+    it('应调用正确的URL并传递模板ID和主机ID列表', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const hostIds = [1, 2, 3]
+
+      await applyPolicy(mockTemplateId, hostIds)
+
+      expect(api.post).toHaveBeenCalledWith(
+        `/safeguard/policy/templates/${mockTemplateId}/apply/`,
+        { host_ids: hostIds }
+      )
+    })
+  })
+
+  describe('getPolicyTask 正确传递任务ID', () => {
+    it('应调用正确的URL并包含任务ID', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await getPolicyTask(mockTaskId)
+
+      expect(api.get).toHaveBeenCalledWith(
+        `/safeguard/policy/tasks/${mockTaskId}/`
+      )
+    })
+  })
+
+  describe('getPolicyTasks 正确传递过滤参数', () => {
+    it('应调用正确的URL并传递过滤参数', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const params = { status: 'pending', page: 1 }
+
+      await getPolicyTasks(params)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/policy/tasks/',
+        { params }
+      )
+    })
+  })
+
+  describe('正确处理 API 错误响应', () => {
+    it('getPolicyTemplates 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getPolicyTemplates()).rejects.toThrow('API Error')
+    })
+
+    it('createPolicyTemplate 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+      const templateData = { name: 'Test Policy' }
+
+      await expect(createPolicyTemplate(templateData)).rejects.toThrow('API Error')
+    })
+
+    it('updatePolicyTemplate 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.put.mockRejectedValue(mockError)
+      const templateData = { name: 'Updated' }
+
+      await expect(updatePolicyTemplate(mockTemplateId, templateData)).rejects.toThrow('API Error')
+    })
+
+    it('deletePolicyTemplate 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.delete.mockRejectedValue(mockError)
+
+      await expect(deletePolicyTemplate(mockTemplateId)).rejects.toThrow('API Error')
+    })
+  })
 })
