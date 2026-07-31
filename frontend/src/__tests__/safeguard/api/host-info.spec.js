@@ -106,4 +106,99 @@ describe('host-info API 测试', () => {
       )
     })
   })
+
+  describe('getServiceLogs 正确传递参数', () => {
+    it('应调用正确的URL并传递服务名称和行数参数', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const serviceName = 'nginx'
+      const lines = 200
+
+      await getServiceLogs(mockHostId, serviceName, lines)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/host-info/service-logs/',
+        { params: { host_id: mockHostId, service_name: serviceName, lines } }
+      )
+    })
+
+    it('应使用默认的lines参数值', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const serviceName = 'nginx'
+
+      await getServiceLogs(mockHostId, serviceName)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/host-info/service-logs/',
+        { params: { host_id: mockHostId, service_name: serviceName, lines: 100 } }
+      )
+    })
+  })
+
+  describe('killProcess 正确传递参数', () => {
+    it('应调用正确的URL并传递pid参数', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const pid = 1234
+
+      await killProcess(mockHostId, pid)
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/safeguard/host-info/kill-process/',
+        { host_id: mockHostId, pid, force: false }
+      )
+    })
+
+    it('应正确传递force参数', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const pid = 1234
+
+      await killProcess(mockHostId, pid, true)
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/safeguard/host-info/kill-process/',
+        { host_id: mockHostId, pid, force: true }
+      )
+    })
+  })
+
+  describe('正确处理 API 错误响应', () => {
+    it('getSystemInfo 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getSystemInfo(mockHostId)).rejects.toThrow('API Error')
+    })
+
+    it('controlService 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+      const controlData = { service_name: 'nginx', action: 'start' }
+
+      await expect(controlService(mockHostId, controlData)).rejects.toThrow('API Error')
+    })
+  })
+
+  describe('getSystemLogs 正确调用 API 路径', () => {
+    it('应调用正确的URL并传递host_id和额外参数', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const extraParams = { level: 'error', limit: 50 }
+
+      await getSystemLogs(mockHostId, extraParams)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/host-info/system-logs/',
+        { params: { host_id: mockHostId, ...extraParams } }
+      )
+    })
+
+    it('应只传递host_id当没有额外参数时', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await getSystemLogs(mockHostId)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/host-info/system-logs/',
+        { params: { host_id: mockHostId } }
+      )
+    })
+  })
 })
