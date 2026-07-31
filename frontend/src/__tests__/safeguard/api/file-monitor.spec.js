@@ -86,4 +86,63 @@ describe('file-monitor API 测试', () => {
       )
     })
   })
+
+  describe('updateFileMonitorRule 正确传递规则ID和数据', () => {
+    it('应调用正确的URL并传递规则ID和数据', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const ruleData = { path: '/etc/updated', enabled: false }
+
+      await updateFileMonitorRule(mockRuleId, ruleData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        `/safeguard/file-monitor/rules/${mockRuleId}/`,
+        ruleData
+      )
+    })
+  })
+
+  describe('deleteFileMonitorRule 正确传递规则ID', () => {
+    it('应调用正确的URL并包含规则ID', async () => {
+      api.delete.mockResolvedValue(mockResponse)
+
+      await deleteFileMonitorRule(mockRuleId)
+
+      expect(api.delete).toHaveBeenCalledWith(
+        `/safeguard/file-monitor/rules/${mockRuleId}/`
+      )
+    })
+  })
+
+  describe('getFileMonitorEvents 正确调用 API 路径', () => {
+    it('应调用正确的URL', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await getFileMonitorEvents()
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/file-monitor/events/',
+        { params: undefined }
+      )
+    })
+  })
+
+  describe('getFileMonitorEvents 正确传递时间范围参数', () => {
+    it('应调用正确的URL并传递时间范围参数', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const params = {
+        host_id: mockHostId,
+        start_time: '2024-01-01',
+        end_time: '2024-01-02',
+        event_type: 'modify',
+        page: 1
+      }
+
+      await getFileMonitorEvents(params)
+
+      expect(api.get).toHaveBeenCalledWith(
+        '/safeguard/file-monitor/events/',
+        { params }
+      )
+    })
+  })
 })
