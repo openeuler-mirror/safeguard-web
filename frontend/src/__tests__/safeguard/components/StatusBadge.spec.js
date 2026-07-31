@@ -66,4 +66,29 @@ describe('StatusBadge.vue', () => {
     })
   })
 
+  describe('使用自定义 text prop 覆盖默认文本', () => {
+    it('应使用自定义文本替代默认文本', () => {
+      const wrapper = createWrapper({ type: 'success', text: '自定义成功' })
+      expect(wrapper.text()).toBe('自定义成功')
+      expect(wrapper.classes()).toContain('status-success')
+    })
+  })
+
+  describe('无效的 type 值使用默认样式', () => {
+    it('未知类型应使用status-default样式并显示type值', () => {
+      const wrapper = createWrapper({ type: 'unknown-type' })
+      expect(wrapper.text()).toBe('unknown-type')
+      expect(wrapper.classes()).toContain('status-default')
+    })
+  })
+
+  describe('prop 验证', () => {
+    it('type prop 应接受有效的类型值', () => {
+      const validTypes = ['success', 'warning', 'danger', 'info', 'online', 'offline', 'default']
+      validTypes.forEach(type => {
+        const wrapper = createWrapper({ type })
+        expect(wrapper.vm.$props.type).toBe(type)
+      })
+    })
+  })
 })
