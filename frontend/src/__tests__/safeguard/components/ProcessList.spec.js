@@ -139,4 +139,66 @@ describe('ProcessList.vue', () => {
     })
   })
 
+  describe('禁止终止 PID 1', () => {
+    it('PID为1的进程不应显示终止按钮', () => {
+      const wrapper = createWrapper({ processes: mockProcesses })
+      const rows = wrapper.findAll('tbody tr')
+      const initRow = rows.filter(row => row.text().includes('1') && row.text().includes('init'))[0]
+      expect(initRow.find('.btn-kill').exists()).toBe(false)
+    })
+  })
+
+  describe('终止失败', () => {
+    it('终止失败应显示alert提示', async () => {
+      const onKill = vi.fn().mockRejectedValue(new Error('终止失败'))
+      const wrapper = createWrapper({ processes: mockProcesses, onKill })
+
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-danger')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(alertMock).toHaveBeenCalledWith('终止失败')
+    })
+  })
+
+  describe('终止进行中', () => {
+    it('终止进行中按钮应显示loading文本并禁用', async () => {
+      const onKill = vi.fn().mockImplementation(() => new Promise(() => { }))
+      const wrapper = createWrapper({ processes: mockProcesses, onKill })
+
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-danger')
+      await confirmBtn.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      expect(confirmBtn.text()).toBe('终止中...')
+      expect(confirmBtn.attributes('disabled')).toBe('')
+    })
+  })
+
+  describe('loading状态', () => {
+    it('应显示loading文本', () => {
+      const wrapper = createWrapper({ loading: true })
+      expect(wrapper.find('.loading').text()).toBe('加载中...')
+    })
+  })
+
+  describe('error状态', () => {
+    it('应显示错误信息', () => {
+      const wrapper = createWrapper({ error: '加载失败' })
+      expect(wrapper.find('.error').text()).toBe('加载失败')
+    })
+  })
+
+  describe('空进程列表', () => {
+    it('应显示空提示', () => {
+      const wrapper = createWrapper({ processes: [] })
+      expect(wrapper.find('.empty-text').text()).toBe('暂无进程信息')
+    })
+  })
 })
