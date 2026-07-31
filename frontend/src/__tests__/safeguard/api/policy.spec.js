@@ -86,4 +86,68 @@ describe('policy API 测试', () => {
       )
     })
   })
+
+  describe('updatePolicyTemplate 正确传递模板ID和数据', () => {
+    it('应调用正确的URL并传递模板ID和数据', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const templateData = { name: 'Updated Policy' }
+
+      await updatePolicyTemplate(mockTemplateId, templateData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        `/safeguard/policy/templates/${mockTemplateId}/`,
+        templateData
+      )
+    })
+  })
+
+  describe('deletePolicyTemplate 正确传递模板ID', () => {
+    it('应调用正确的URL并包含模板ID', async () => {
+      api.delete.mockResolvedValue(mockResponse)
+
+      await deletePolicyTemplate(mockTemplateId)
+
+      expect(api.delete).toHaveBeenCalledWith(
+        `/safeguard/policy/templates/${mockTemplateId}/`
+      )
+    })
+  })
+
+  describe('clonePolicyTemplate 正确调用克隆接口', () => {
+    it('应调用正确的克隆URL', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await clonePolicyTemplate(mockTemplateId)
+
+      expect(api.post).toHaveBeenCalledWith(
+        `/safeguard/policy/templates/${mockTemplateId}/clone/`
+      )
+    })
+  })
+
+  describe('getHostPolicy 正确传递主机ID', () => {
+    it('应调用正确的URL并包含主机ID', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await getHostPolicy(mockHostId)
+
+      expect(api.get).toHaveBeenCalledWith(
+        `/safeguard/policy/host/${mockHostId}/`
+      )
+    })
+  })
+
+  describe('bindHostPolicy 正确传递主机ID和策略数据', () => {
+    it('应调用正确的URL并传递主机ID和策略数据', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const policyData = { template_id: 1 }
+
+      await bindHostPolicy(mockHostId, policyData)
+
+      expect(api.post).toHaveBeenCalledWith(
+        `/safeguard/policy/host/${mockHostId}/bind/`,
+        policyData
+      )
+    })
+  })
 })
