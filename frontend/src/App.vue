@@ -175,7 +175,11 @@ export default {
         '/network/health-monitors': '❤',
         '/security/safeguards': '🛡️',
         '/tasks': '📋',
-        '/osmigrate/migrations': '🔄'
+        '/osmigrate/migrations': '🔄',
+        '/safeguard/policy-templates': '🛡️',
+        '/safeguard/policy-tasks': '📋',
+        '/audit/logs': '📝',
+        '/audit/dashboard': '📊'
       }
       return icons[path] || '📄'
     }
