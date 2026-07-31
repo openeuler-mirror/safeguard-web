@@ -62,4 +62,30 @@ describe('MetricCard.vue', () => {
       expect(wrapper.find('.metric-trend').classes()).toContain('trend-down')
     })
   })
+
+  describe('不显示趋势', () => {
+    it('trend为null时不显示趋势元素', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50, trend: null })
+      expect(wrapper.find('.metric-trend').exists()).toBe(false)
+    })
+
+    it('未设置trend prop时不显示趋势元素', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50 })
+      expect(wrapper.find('.metric-trend').exists()).toBe(false)
+    })
+  })
+
+  describe('处理数值为 0 的情况', () => {
+    it('应正确显示数值0', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 0 })
+      expect(wrapper.find('.metric-value').text()).toContain('0')
+    })
+  })
+
+  describe('处理字符串数值', () => {
+    it('应正确显示字符串类型的数值', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: '50.5' })
+      expect(wrapper.find('.metric-value').text()).toContain('50.5')
+    })
+  })
 })
