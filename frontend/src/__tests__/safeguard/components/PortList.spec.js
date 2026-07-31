@@ -74,4 +74,24 @@ describe('PortList.vue', () => {
     })
   })
 
+  describe('loading状态', () => {
+    it('应显示loading文本', () => {
+      const wrapper = createWrapper({ loading: true })
+      expect(wrapper.find('.loading').text()).toBe('加载中...')
+    })
+  })
+
+  describe('error状态', () => {
+    it('应显示错误信息', () => {
+      const wrapper = createWrapper({ error: '加载失败' })
+      expect(wrapper.find('.error').text()).toBe('加载失败')
+    })
+  })
+
+  describe('空端口列表', () => {
+    it('应显示空提示', () => {
+      const wrapper = createWrapper({ ports: [] })
+      expect(wrapper.find('.empty-text').text()).toBe('暂无端口信息')
+    })
+  })
 })
