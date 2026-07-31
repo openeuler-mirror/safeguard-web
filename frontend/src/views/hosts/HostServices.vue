@@ -55,6 +55,7 @@ export default {
     },
     async loadServicesInfo() {
       try {
+        this.error = ''
         const res = await getServicesInfo(this.hostId)
         this.services = res?.services || []
       } catch (e) {

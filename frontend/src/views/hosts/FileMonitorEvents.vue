@@ -89,6 +89,7 @@ export default {
     },
     async loadEvents() {
       try {
+        this.error = ''
         const params = { host_id: this.hostId }
         if (this.filterType) params.event_type = this.filterType
         const res = await getFileMonitorEvents(params)

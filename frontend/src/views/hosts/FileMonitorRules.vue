@@ -159,6 +159,7 @@ export default {
     },
     async loadRules() {
       try {
+        this.error = ''
         const res = await getFileMonitorRules({ host_id: this.hostId })
         this.rules = res?.results || res || []
       } catch (e) {
