@@ -59,6 +59,7 @@
             <td>{{ host.os_type || '-' }}</td>
             <td>{{ formatDate(host.created_at) }}</td>
             <td>
+              <button class="btn-action btn-info" @click="goToHostDetail(host)" title="主机详情">详情</button>
               <button class="btn-action btn-collect" @click="handleCollectHardware(host)" title="采集硬件信息">采集硬件</button>
               <button class="btn-action btn-collect-lldp" @click="handleCollectLLDP(host)" title="采集LLDP信息">LLDP</button>
               <button class="btn-action btn-remote" @click="openRemoteCommandDialog(host)" title="远程命令">远程命令</button>
@@ -428,6 +429,9 @@ export default {
       if (!dateStr) return '-'
       const date = new Date(dateStr)
       return date.toLocaleString()
+    },
+    goToHostDetail(host) {
+      this.$router.push(`/hosts/${host.id}/dashboard`)
     },
     // ---------- Import / Export ----------
     openImportDialog() {
