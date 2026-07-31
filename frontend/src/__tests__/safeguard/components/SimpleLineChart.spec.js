@@ -100,4 +100,29 @@ describe('SimpleLineChart.vue', () => {
     })
   })
 
+  describe('自定义颜色主题', () => {
+    it('应使用自定义颜色', () => {
+      const wrapper = createWrapper({ data: mockSingleData, color: '#ff0000' })
+      const path = wrapper.find('path')
+      expect(path.attributes('stroke')).toBe('#ff0000')
+    })
+  })
+
+  describe('多数据系列', () => {
+    it('应渲染多个数据系列', () => {
+      const wrapper = createWrapper({ data: mockMultiData })
+      const paths = wrapper.findAll('path')
+      // 多个数据系列应该有多个path（注意：也要考虑坐标轴的line）
+      const dataPaths = paths.filter(p => p.attributes('stroke') === '#ff0000' || p.attributes('stroke') === '#00ff00')
+      expect(dataPaths.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Y轴刻度和单位', () => {
+    it('应在最大值刻度显示单位', () => {
+      const wrapper = createWrapper({ data: mockSingleData, unit: '%', maxValue: 100 })
+      const texts = wrapper.findAll('text')
+      expect(texts.some(t => t.text().includes('%'))).toBe(true)
+    })
+  })
 })
