@@ -28,4 +28,38 @@ describe('MetricCard.vue', () => {
     })
   })
 
+  describe('显示图标和图标背景色', () => {
+    it('应显示默认图标', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50 })
+      expect(wrapper.find('.metric-icon').exists()).toBe(true)
+    })
+
+    it('应使用自定义图标', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50, icon: '📊' })
+      expect(wrapper.find('.metric-icon').text()).toBe('📊')
+    })
+
+    it('应使用自定义图标背景色', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50, iconBg: '#ff0000' })
+      expect(wrapper.find('.metric-icon').attributes('style')).toContain('background: #ff0000')
+    })
+  })
+
+  describe('显示正向趋势', () => {
+    it('正趋势应显示↑和绿色样式', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50, trend: 10 })
+      expect(wrapper.find('.metric-trend').text()).toContain('↑')
+      expect(wrapper.find('.metric-trend').text()).toContain('10%')
+      expect(wrapper.find('.metric-trend').classes()).toContain('trend-up')
+    })
+  })
+
+  describe('显示负向趋势', () => {
+    it('负趋势应显示↓和红色样式', () => {
+      const wrapper = createWrapper({ label: 'CPU使用率', value: 50, trend: -10 })
+      expect(wrapper.find('.metric-trend').text()).toContain('↓')
+      expect(wrapper.find('.metric-trend').text()).toContain('10%')
+      expect(wrapper.find('.metric-trend').classes()).toContain('trend-down')
+    })
+  })
 })
