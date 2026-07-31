@@ -50,4 +50,54 @@ describe('SimpleLineChart.vue', () => {
     })
   })
 
+  describe('显示X轴和Y轴', () => {
+    it('应渲染X轴线', () => {
+      const wrapper = createWrapper({ data: mockSingleData })
+      const lines = wrapper.findAll('line')
+      const hasXAxis = lines.some(line => {
+        const y2 = line.attributes('y2')
+        const y1 = line.attributes('y1')
+        return y1 === y2
+      })
+      expect(hasXAxis).toBe(true)
+    })
+
+    it('应渲染Y轴线', () => {
+      const wrapper = createWrapper({ data: mockSingleData })
+      const lines = wrapper.findAll('line')
+      const hasYAxis = lines.some(line => {
+        const x2 = line.attributes('x2')
+        const x1 = line.attributes('x1')
+        return x1 === x2
+      })
+      expect(hasYAxis).toBe(true)
+    })
+
+    it('应显示Y轴刻度标签', () => {
+      const wrapper = createWrapper({ data: mockSingleData })
+      expect(wrapper.find('text').exists()).toBe(true)
+    })
+  })
+
+  describe('处理空数据情况', () => {
+    it('空数组不应出错', () => {
+      expect(() => {
+        createWrapper({ data: [] })
+      }).not.toThrow()
+    })
+
+    it('未提供data不应出错', () => {
+      expect(() => {
+        createWrapper()
+      }).not.toThrow()
+    })
+  })
+
+  describe('处理单数据点情况', () => {
+    it('单个数据点应正常渲染', () => {
+      const wrapper = createWrapper({ data: [{ y: 50 }] })
+      expect(wrapper.find('svg').exists()).toBe(true)
+    })
+  })
+
 })
