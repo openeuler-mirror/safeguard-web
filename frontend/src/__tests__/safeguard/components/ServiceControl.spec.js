@@ -148,4 +148,57 @@ describe('ServiceControl.vue', () => {
     })
   })
 
+  describe('操作进行中显示 loading 状态', () => {
+    it('操作进行中确认按钮应显示loading文本并禁用', async () => {
+      const onControl = vi.fn().mockImplementation(() => new Promise(() => { }))
+      const wrapper = createWrapper({ services: mockServices, onControl })
+
+      const stopBtn = wrapper.findAll('.btn-stop')[0]
+      await stopBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-primary')
+      await confirmBtn.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      expect(confirmBtn.text()).toBe('操作中...')
+      expect(confirmBtn.attributes('disabled')).toBe('')
+    })
+  })
+
+  describe('显示操作成功/失败提示', () => {
+    it('操作失败应显示alert提示', async () => {
+      const onControl = vi.fn().mockRejectedValue(new Error('操作失败'))
+      const wrapper = createWrapper({ services: mockServices, onControl })
+
+      const stopBtn = wrapper.findAll('.btn-stop')[0]
+      await stopBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-primary')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(alertMock).toHaveBeenCalledWith('操作失败')
+    })
+  })
+
+  describe('loading状态', () => {
+    it('应显示loading文本', () => {
+      const wrapper = createWrapper({ loading: true })
+      expect(wrapper.find('.loading').text()).toBe('加载中...')
+    })
+  })
+
+  describe('error状态', () => {
+    it('应显示错误信息', () => {
+      const wrapper = createWrapper({ error: '加载失败' })
+      expect(wrapper.find('.error').text()).toBe('加载失败')
+    })
+  })
+
+  describe('空服务列表', () => {
+    it('应显示空提示', () => {
+      const wrapper = createWrapper({ services: [] })
+      expect(wrapper.find('.empty-text').text()).toBe('暂无服务信息')
+    })
+  })
 })
