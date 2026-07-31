@@ -194,11 +194,12 @@ export default {
       this.form = {
         name: this.template.name,
         description: this.template.description || '',
-        config: this.template.config || {
-          enable_firewall: false,
-          enable_antivirus: false,
-          enable_file_monitor: false,
-          auto_update_hours: 24
+        config: {
+          ...(this.template.config || {}),
+          enable_firewall: this.template.config?.enable_firewall ?? false,
+          enable_antivirus: this.template.config?.enable_antivirus ?? false,
+          enable_file_monitor: this.template.config?.enable_file_monitor ?? false,
+          auto_update_hours: this.template.config?.auto_update_hours ?? 24
         }
       }
       this.dialogVisible = true

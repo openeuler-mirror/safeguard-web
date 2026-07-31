@@ -238,11 +238,12 @@ export default {
       this.form = {
         name: template.name,
         description: template.description || '',
-        config: template.config || {
-          enable_firewall: false,
-          enable_antivirus: false,
-          enable_file_monitor: false,
-          auto_update_hours: 24
+        config: {
+          ...(template.config || {}),
+          enable_firewall: template.config?.enable_firewall ?? false,
+          enable_antivirus: template.config?.enable_antivirus ?? false,
+          enable_file_monitor: template.config?.enable_file_monitor ?? false,
+          auto_update_hours: template.config?.auto_update_hours ?? 24
         }
       }
       this.dialogVisible = true

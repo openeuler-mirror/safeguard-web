@@ -10,7 +10,7 @@
         <span v-if="unit" class="metric-unit">{{ unit }}</span>
       </div>
       <div v-if="trend !== null" class="metric-trend" :class="trendClass">
-        {{ trend > 0 ? '↑' : '↓' }} {{ Math.abs(trend) }}%
+        {{ trend > 0 ? '↑' : trend < 0 ? '↓' : '→' }} {{ Math.abs(trend) }}%
       </div>
     </div>
   </div>
@@ -29,7 +29,9 @@ export default {
   },
   computed: {
     trendClass() {
-      return this.trend > 0 ? 'trend-up' : 'trend-down'
+      if (this.trend > 0) return 'trend-up'
+      if (this.trend < 0) return 'trend-down'
+      return 'trend-flat'
     }
   }
 }
@@ -79,4 +81,5 @@ export default {
 }
 .trend-up { color: #67c23a; }
 .trend-down { color: #f56c6c; }
+.trend-flat { color: #909399; }
 </style>
