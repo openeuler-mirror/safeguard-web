@@ -63,13 +63,22 @@ export default {
       }
     },
     async handleControlService(serviceName, action) {
-      await controlService(this.hostId, { name: serviceName, action })
-      alert('操作成功')
-      await this.loadServicesInfo()
+      try {
+        await controlService(this.hostId, { name: serviceName, action })
+        alert('操作成功')
+        await this.loadServicesInfo()
+      } catch (e) {
+        alert(e.message || '操作失败')
+      }
     },
     async handleGetServiceLogs(serviceName) {
-      const res = await getServiceLogs(this.hostId, serviceName)
-      return res?.logs || ''
+      try {
+        const res = await getServiceLogs(this.hostId, serviceName)
+        return res?.logs || ''
+      } catch (e) {
+        alert(e.message || '获取日志失败')
+        return ''
+      }
     },
     goBack() {
       this.$router.push(`/hosts/${this.hostId}/dashboard`)

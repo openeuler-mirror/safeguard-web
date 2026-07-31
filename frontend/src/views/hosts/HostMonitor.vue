@@ -14,6 +14,7 @@
     <div v-if="loading && !monitorHistory.length" class="loading">加载中...</div>
     <div v-else-if="error && !monitorHistory.length" class="error">{{ error }}</div>
     <div v-else class="monitor-content">
+      <div v-if="pollError" class="poll-error">{{ pollError }}</div>
       <!-- 当前指标 -->
       <div class="current-metrics">
         <MetricCard
@@ -94,6 +95,7 @@ export default {
       maxDataPoints: 20,
       loading: false,
       error: '',
+      pollError: '',
       autoRefresh: true,
       refreshInterval: null
     }
@@ -153,6 +155,7 @@ export default {
     },
     async loadMonitorData() {
       try {
+        this.pollError = ''
         const res = await getRealTimeMonitor(this.hostId)
         const data = res || {}
         this.currentMetrics = data
@@ -162,6 +165,7 @@ export default {
         }
       } catch (e) {
         console.error('获取监控数据失败', e)
+        this.pollError = e.message || '获取监控数据失败'
       }
     },
     startAutoRefresh() {
@@ -270,6 +274,15 @@ export default {
 
 .error {
   color: #f56c6c;
+}
+
+.poll-error {
+  background: #fef0f0;
+  border: 1px solid #fde2e2;
+  color: #f56c6c;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
 }
 
 .monitor-content {

@@ -186,7 +186,7 @@ export default {
       this.errors = {}
       this.form = {
         path: rule.path,
-        monitor_types: rule.monitor_types || [],
+        monitor_types: [...(rule.monitor_types || [])],
         enabled: rule.enabled !== false,
         description: rule.description || ''
       }
