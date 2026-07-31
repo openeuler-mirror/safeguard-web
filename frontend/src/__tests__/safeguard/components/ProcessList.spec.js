@@ -73,4 +73,70 @@ describe('ProcessList.vue', () => {
     })
   })
 
+  describe('点击终止按钮', () => {
+    it('点击终止按钮应显示确认对话框', async () => {
+      const wrapper = createWrapper({ processes: mockProcesses })
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+      expect(wrapper.find('.dialog-overlay').exists()).toBe(true)
+      expect(wrapper.find('.dialog-header h3').text()).toBe('确认终止进程')
+    })
+
+    it('对话框应显示进程名称和PID', async () => {
+      const wrapper = createWrapper({ processes: mockProcesses })
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+      expect(wrapper.text()).toContain('nginx')
+      expect(wrapper.text()).toContain('1234')
+    })
+  })
+
+  describe('确认终止', () => {
+    it('确认终止应调用onKill回调', async () => {
+      const onKill = vi.fn().mockResolvedValue({})
+      const wrapper = createWrapper({ processes: mockProcesses, onKill })
+
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-danger')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(onKill).toHaveBeenCalledWith(1234, false)
+    })
+
+    it('勾选强制终止应传递force=true', async () => {
+      const onKill = vi.fn().mockResolvedValue({})
+      const wrapper = createWrapper({ processes: mockProcesses, onKill })
+
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+
+      const checkbox = wrapper.find('input[type="checkbox"]')
+      await checkbox.setValue(true)
+
+      const confirmBtn = wrapper.find('.btn-danger')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(onKill).toHaveBeenCalledWith(1234, true)
+    })
+  })
+
+  describe('取消终止', () => {
+    it('取消终止不调用onKill回调', async () => {
+      const onKill = vi.fn()
+      const wrapper = createWrapper({ processes: mockProcesses, onKill })
+
+      const killBtn = wrapper.findAll('.btn-kill')[0]
+      await killBtn.trigger('click')
+
+      const cancelBtn = wrapper.find('.btn-cancel')
+      await cancelBtn.trigger('click')
+
+      expect(onKill).not.toHaveBeenCalled()
+    })
+  })
+
 })
