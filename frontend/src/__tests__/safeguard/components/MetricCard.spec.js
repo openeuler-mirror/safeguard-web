@@ -41,7 +41,7 @@ describe('MetricCard.vue', () => {
 
     it('应使用自定义图标背景色', () => {
       const wrapper = createWrapper({ label: 'CPU使用率', value: 50, iconBg: '#ff0000' })
-      expect(wrapper.find('.metric-icon').attributes('style')).toContain('background: #ff0000')
+      expect(wrapper.find('.metric-icon').attributes('style')).toMatch(/background.*(255, 0, 0|#ff0000)/)
     })
   })
 
