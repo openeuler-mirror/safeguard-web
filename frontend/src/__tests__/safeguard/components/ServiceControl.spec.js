@@ -55,4 +55,97 @@ describe('ServiceControl.vue', () => {
     })
   })
 
+  describe('点击启动按钮', () => {
+    it('点击启动按钮应显示确认弹窗', async () => {
+      const wrapper = createWrapper({ services: mockServices })
+      const startBtn = wrapper.findAll('.btn-start')[0]
+      await startBtn.trigger('click')
+      expect(wrapper.find('.dialog-overlay').exists()).toBe(true)
+      expect(wrapper.find('.dialog-header h3').text()).toBe('启动')
+    })
+
+    it('确认启动应调用onControl回调', async () => {
+      const onControl = vi.fn().mockResolvedValue({})
+      const wrapper = createWrapper({ services: mockServices, onControl })
+
+      const startBtn = wrapper.findAll('.btn-start')[0]
+      await startBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-primary')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(onControl).toHaveBeenCalledWith('mysql', 'start')
+    })
+  })
+
+  describe('点击停止按钮', () => {
+    it('点击停止按钮应显示确认弹窗', async () => {
+      const wrapper = createWrapper({ services: mockServices })
+      const stopBtn = wrapper.findAll('.btn-stop')[0]
+      await stopBtn.trigger('click')
+      expect(wrapper.find('.dialog-overlay').exists()).toBe(true)
+      expect(wrapper.find('.dialog-header h3').text()).toBe('停止')
+    })
+
+    it('确认停止应调用onControl回调', async () => {
+      const onControl = vi.fn().mockResolvedValue({})
+      const wrapper = createWrapper({ services: mockServices, onControl })
+
+      const stopBtn = wrapper.findAll('.btn-stop')[0]
+      await stopBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-primary')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(onControl).toHaveBeenCalledWith('nginx', 'stop')
+    })
+  })
+
+  describe('点击重启按钮', () => {
+    it('点击重启按钮应显示确认弹窗', async () => {
+      const wrapper = createWrapper({ services: mockServices })
+      const restartBtn = wrapper.findAll('.btn-restart')[0]
+      await restartBtn.trigger('click')
+      expect(wrapper.find('.dialog-overlay').exists()).toBe(true)
+      expect(wrapper.find('.dialog-header h3').text()).toBe('重启')
+    })
+
+    it('确认重启应调用onControl回调', async () => {
+      const onControl = vi.fn().mockResolvedValue({})
+      const wrapper = createWrapper({ services: mockServices, onControl })
+
+      const restartBtn = wrapper.findAll('.btn-restart')[0]
+      await restartBtn.trigger('click')
+
+      const confirmBtn = wrapper.find('.btn-primary')
+      await confirmBtn.trigger('click')
+      await flushPromises()
+
+      expect(onControl).toHaveBeenCalledWith('nginx', 'restart')
+    })
+  })
+
+  describe('点击查看日志按钮', () => {
+    it('点击日志按钮应显示日志弹窗', async () => {
+      const wrapper = createWrapper({ services: mockServices })
+      const logsBtn = wrapper.findAll('.btn-logs')[0]
+      await logsBtn.trigger('click')
+      expect(wrapper.find('.dialog-overlay').exists()).toBe(true)
+      expect(wrapper.find('.dialog-header h3').text()).toContain('服务日志')
+    })
+
+    it('应调用onGetLogs回调获取日志', async () => {
+      const onGetLogs = vi.fn().mockResolvedValue('log content')
+      const wrapper = createWrapper({ services: mockServices, onGetLogs })
+
+      const logsBtn = wrapper.findAll('.btn-logs')[0]
+      await logsBtn.trigger('click')
+      await flushPromises()
+
+      expect(onGetLogs).toHaveBeenCalledWith('nginx')
+    })
+  })
+
 })
