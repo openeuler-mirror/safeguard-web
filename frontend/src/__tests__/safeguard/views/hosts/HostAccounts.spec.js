@@ -151,4 +151,98 @@ describe('HostAccounts 页面测试', () => {
     })
   })
 
+  describe('按用户名搜索过滤', () => {
+    it('表格应显示所有账户信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const text = wrapper.text()
+      expect(text).toContain('root')
+      expect(text).toContain('www-data')
+      expect(text).toContain('admin')
+    })
+  })
+
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应显示错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error').exists()).toBe(true)
+      expect(wrapper.text()).toContain(errorMessage)
+    })
+
+    it('getAccountsInfo失败时应显示错误信息', async () => {
+      const errorMessage = '获取账户信息失败'
+      getAccountsInfo.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+  })
+
+  describe('显示空账户提示', () => {
+    it('没有账户时应显示空提示', async () => {
+      getAccountsInfo.mockResolvedValue({ accounts: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const emptyRow = wrapper.find('.empty-text')
+      expect(emptyRow.exists()).toBe(true)
+      expect(wrapper.text()).toContain('暂无账户信息')
+    })
+  })
+
+  describe('表格列结构', () => {
+    it('表格应有正确的列标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const headers = wrapper.findAll('thead th')
+      expect(headers.length).toBe(6)
+      expect(headers[0].text()).toBe('用户名')
+      expect(headers[1].text()).toBe('UID')
+      expect(headers[2].text()).toBe('GID')
+      expect(headers[3].text()).toBe('用户主目录')
+      expect(headers[4].text()).toBe('Shell')
+      expect(headers[5].text()).toBe('状态')
+    })
+  })
+
+  describe('刷新按钮功能', () => {
+    it('刷新按钮存在且可点击', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+    })
+
+    it('点击刷新按钮应重新加载账户数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getAccountsInfo).toHaveBeenCalledWith(mockHostId)
+    })
+  })
+
 })
