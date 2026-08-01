@@ -172,4 +172,56 @@ describe('HostProcesses 页面测试', () => {
     })
   })
 
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应设置错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+
+    it('getProcessesInfo失败时应设置错误信息', async () => {
+      const errorMessage = '获取进程信息失败'
+      getProcessesInfo.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+  })
+
+  describe('刷新按钮功能', () => {
+    it('刷新按钮存在且可点击', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+    })
+
+    it('点击刷新按钮应重新加载进程数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getProcessesInfo).toHaveBeenCalledWith(mockHostId)
+    })
+  })
+
 })
