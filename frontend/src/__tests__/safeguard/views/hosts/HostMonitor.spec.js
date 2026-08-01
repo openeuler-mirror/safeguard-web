@@ -191,4 +191,117 @@ describe('HostMonitor 页面测试', () => {
     })
   })
 
+  describe('自动刷新功能（默认 10 秒）', () => {
+    it('autoRefresh默认应为true', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.autoRefresh).toBe(true)
+    })
+
+    it('应设置自动刷新定时器', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.refreshInterval).not.toBeNull()
+    })
+
+    it('10秒后应自动刷新数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      clock.tick(10000)
+
+      expect(getRealTimeMonitor).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('暂停/继续自动刷新', () => {
+    it('点击切换按钮应改变autoRefresh状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      expect(wrapper.vm.autoRefresh).toBe(true)
+
+      await toggleButton.trigger('click')
+      expect(wrapper.vm.autoRefresh).toBe(false)
+
+      await toggleButton.trigger('click')
+      expect(wrapper.vm.autoRefresh).toBe(true)
+    })
+
+    it('暂停后应清除定时器', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      await toggleButton.trigger('click')
+
+      expect(wrapper.vm.refreshInterval).toBeNull()
+    })
+
+    it('继续后应重新设置定时器', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      await toggleButton.trigger('click')
+      await toggleButton.trigger('click')
+
+      expect(wrapper.vm.refreshInterval).not.toBeNull()
+    })
+  })
+
+  describe('手动刷新按钮触发数据采集', () => {
+    it('手动刷新按钮应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      await toggleButton.trigger('click')
+
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+    })
+
+    it('点击手动刷新按钮应调用API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      await toggleButton.trigger('click')
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getRealTimeMonitor).toHaveBeenCalledWith(mockHostId)
+    })
+  })
+
+  describe('组件卸载时清除定时器', () => {
+    it('beforeDestroy钩子应清除定时器', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const interval = wrapper.vm.refreshInterval
+      expect(interval).not.toBeNull()
+
+      wrapper.unmount()
+
+      expect(wrapper.vm.refreshInterval).toBeNull()
+    })
+  })
+
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
 })
