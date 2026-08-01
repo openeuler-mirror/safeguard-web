@@ -230,4 +230,53 @@ describe('HostServices 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应设置错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+
+    it('getServicesInfo失败时应设置错误信息', async () => {
+      const errorMessage = '获取服务信息失败'
+      getServicesInfo.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+  })
+
+  describe('刷新按钮功能', () => {
+    it('刷新按钮存在且可点击', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+    })
+
+    it('点击刷新按钮应重新加载服务数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getServicesInfo).toHaveBeenCalledWith(mockHostId)
+    })
+  })
+
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 服务控制')
+    })
+  })
 })
