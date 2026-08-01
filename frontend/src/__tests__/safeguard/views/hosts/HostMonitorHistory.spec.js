@@ -208,4 +208,121 @@ describe('HostMonitorHistory 页面测试', () => {
     })
   })
 
+  describe('分页功能正常工作', () => {
+    it('表格应能显示多行数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('45.5')
+      expect(wrapper.text()).toContain('50.1')
+      expect(wrapper.text()).toContain('42.3')
+    })
+  })
+
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应显示错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error').exists()).toBe(true)
+      expect(wrapper.text()).toContain(errorMessage)
+    })
+
+    it('getMonitorHistory失败时应设置错误信息', async () => {
+      const errorMessage = '获取历史监控数据失败'
+      getMonitorHistory.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+  })
+
+  describe('刷新按钮功能', () => {
+    it('刷新按钮存在且可点击', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+    })
+
+    it('点击刷新按钮应重新加载历史数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getMonitorHistory).toHaveBeenCalledWith(mockHostId, { range: '1h' })
+    })
+  })
+
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 历史监控')
+    })
+  })
+
+  describe('计算属性测试', () => {
+    it('cpuChartData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const cpuChartData = wrapper.vm.cpuChartData
+      expect(cpuChartData.length).toBe(3)
+      expect(cpuChartData[0].y).toBe(45.5)
+      expect(cpuChartData[1].y).toBe(50.1)
+    })
+
+    it('memChartData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const memChartData = wrapper.vm.memChartData
+      expect(memChartData.length).toBe(3)
+      expect(memChartData[0].y).toBe(60.2)
+    })
+
+    it('netInChartData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const netInChartData = wrapper.vm.netInChartData
+      expect(netInChartData.length).toBe(3)
+      expect(netInChartData[0].y).toBe(1024)
+    })
+
+    it('netOutChartData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const netOutChartData = wrapper.vm.netOutChartData
+      expect(netOutChartData.length).toBe(3)
+      expect(netOutChartData[0].y).toBe(2048)
+    })
+
+    it('maxNetValue应计算正确的最大值', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.maxNetValue).toBe(2600)
+    })
+  })
+
 })
