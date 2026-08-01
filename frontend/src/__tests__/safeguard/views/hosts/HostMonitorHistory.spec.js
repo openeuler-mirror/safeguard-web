@@ -53,4 +53,98 @@ describe('HostMonitorHistory 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始应显示loading状态', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('.loading').exists()).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏loading状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('.loading').exists()).toBe(false)
+    })
+  })
+
+  describe('从路由参数获取 hostId', () => {
+    it('应正确从路由参数获取hostId', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.hostId).toBe(mockHostId)
+    })
+  })
+
+  describe('时间范围选择器正常工作', () => {
+    it('时间范围选择器应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const timeSelect = wrapper.findAll('.filter-select')[0]
+      expect(timeSelect.exists()).toBe(true)
+    })
+
+    it('timeRange默认值应为1h', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.timeRange).toBe('1h')
+    })
+
+    it('时间范围选择器应有4个选项', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const timeSelect = wrapper.findAll('.filter-select')[0]
+      const options = timeSelect.findAll('option')
+      expect(options.length).toBe(4)
+    })
+
+    it('改变时间范围应重新加载数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.setData({ timeRange: '6h' })
+      const timeSelect = wrapper.findAll('.filter-select')[0]
+      await timeSelect.trigger('change')
+
+      expect(getMonitorHistory).toHaveBeenCalledWith(mockHostId, { range: '6h' })
+    })
+  })
+
+  describe('指标类型选择器正常工作', () => {
+    it('指标类型选择器应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const metricSelect = wrapper.findAll('.filter-select')[1]
+      expect(metricSelect.exists()).toBe(true)
+    })
+
+    it('metricType默认值应为all', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.metricType).toBe('all')
+    })
+
+    it('指标类型选择器应有4个选项', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const metricSelect = wrapper.findAll('.filter-select')[1]
+      const options = metricSelect.findAll('option')
+      expect(options.length).toBe(4)
+    })
+  })
+
+  describe('加载历史监控数据', () => {
+    it('应调用getHost和getMonitorHistory API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(mockHostId)
+      expect(getMonitorHistory).toHaveBeenCalledWith(mockHostId, { range: '1h' })
+    })
+
+    it('应正确设置historyData数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.historyData).toEqual(mockHistoryData)
+    })
+  })
+
 })
