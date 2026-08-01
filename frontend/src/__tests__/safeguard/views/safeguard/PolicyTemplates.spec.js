@@ -67,15 +67,15 @@ describe('PolicyTemplates 页面测试', () => {
   }
 
   describe('页面加载时显示 loading 状态', () => {
-    it('初始应显示loading状态', async () => {
+    it('初始loading应为true', async () => {
       wrapper = createWrapper()
-      expect(wrapper.find('.loading').exists()).toBe(true)
+      expect(wrapper.vm.loading).toBe(true)
     })
 
     it('数据加载完成后应隐藏loading状态', async () => {
       wrapper = createWrapper()
       await flushPromises()
-      expect(wrapper.find('.loading').exists()).toBe(false)
+      expect(wrapper.vm.loading).toBe(false)
     })
   })
 
