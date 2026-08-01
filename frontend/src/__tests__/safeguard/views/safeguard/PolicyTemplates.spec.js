@@ -105,4 +105,176 @@ describe('PolicyTemplates 页面测试', () => {
     })
   })
 
+  describe('搜索功能正常工作', () => {
+    it('搜索输入框应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const searchInput = wrapper.find('.search-input')
+      expect(searchInput.exists()).toBe(true)
+    })
+
+    it('有搜索文本时API应传递search参数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.setData({ searchText: 'test' })
+      await wrapper.vm.loadTemplates()
+
+      expect(getPolicyTemplates).toHaveBeenCalledWith({ search: 'test' })
+    })
+  })
+
+  describe('点击创建模板打开创建弹窗', () => {
+    it('创建按钮应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const createButton = wrapper.find('.btn-primary')
+      expect(createButton.exists()).toBe(true)
+    })
+
+    it('点击创建按钮应打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const createButton = wrapper.find('.btn-primary')
+      await createButton.trigger('click')
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+  })
+
+  describe('创建模板表单验证', () => {
+    it('表单验证不通过时应显示错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.name).toBe('请输入模板名称')
+    })
+  })
+
+  describe('创建模板成功后刷新列表', () => {
+    it('创建成功后应关闭弹窗并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.setData({ form: { name: '新策略', description: '', config: { enable_firewall: false, enable_antivirus: false, enable_file_monitor: false, auto_update_hours: 24 } } })
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createPolicyTemplate).toHaveBeenCalled()
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+  })
+
+  describe('点击编辑模板打开编辑弹窗', () => {
+    it('编辑按钮应存在', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const editButtons = wrapper.findAll('.btn-action')
+      expect(editButtons.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('编辑模板正确填充表单数据', () => {
+    it('打开编辑弹窗时应正确填充表单', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog(mockTemplates[0])
+
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('基础安全策略')
+    })
+  })
+
+  describe('编辑模板成功后刷新列表', () => {
+    it('编辑成功后应关闭弹窗并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog(mockTemplates[0])
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updatePolicyTemplate).toHaveBeenCalled()
+    })
+  })
+
+  describe('点击删除模板显示确认对话框', () => {
+    it('删除确认弹窗应能打开', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockTemplates[0])
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+  })
+
+  describe('删除模板成功后刷新列表', () => {
+    it('删除成功后应关闭弹窗并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockTemplates[0])
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deletePolicyTemplate).toHaveBeenCalled()
+    })
+  })
+
+  describe('点击克隆模板', () => {
+    it('克隆成功后应刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.cloneTemplate(mockTemplates[0])
+      await flushPromises()
+
+      expect(clonePolicyTemplate).toHaveBeenCalled()
+      expect(mockAlert).toHaveBeenCalledWith('模板克隆成功')
+    })
+
+    it('克隆失败时应显示错误', async () => {
+      clonePolicyTemplate.mockRejectedValue(new Error('克隆失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.cloneTemplate(mockTemplates[0])
+      await flushPromises()
+
+      expect(mockAlert).toHaveBeenCalledWith('克隆失败')
+    })
+  })
+
+  describe('点击查看模板详情跳转详情页', () => {
+    it('查看详情应跳转路由', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.viewTemplate(mockTemplates[0])
+
+      expect(mockPush).toHaveBeenCalledWith('/safeguard/policy-templates/1')
+    })
+  })
+
+  describe('点击应用策略打开主机选择弹窗', () => {
+    it('应用策略弹窗应能打开', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog(mockTemplates[0])
+
+      expect(wrapper.vm.applyDialogVisible).toBe(true)
+    })
+  })
+
 })
