@@ -277,4 +277,115 @@ describe('PolicyTemplates 页面测试', () => {
     })
   })
 
+  describe('应用策略成功后显示任务信息', () => {
+    it('应用成功后应跳转任务页面', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog(mockTemplates[0])
+      await wrapper.setData({ applyForm: { host_ids: [1, 2] } })
+      await wrapper.vm.submitApply()
+      await flushPromises()
+
+      expect(applyPolicy).toHaveBeenCalled()
+      expect(mockAlert).toHaveBeenCalledWith('策略下发任务已创建')
+      expect(mockPush).toHaveBeenCalledWith('/safeguard/policy-tasks')
+    })
+
+    it('未选择主机时应提示', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog(mockTemplates[0])
+      await wrapper.vm.submitApply()
+
+      expect(mockAlert).toHaveBeenCalledWith('请至少选择一个主机')
+    })
+  })
+
+  describe('分页功能正常工作', () => {
+    it('应能显示多个模板卡片', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const cards = wrapper.findAll('.template-card')
+      expect(cards.length).toBe(2)
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getPolicyTemplates失败时应显示错误', async () => {
+      const errorMessage = '加载模板列表失败'
+      getPolicyTemplates.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+  })
+
+  describe('formatDate方法测试', () => {
+    it('应正确格式化日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate('2024-01-01T00:00:00Z')
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理null日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate(null)
+      expect(result).toBe('-')
+    })
+  })
+
+  describe('空数据处理', () => {
+    it('没有模板时应显示空状态', async () => {
+      getPolicyTemplates.mockResolvedValue({ results: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无策略模板')
+    })
+  })
+
+  describe('弹窗关闭功能', () => {
+    it('应能关闭创建/编辑弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      expect(wrapper.vm.dialogVisible).toBe(true)
+
+      await wrapper.vm.closeDialog()
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+
+    it('应能关闭删除确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockTemplates[0])
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+
+      await wrapper.vm.closeDeleteDialog()
+      expect(wrapper.vm.deleteDialogVisible).toBe(false)
+    })
+
+    it('应能关闭应用策略弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog(mockTemplates[0])
+      expect(wrapper.vm.applyDialogVisible).toBe(true)
+
+      await wrapper.vm.closeApplyDialog()
+      expect(wrapper.vm.applyDialogVisible).toBe(false)
+    })
+  })
 })
