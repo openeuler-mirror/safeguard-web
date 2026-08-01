@@ -58,4 +58,58 @@ describe('HostServices 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始应显示loading状态', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应停止loading', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('从路由参数获取 hostId', () => {
+    it('应正确从路由参数获取hostId', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.hostId).toBe(mockHostId)
+    })
+  })
+
+  describe('加载服务列表数据', () => {
+    it('应调用getHost和getServicesInfo API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(mockHostId)
+      expect(getServicesInfo).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置services数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.services).toEqual(mockServices)
+    })
+  })
+
+  describe('使用 ServiceControl 组件渲染服务', () => {
+    it('应渲染ServiceControl组件', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.findComponent(ServiceControl).exists()).toBe(true)
+    })
+
+    it('ServiceControl组件应接收正确的props', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const serviceControl = wrapper.findComponent(ServiceControl)
+      expect(serviceControl.props('services')).toEqual(mockServices)
+      expect(serviceControl.props('loading')).toBe(false)
+      expect(serviceControl.props('on-control')).toBeDefined()
+      expect(serviceControl.props('on-get-logs')).toBeDefined()
+    })
+  })
+
 })
