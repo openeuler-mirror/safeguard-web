@@ -245,4 +245,37 @@ describe('HostAccounts 页面测试', () => {
     })
   })
 
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 系统账户')
+    })
+  })
+
+  describe('处理缺失的账户信息', () => {
+    it('处理home为null的情况', async () => {
+      const accountsWithNullHome = [
+        { username: 'test', uid: 1001, gid: 1001, home: null, shell: '/bin/bash', locked: false }
+      ]
+      getAccountsInfo.mockResolvedValue({ accounts: accountsWithNullHome })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('-')
+    })
+
+    it('处理shell为null的情况', async () => {
+      const accountsWithNullShell = [
+        { username: 'test', uid: 1001, gid: 1001, home: '/home/test', shell: null, locked: false }
+      ]
+      getAccountsInfo.mockResolvedValue({ accounts: accountsWithNullShell })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('-')
+    })
+  })
 })
