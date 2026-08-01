@@ -304,4 +304,108 @@ describe('HostMonitor 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应显示错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error').exists()).toBe(true)
+      expect(wrapper.text()).toContain(errorMessage)
+    })
+
+    it('轮询失败时应显示pollError', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const errorMessage = '获取监控数据失败'
+      getRealTimeMonitor.mockRejectedValue(new Error(errorMessage))
+
+      await wrapper.vm.loadMonitorData()
+      await flushPromises()
+
+      expect(wrapper.vm.pollError).toBe(errorMessage)
+    })
+  })
+
+  describe('计算属性测试', () => {
+    it('cpuData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const cpuData = wrapper.vm.cpuData
+      expect(cpuData.length).toBe(1)
+      expect(cpuData[0].x).toBe(0)
+      expect(cpuData[0].y).toBe(45.5)
+    })
+
+    it('memData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const memData = wrapper.vm.memData
+      expect(memData.length).toBe(1)
+      expect(memData[0].x).toBe(0)
+      expect(memData[0].y).toBe(60.2)
+    })
+
+    it('maxNetValue应计算正确的最大值', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.maxNetValue).toBe(2100)
+    })
+
+    it('maxLoadValue应计算正确的最大值', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.maxLoadValue).toBe(2)
+    })
+  })
+
+  describe('历史数据点限制', () => {
+    it('超过maxDataPoints时应移除最旧的数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      // 添加足够多的数据点
+      for (let i = 0; i < 25; i++) {
+        await wrapper.vm.loadMonitorData()
+      }
+
+      expect(wrapper.vm.monitorHistory.length).toBe(20)
+    })
+  })
+
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 实时监控')
+    })
+  })
+
+  describe('切换按钮文本', () => {
+    it('autoRefresh为true时显示"暂停自动刷新"', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      expect(toggleButton.text()).toBe('暂停自动刷新')
+    })
+
+    it('autoRefresh为false时显示"开启自动刷新"', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const toggleButton = wrapper.find('.btn-toggle')
+      await toggleButton.trigger('click')
+
+      expect(toggleButton.text()).toBe('开启自动刷新')
+    })
+  })
 })
