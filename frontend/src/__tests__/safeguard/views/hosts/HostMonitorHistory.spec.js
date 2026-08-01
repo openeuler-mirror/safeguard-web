@@ -325,4 +325,41 @@ describe('HostMonitorHistory 页面测试', () => {
     })
   })
 
+  describe('formatTime方法测试', () => {
+    it('应正确格式化时间戳', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatTime(Date.now())
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理null时间戳', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatTime(null)
+      expect(result).toBe('-')
+    })
+  })
+
+  describe('空数据处理', () => {
+    it('没有数据时应显示空提示', async () => {
+      getMonitorHistory.mockResolvedValue({ history: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+  })
+
+  describe('updateChartData方法', () => {
+    it('updateChartData应能被调用', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(() => wrapper.vm.updateChartData()).not.toThrow()
+    })
+  })
 })
