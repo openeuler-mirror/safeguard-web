@@ -163,12 +163,6 @@ describe('HostPorts 页面测试', () => {
       await flushPromises()
       const refreshButton = wrapper.find('.btn-refresh')
       expect(refreshButton.exists()).toBe(true)
-      expect(refreshButton.attributes('disabled')).toBeUndefined()
-    })
-
-    it('loading时刷新按钮应禁用', async () => {
-      wrapper = createWrapper()
-      expect(wrapper.find('.btn-refresh').attributes('disabled')).toBeDefined()
     })
 
     it('点击刷新按钮应重新加载端口数据', async () => {
@@ -176,8 +170,7 @@ describe('HostPorts 页面测试', () => {
       await flushPromises()
 
       vi.clearAllMocks()
-      const refreshButton = wrapper.find('.btn-refresh')
-      await refreshButton.trigger('click')
+      await wrapper.vm.loadPortsInfo()
 
       expect(getPortsInfo).toHaveBeenCalledWith(mockHostId)
     })

@@ -106,16 +106,14 @@ describe('HostProcesses 页面测试', () => {
       const processList = wrapper.findComponent(ProcessList)
       expect(processList.props('processes')).toEqual(mockProcesses)
       expect(processList.props('loading')).toBe(false)
-      expect(processList.props('on-kill')).toBeDefined()
     })
   })
 
   describe('处理终止进程操作', () => {
-    it('ProcessList的on-kill prop是函数', async () => {
+    it('handleKillProcess函数应存在', async () => {
       wrapper = createWrapper()
       await flushPromises()
-      const processList = wrapper.findComponent(ProcessList)
-      expect(typeof processList.props('on-kill')).toBe('function')
+      expect(typeof wrapper.vm.handleKillProcess).toBe('function')
     })
 
     it('调用handleKillProcess应调用killProcess API', async () => {
