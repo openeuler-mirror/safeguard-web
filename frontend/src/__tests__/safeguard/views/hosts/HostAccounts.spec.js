@@ -53,4 +53,40 @@ describe('HostAccounts 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始应显示loading状态', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('.loading').exists()).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏loading状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('.loading').exists()).toBe(false)
+    })
+  })
+
+  describe('从路由参数获取 hostId', () => {
+    it('应正确从路由参数获取hostId', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.hostId).toBe(mockHostId)
+    })
+  })
+
+  describe('加载系统账户列表', () => {
+    it('应调用getHost和getAccountsInfo API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(mockHostId)
+      expect(getAccountsInfo).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置accounts数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.accounts).toEqual(mockAccounts)
+    })
+  })
+
 })
