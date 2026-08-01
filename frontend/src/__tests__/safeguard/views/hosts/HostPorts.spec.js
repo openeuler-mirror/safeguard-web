@@ -148,4 +148,53 @@ describe('HostPorts 页面测试', () => {
     })
   })
 
+  describe('显示端口总数统计', () => {
+    it('PortList应收到正确的端口数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const portList = wrapper.findComponent(PortList)
+      expect(portList.props('ports').length).toBe(3)
+    })
+  })
+
+  describe('刷新按钮功能', () => {
+    it('刷新按钮存在且初始可点击', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const refreshButton = wrapper.find('.btn-refresh')
+      expect(refreshButton.exists()).toBe(true)
+      expect(refreshButton.attributes('disabled')).toBeUndefined()
+    })
+
+    it('loading时刷新按钮应禁用', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('.btn-refresh').attributes('disabled')).toBeDefined()
+    })
+
+    it('点击刷新按钮应重新加载端口数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      const refreshButton = wrapper.find('.btn-refresh')
+      await refreshButton.trigger('click')
+
+      expect(getPortsInfo).toHaveBeenCalledWith(mockHostId)
+    })
+  })
+
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 端口信息')
+    })
+
+    it('没有主机名时显示默认标题', async () => {
+      getHost.mockResolvedValue(null)
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('主机 - 端口信息')
+    })
+  })
 })
