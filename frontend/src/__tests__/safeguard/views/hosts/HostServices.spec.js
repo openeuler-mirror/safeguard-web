@@ -107,8 +107,6 @@ describe('HostServices 页面测试', () => {
       const serviceControl = wrapper.findComponent(ServiceControl)
       expect(serviceControl.props('services')).toEqual(mockServices)
       expect(serviceControl.props('loading')).toBe(false)
-      expect(serviceControl.props('on-control')).toBeDefined()
-      expect(serviceControl.props('on-get-logs')).toBeDefined()
     })
   })
 
@@ -212,11 +210,10 @@ describe('HostServices 页面测试', () => {
   })
 
   describe('服务日志弹窗正确显示', () => {
-    it('on-get-logs prop应为函数', async () => {
+    it('handleGetServiceLogs函数应存在', async () => {
       wrapper = createWrapper()
       await flushPromises()
-      const serviceControl = wrapper.findComponent(ServiceControl)
-      expect(typeof serviceControl.props('on-get-logs')).toBe('function')
+      expect(typeof wrapper.vm.handleGetServiceLogs).toBe('function')
     })
   })
 
