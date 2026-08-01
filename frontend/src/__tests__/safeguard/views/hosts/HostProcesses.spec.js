@@ -93,4 +93,83 @@ describe('HostProcesses 页面测试', () => {
     })
   })
 
+  describe('使用 ProcessList 组件渲染进程', () => {
+    it('应渲染ProcessList组件', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.findComponent(ProcessList).exists()).toBe(true)
+    })
+
+    it('ProcessList组件应接收正确的props', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const processList = wrapper.findComponent(ProcessList)
+      expect(processList.props('processes')).toEqual(mockProcesses)
+      expect(processList.props('loading')).toBe(false)
+      expect(processList.props('on-kill')).toBeDefined()
+    })
+  })
+
+  describe('处理终止进程操作', () => {
+    it('ProcessList的on-kill prop是函数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const processList = wrapper.findComponent(ProcessList)
+      expect(typeof processList.props('on-kill')).toBe('function')
+    })
+
+    it('调用handleKillProcess应调用killProcess API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const testPid = 1234
+
+      await wrapper.vm.handleKillProcess(testPid, false)
+
+      expect(killProcess).toHaveBeenCalledWith(mockHostId, testPid, false)
+    })
+
+    it('调用handleKillProcess时应传递force参数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const testPid = 1234
+
+      await wrapper.vm.handleKillProcess(testPid, true)
+
+      expect(killProcess).toHaveBeenCalledWith(mockHostId, testPid, true)
+    })
+  })
+
+  describe('终止成功后刷新进程列表', () => {
+    it('终止进程成功后应重新加载进程列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.handleKillProcess(1234, false)
+
+      expect(getProcessesInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('终止进程成功后应显示提示信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.handleKillProcess(1234, false)
+
+      expect(mockAlert).toHaveBeenCalledWith('进程已终止')
+    })
+  })
+
+  describe('终止失败显示错误提示', () => {
+    it('killProcess失败时应显示错误', async () => {
+      const errorMessage = '终止进程失败'
+      killProcess.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await expect(wrapper.vm.handleKillProcess(1234, false)).rejects.toThrow(errorMessage)
+    })
+  })
+
 })
