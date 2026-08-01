@@ -236,4 +236,57 @@ describe('HostDashboard 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应显示错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.error').exists()).toBe(true)
+      expect(wrapper.text()).toContain(errorMessage)
+    })
+
+    it('getSystemInfo失败时不应阻止其他数据加载', async () => {
+      getSystemInfo.mockRejectedValue(new Error('获取系统信息失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getHost).toHaveBeenCalled()
+      expect(getRealTimeMonitor).toHaveBeenCalled()
+    })
+  })
+
+  describe('formatBytes 正确格式化字节数', () => {
+    it('应正确格式化字节为合适的单位', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.formatBytes(1024)).toBe('1.00 KB')
+      expect(wrapper.vm.formatBytes(1048576)).toBe('1.00 MB')
+      expect(wrapper.vm.formatBytes(1073741824)).toBe('1.00 GB')
+    })
+
+    it('处理空值应返回"-"', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.formatBytes(null)).toBe('-')
+      expect(wrapper.vm.formatBytes(0)).toBe('-')
+    })
+  })
+
+  describe('Promise.allSettled 正确处理部分失败', () => {
+    it('一个API失败不应影响其他API的数据', async () => {
+      getSystemInfo.mockRejectedValue(new Error('系统信息失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.host).toEqual(mockHost)
+      expect(wrapper.vm.monitorData).toEqual(mockMonitorData)
+    })
+  })
 })
