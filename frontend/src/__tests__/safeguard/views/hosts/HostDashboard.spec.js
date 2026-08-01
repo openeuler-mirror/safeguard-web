@@ -139,4 +139,57 @@ describe('HostDashboard 页面测试', () => {
     })
   })
 
+  describe('渲染 4 个指标卡片', () => {
+    it('应渲染4个MetricCard组件', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const metricCards = wrapper.findAllComponents(MetricCard)
+      expect(metricCards.length).toBe(4)
+    })
+
+    it('指标卡片应包含正确的props', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const metricCards = wrapper.findAllComponents(MetricCard)
+      expect(metricCards[0].props('label')).toBe('CPU 使用率')
+      expect(metricCards[0].props('value')).toBe(45.5)
+      expect(metricCards[0].props('unit')).toBe('%')
+    })
+  })
+
+  describe('渲染快速导航按钮', () => {
+    it('应渲染9个快速导航按钮', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const navButtons = wrapper.findAll('.nav-btn')
+      expect(navButtons.length).toBe(9)
+    })
+
+    it('导航按钮应包含正确的文本', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('端口信息')
+      expect(wrapper.text()).toContain('进程管理')
+      expect(wrapper.text()).toContain('服务控制')
+      expect(wrapper.text()).toContain('实时监控')
+    })
+  })
+
+  describe('渲染系统信息网格', () => {
+    it('应渲染系统信息网格', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('.system-info').exists()).toBe(true)
+    })
+
+    it('系统信息应显示正确的内容', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('主机名')
+      expect(wrapper.text()).toContain('操作系统')
+      expect(wrapper.text()).toContain('内核版本')
+      expect(wrapper.text()).toContain('Ubuntu 20.04')
+    })
+  })
+
 })
