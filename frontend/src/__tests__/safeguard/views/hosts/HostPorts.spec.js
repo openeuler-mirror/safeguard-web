@@ -89,4 +89,63 @@ describe('HostPorts 页面测试', () => {
     })
   })
 
+  describe('使用 PortList 组件渲染端口', () => {
+    it('应渲染PortList组件', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.findComponent(PortList).exists()).toBe(true)
+    })
+
+    it('PortList组件应接收正确的props', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const portList = wrapper.findComponent(PortList)
+      expect(portList.props('ports')).toEqual(mockPorts)
+      expect(portList.props('loading')).toBe(false)
+    })
+  })
+
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getHost失败时应设置错误信息', async () => {
+      const errorMessage = '获取主机信息失败'
+      getHost.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+
+    it('getPortsInfo失败时应设置错误信息', async () => {
+      const errorMessage = '获取端口信息失败'
+      getPortsInfo.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe(errorMessage)
+    })
+
+    it('PortList组件应接收error prop', async () => {
+      const errorMessage = '获取端口信息失败'
+      getPortsInfo.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const portList = wrapper.findComponent(PortList)
+      expect(portList.props('error')).toBe(errorMessage)
+    })
+  })
+
 })
