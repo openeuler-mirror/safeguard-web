@@ -89,4 +89,66 @@ describe('HostAccounts 页面测试', () => {
     })
   })
 
+  describe('显示用户名、UID、GID、家目录、Shell', () => {
+    it('应渲染表格并显示账户信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const table = wrapper.find('table')
+      expect(table.exists()).toBe(true)
+
+      const rows = wrapper.findAll('tbody tr')
+      expect(rows.length).toBe(3)
+    })
+
+    it('第一行应显示root账户信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const firstRow = wrapper.findAll('tbody tr')[0]
+      expect(firstRow.text()).toContain('root')
+      expect(firstRow.text()).toContain('0')
+      expect(firstRow.text()).toContain('/root')
+      expect(firstRow.text()).toContain('/bin/bash')
+    })
+  })
+
+  describe('显示账户状态（锁定/活跃）', () => {
+    it('应渲染StatusBadge组件显示账户状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const statusBadges = wrapper.findAllComponents(StatusBadge)
+      expect(statusBadges.length).toBe(3)
+    })
+
+    it('未锁定账户应显示success状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const statusBadges = wrapper.findAllComponents(StatusBadge)
+      expect(statusBadges[0].props('type')).toBe('success')
+      expect(statusBadges[0].props('text')).toBe('正常')
+    })
+
+    it('锁定账户应显示danger状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const statusBadges = wrapper.findAllComponents(StatusBadge)
+      expect(statusBadges[1].props('type')).toBe('danger')
+      expect(statusBadges[1].props('text')).toBe('已锁定')
+    })
+  })
+
+  describe('root 账户高亮显示', () => {
+    it('root账户的状态应使用success类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const statusBadges = wrapper.findAllComponents(StatusBadge)
+      expect(statusBadges[0].props('type')).toBe('success')
+    })
+  })
+
 })
