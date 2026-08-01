@@ -112,4 +112,122 @@ describe('HostServices 页面测试', () => {
     })
   })
 
+  describe('处理服务控制操作', () => {
+    it('handleControlService应调用controlService API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.handleControlService('nginx', 'start')
+
+      expect(controlService).toHaveBeenCalledWith(mockHostId, { name: 'nginx', action: 'start' })
+    })
+
+    it('start操作成功后应刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.handleControlService('nginx', 'start')
+
+      expect(getServicesInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('stop操作成功后应刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.handleControlService('nginx', 'stop')
+
+      expect(getServicesInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('restart操作成功后应刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.handleControlService('nginx', 'restart')
+
+      expect(getServicesInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('reload操作成功后应刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.handleControlService('nginx', 'reload')
+
+      expect(getServicesInfo).toHaveBeenCalledTimes(1)
+    })
+
+    it('服务操作成功后应显示成功提示', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.handleControlService('nginx', 'start')
+
+      expect(mockAlert).toHaveBeenCalledWith('操作成功')
+    })
+  })
+
+  describe('处理获取服务日志操作', () => {
+    it('handleGetServiceLogs应调用getServiceLogs API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = await wrapper.vm.handleGetServiceLogs('nginx')
+
+      expect(getServiceLogs).toHaveBeenCalledWith(mockHostId, 'nginx')
+      expect(result).toBe('sample log content')
+    })
+
+    it('获取日志失败时应显示错误提示', async () => {
+      const errorMessage = '获取日志失败'
+      getServiceLogs.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = await wrapper.vm.handleGetServiceLogs('nginx')
+
+      expect(mockAlert).toHaveBeenCalledWith(errorMessage)
+      expect(result).toBe('')
+    })
+  })
+
+  describe('服务操作失败显示错误提示', () => {
+    it('controlService失败时应显示错误', async () => {
+      const errorMessage = '操作失败'
+      controlService.mockRejectedValue(new Error(errorMessage))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.handleControlService('nginx', 'start')
+
+      expect(mockAlert).toHaveBeenCalledWith(errorMessage)
+    })
+  })
+
+  describe('服务日志弹窗正确显示', () => {
+    it('on-get-logs prop应为函数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const serviceControl = wrapper.findComponent(ServiceControl)
+      expect(typeof serviceControl.props('on-get-logs')).toBe('function')
+    })
+  })
+
+  describe('点击返回按钮跳转回主机仪表盘', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/dashboard`)
+    })
+  })
+
 })
