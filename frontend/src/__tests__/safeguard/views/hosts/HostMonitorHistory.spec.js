@@ -147,4 +147,65 @@ describe('HostMonitorHistory 页面测试', () => {
     })
   })
 
+  describe('渲染历史数据图表', () => {
+    it('metricType为all时应渲染所有3个图表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const charts = wrapper.findAllComponents(SimpleLineChart)
+      expect(charts.length).toBe(3)
+    })
+
+    it('metricType为cpu时应只渲染CPU图表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      await wrapper.setData({ metricType: 'cpu' })
+
+      expect(wrapper.vm.showCpuChart).toBe(true)
+      expect(wrapper.vm.showMemChart).toBe(false)
+      expect(wrapper.vm.showNetChart).toBe(false)
+    })
+
+    it('metricType为memory时应只渲染内存图表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      await wrapper.setData({ metricType: 'memory' })
+
+      expect(wrapper.vm.showCpuChart).toBe(false)
+      expect(wrapper.vm.showMemChart).toBe(true)
+      expect(wrapper.vm.showNetChart).toBe(false)
+    })
+
+    it('metricType为network时应只渲染网络图表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      await wrapper.setData({ metricType: 'network' })
+
+      expect(wrapper.vm.showCpuChart).toBe(false)
+      expect(wrapper.vm.showMemChart).toBe(false)
+      expect(wrapper.vm.showNetChart).toBe(true)
+    })
+  })
+
+  describe('渲染历史数据表格', () => {
+    it('应渲染数据表格', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('table').exists()).toBe(true)
+    })
+
+    it('表格应显示正确的列数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const headers = wrapper.findAll('thead th')
+      expect(headers.length).toBe(6)
+    })
+
+    it('表格应显示正确的行数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const rows = wrapper.findAll('tbody tr')
+      expect(rows.length).toBe(3)
+    })
+  })
+
 })
