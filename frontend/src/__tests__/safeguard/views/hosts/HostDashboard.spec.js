@@ -192,4 +192,48 @@ describe('HostDashboard 页面测试', () => {
     })
   })
 
+  describe('点击快速导航按钮正确跳转路由', () => {
+    it('点击端口信息按钮应跳转到正确路由', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const portsButton = wrapper.findAll('.nav-btn')[0]
+      await portsButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/ports`)
+    })
+
+    it('点击进程管理按钮应跳转到正确路由', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const processesButton = wrapper.findAll('.nav-btn')[1]
+      await processesButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/processes`)
+    })
+
+    it('点击服务控制按钮应跳转到正确路由', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const servicesButton = wrapper.findAll('.nav-btn')[2]
+      await servicesButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/services`)
+    })
+
+    it('点击实时监控按钮应跳转到正确路由', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const monitorButton = wrapper.findAll('.nav-btn')[3]
+      await monitorButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith(`/hosts/${mockHostId}/monitor`)
+    })
+  })
+
+  describe('点击返回按钮跳转回主机列表', () => {
+    it('点击返回按钮应调用router.push', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const backButton = wrapper.find('.btn-back')
+      await backButton.trigger('click')
+      expect(mockPush).toHaveBeenCalledWith('/hosts')
+    })
+  })
+
 })
