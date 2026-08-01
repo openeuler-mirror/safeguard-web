@@ -60,4 +60,47 @@ describe('HostMonitor 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始应显示loading状态', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('.loading').exists()).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏loading状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('.loading').exists()).toBe(false)
+    })
+  })
+
+  describe('从路由参数获取 hostId', () => {
+    it('应正确从路由参数获取hostId', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.hostId).toBe(mockHostId)
+    })
+  })
+
+  describe('加载实时监控数据', () => {
+    it('应调用getHost和getRealTimeMonitor API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(mockHostId)
+      expect(getRealTimeMonitor).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置currentMetrics数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.currentMetrics).toEqual(mockMonitorData)
+    })
+
+    it('应将数据添加到monitorHistory', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.monitorHistory.length).toBe(1)
+      expect(wrapper.vm.monitorHistory[0]).toEqual(mockMonitorData)
+    })
+  })
+
 })
