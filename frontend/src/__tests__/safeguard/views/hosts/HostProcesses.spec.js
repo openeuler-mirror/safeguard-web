@@ -224,4 +224,20 @@ describe('HostProcesses 页面测试', () => {
     })
   })
 
+  describe('页面标题显示', () => {
+    it('应显示包含主机名的标题', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.text()).toContain('test-host - 进程管理')
+    })
+  })
+
+  describe('显示进程总数统计', () => {
+    it('ProcessList应收到正确的进程数据数量', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      const processList = wrapper.findComponent(ProcessList)
+      expect(processList.props('processes').length).toBe(3)
+    })
+  })
 })
