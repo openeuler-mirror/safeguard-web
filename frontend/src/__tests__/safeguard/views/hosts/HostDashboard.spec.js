@@ -76,4 +76,67 @@ describe('HostDashboard 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始应显示loading状态', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('.loading').exists()).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏loading状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.find('.loading').exists()).toBe(false)
+    })
+  })
+
+  describe('从路由参数获取 hostId', () => {
+    it('应正确从路由参数获取hostId', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.hostId).toBe(mockHostId)
+    })
+  })
+
+  describe('加载主机基本信息', () => {
+    it('应调用getHost API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置host数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.host).toEqual(mockHost)
+    })
+  })
+
+  describe('加载系统信息', () => {
+    it('应调用getSystemInfo API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getSystemInfo).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置systemInfo数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.systemInfo).toEqual(mockSystemInfo)
+    })
+  })
+
+  describe('加载实时监控数据', () => {
+    it('应调用getRealTimeMonitor API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getRealTimeMonitor).toHaveBeenCalledWith(mockHostId)
+    })
+
+    it('应正确设置monitorData数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.monitorData).toEqual(mockMonitorData)
+    })
+  })
+
 })
