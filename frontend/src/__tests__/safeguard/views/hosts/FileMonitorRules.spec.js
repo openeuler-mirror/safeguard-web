@@ -134,4 +134,59 @@ describe('FileMonitorRules 页面测试', () => {
     })
   })
 
+  describe('编辑规则弹窗', () => {
+    it('点击编辑按钮应打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog(mockRules[0])
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.path).toBe('/etc/passwd')
+    })
+
+    it('编辑成功后应关闭弹窗并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog(mockRules[0])
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateFileMonitorRule).toHaveBeenCalled()
+    })
+  })
+
+  describe('启用/禁用规则', () => {
+    it('调用 toggleEnabled 时应更新规则', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.toggleEnabled(mockRules[0])
+      expect(updateFileMonitorRule).toHaveBeenCalledWith(1, expect.any(Object))
+    })
+  })
+
+  describe('删除规则', () => {
+    it('确认弹窗应正确显示', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockRules[0])
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedRule).toEqual(mockRules[0])
+    })
+
+    it('删除成功后应关闭弹窗并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockRules[0])
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteFileMonitorRule).toHaveBeenCalledWith(1)
+    })
+  })
+
 })
