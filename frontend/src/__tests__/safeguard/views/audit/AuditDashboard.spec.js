@@ -110,4 +110,25 @@ describe('AuditDashboard 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getAuditStats 失败时应显示错误', async () => {
+      getAuditStats.mockRejectedValue(new Error('获取统计失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('获取统计失败')
+    })
+  })
+
+  describe('刷新按钮', () => {
+    it('点击刷新应重新加载统计数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.loadStats()
+
+      expect(getAuditStats).toHaveBeenCalled()
+    })
+  })
 })
