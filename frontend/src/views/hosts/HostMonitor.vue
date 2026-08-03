@@ -70,7 +70,7 @@
         </div>
         <div class="chart-card">
           <h3>系统负载</h3>
-          <SimpleLineChart :data="loadData" :max-value="maxLoadValue" color="#e6a23c" />
+          <SimpleLineChart :data="loadChartData" :max-value="maxLoadValue" color="#e6a23c" />
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@ export default {
     netOutData() {
       return this.monitorHistory.map((m, i) => ({ x: i, y: m.net_out || 0 }))
     },
-    loadData() {
+    loadChartData() {
       return this.monitorHistory.map((m, i) => ({ x: i, y: m.load_1 || 0 }))
     },
     maxNetValue() {
@@ -122,7 +122,7 @@ export default {
       return Math.ceil(max / 100) * 100
     },
     maxLoadValue() {
-      const values = this.loadData.map(d => d.y)
+      const values = this.loadChartData.map(d => d.y)
       const max = Math.max(...values, 2)
       return Math.ceil(max / 2) * 2
     }

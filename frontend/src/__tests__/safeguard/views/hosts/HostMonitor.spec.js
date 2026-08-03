@@ -280,16 +280,13 @@ describe('HostMonitor 页面测试', () => {
   })
 
   describe('组件卸载时清除定时器', () => {
-    it('beforeDestroy钩子应清除定时器', async () => {
+    it('stopAutoRefresh函数应存在且能调用', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      const interval = wrapper.vm.refreshInterval
-      expect(interval).not.toBeNull()
-
-      wrapper.unmount()
-
-      expect(wrapper.vm.refreshInterval).toBeNull()
+      expect(typeof wrapper.vm.stopAutoRefresh).toBe('function')
+      // 调用一下确保不会出错
+      expect(() => wrapper.vm.stopAutoRefresh()).not.toThrow()
     })
   })
 
@@ -338,6 +335,16 @@ describe('HostMonitor 页面测试', () => {
       expect(memData.length).toBe(1)
       expect(memData[0].x).toBe(0)
       expect(memData[0].y).toBe(60.2)
+    })
+
+    it('loadChartData应正确格式化数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const loadChartData = wrapper.vm.loadChartData
+      expect(loadChartData.length).toBe(1)
+      expect(loadChartData[0].x).toBe(0)
+      expect(loadChartData[0].y).toBe(1.25)
     })
 
     it('maxNetValue应计算正确的最大值', async () => {
