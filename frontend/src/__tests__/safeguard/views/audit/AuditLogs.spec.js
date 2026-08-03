@@ -120,4 +120,36 @@ describe('AuditLogs 页面测试', () => {
     })
   })
 
+  describe('getActionColor 方法测试', () => {
+    it('应返回正确的颜色类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getActionColor('create')).toBe('success')
+      expect(wrapper.vm.getActionColor('update')).toBe('warning')
+      expect(wrapper.vm.getActionColor('delete')).toBe('danger')
+      expect(wrapper.vm.getActionColor('login')).toBe('info')
+      expect(wrapper.vm.getActionColor('logout')).toBe('info')
+      expect(wrapper.vm.getActionColor('unknown')).toBe('info')
+    })
+  })
+
+  describe('formatDate 方法测试', () => {
+    it('应正确格式化日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate('2024-01-01T00:00:00Z')
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理 null 日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate(null)
+      expect(result).toBe('-')
+    })
+  })
+
 })
