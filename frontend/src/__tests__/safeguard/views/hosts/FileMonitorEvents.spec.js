@@ -181,4 +181,26 @@ describe('FileMonitorEvents 页面测试', () => {
     })
   })
 
+  describe('空数据处理', () => {
+    it('没有事件时应显示空状态', async () => {
+      getFileMonitorEvents.mockResolvedValue({ results: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无事件')
+    })
+  })
+
+  describe('刷新按钮', () => {
+    it('点击刷新应重新加载事件列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.loadEvents()
+
+      expect(getFileMonitorEvents).toHaveBeenCalledWith({ host_id: 1 })
+    })
+  })
 })
