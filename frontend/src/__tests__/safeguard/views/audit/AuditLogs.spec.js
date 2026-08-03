@@ -78,4 +78,46 @@ describe('AuditLogs 页面测试', () => {
     })
   })
 
+  describe('筛选功能', () => {
+    it('改变 filterAction 时应重新加载日志', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterAction: 'create' })
+      await wrapper.vm.loadLogs()
+
+      expect(getAuditLogs).toHaveBeenCalledWith({ action: 'create' })
+    })
+
+    it('改变 filterResource 时应重新加载日志', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterResource: 'policy' })
+      await wrapper.vm.loadLogs()
+
+      expect(getAuditLogs).toHaveBeenCalledWith({ resource_type: 'policy' })
+    })
+
+    it('同时设置两个筛选条件时都应传递', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterAction: 'create', filterResource: 'policy' })
+      await wrapper.vm.loadLogs()
+
+      expect(getAuditLogs).toHaveBeenCalledWith({ action: 'create', resource_type: 'policy' })
+    })
+
+    it('筛选条件为空时不传该参数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterAction: '', filterResource: '' })
+      await wrapper.vm.loadLogs()
+
+      expect(getAuditLogs).toHaveBeenCalledWith({})
+    })
+  })
+
 })
