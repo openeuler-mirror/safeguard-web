@@ -121,4 +121,25 @@ describe('SystemLogs 页面测试', () => {
     })
   })
 
+  describe('返回按钮', () => {
+    it('点击返回应跳转到主机仪表盘', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.goBack()
+      expect(mockPush).toHaveBeenCalledWith('/hosts/1/dashboard')
+    })
+  })
+
+  describe('刷新按钮', () => {
+    it('点击刷新应重新加载日志', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.loadLogs()
+
+      expect(getSystemLogs).toHaveBeenCalledWith(1, {})
+    })
+  })
 })
