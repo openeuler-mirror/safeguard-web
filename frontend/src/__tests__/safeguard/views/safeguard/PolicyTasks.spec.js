@@ -55,4 +55,31 @@ describe('PolicyTasks 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始 loading 应为 true', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏 loading 状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('加载任务列表', () => {
+    it('应调用 getPolicyTasks API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getPolicyTasks).toHaveBeenCalledWith({})
+    })
+
+    it('应正确设置 tasks 数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.tasks).toEqual(mockTasks)
+    })
+  })
+
 })
