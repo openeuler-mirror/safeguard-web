@@ -51,4 +51,31 @@ describe('AuditLogs 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始 loading 应为 true', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏 loading 状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('加载审计日志', () => {
+    it('应调用 getAuditLogs API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getAuditLogs).toHaveBeenCalledWith({})
+    })
+
+    it('应正确设置 logs 数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.logs).toEqual(mockLogs)
+    })
+  })
+
 })
