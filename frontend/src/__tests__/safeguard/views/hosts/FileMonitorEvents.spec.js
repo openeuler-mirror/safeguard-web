@@ -153,4 +153,32 @@ describe('FileMonitorEvents 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getHost 失败时应显示错误', async () => {
+      getHost.mockRejectedValue(new Error('加载数据失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('加载数据失败')
+    })
+
+    it('getFileMonitorEvents 失败时应显示错误', async () => {
+      getFileMonitorEvents.mockRejectedValue(new Error('获取事件失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('获取事件失败')
+    })
+  })
+
+  describe('返回按钮', () => {
+    it('点击返回应跳转到主机仪表盘', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.goBack()
+      expect(mockPush).toHaveBeenCalledWith('/hosts/1/dashboard')
+    })
+  })
+
 })
