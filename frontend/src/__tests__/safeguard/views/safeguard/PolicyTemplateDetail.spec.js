@@ -146,4 +146,53 @@ describe('PolicyTemplateDetail 页面测试', () => {
     })
   })
 
+  describe('应用策略弹窗', () => {
+    it('点击应用按钮应打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog()
+      expect(wrapper.vm.applyDialogVisible).toBe(true)
+    })
+
+    it('未选择主机时应 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog()
+      await wrapper.setData({ applyForm: { host_ids: [] } })
+      await wrapper.vm.submitApply()
+
+      expect(mockAlert).toHaveBeenCalledWith('请至少选择一个主机')
+    })
+
+    it('应用成功后应 alert 并跳转到任务页面', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog()
+      await wrapper.setData({ applyForm: { host_ids: [1, 2] } })
+      await wrapper.vm.submitApply()
+      await flushPromises()
+
+      expect(applyPolicy).toHaveBeenCalledWith(1, [1, 2])
+      expect(mockAlert).toHaveBeenCalledWith('策略下发任务已创建')
+      expect(mockPush).toHaveBeenCalledWith('/safeguard/policy-tasks')
+    })
+
+    it('应用失败时应显示错误', async () => {
+      applyPolicy.mockRejectedValue(new Error('应用失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog()
+      await wrapper.setData({ applyForm: { host_ids: [1] } })
+      await wrapper.vm.submitApply()
+      await flushPromises()
+
+      expect(mockAlert).toHaveBeenCalledWith('应用失败')
+    })
+  })
+
 })
