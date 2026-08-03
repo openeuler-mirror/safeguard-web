@@ -195,4 +195,65 @@ describe('PolicyTemplateDetail 页面测试', () => {
     })
   })
 
+  describe('formatDate 方法测试', () => {
+    it('应正确格式化日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate('2024-01-01T00:00:00Z')
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理 null 日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate(null)
+      expect(result).toBe('-')
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getPolicyTemplate 失败时应显示错误', async () => {
+      getPolicyTemplate.mockRejectedValue(new Error('加载模板详情失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('加载模板详情失败')
+    })
+  })
+
+  describe('返回按钮', () => {
+    it('点击返回应跳转到模板列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.goBack()
+      expect(mockPush).toHaveBeenCalledWith('/safeguard/policy-templates')
+    })
+  })
+
+  describe('弹窗关闭功能', () => {
+    it('应能关闭编辑弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog()
+      expect(wrapper.vm.dialogVisible).toBe(true)
+
+      await wrapper.vm.closeDialog()
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+
+    it('应能关闭应用策略弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openApplyDialog()
+      expect(wrapper.vm.applyDialogVisible).toBe(true)
+
+      await wrapper.vm.closeApplyDialog()
+      expect(wrapper.vm.applyDialogVisible).toBe(false)
+    })
+  })
 })
