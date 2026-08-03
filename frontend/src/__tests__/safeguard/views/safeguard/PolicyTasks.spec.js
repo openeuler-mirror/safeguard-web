@@ -146,6 +146,34 @@ describe('PolicyTasks 页面测试', () => {
     })
   })
 
+  describe('formatDate 方法测试', () => {
+    it('应正确格式化日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate('2024-01-01T00:00:00Z')
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理 null 日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate(null)
+      expect(result).toBe('-')
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getPolicyTasks 失败时应显示错误', async () => {
+      getPolicyTasks.mockRejectedValue(new Error('加载任务列表失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('加载任务列表失败')
+    })
+  })
+
   describe('空数据处理', () => {
     it('没有任务时应显示空状态', async () => {
       getPolicyTasks.mockResolvedValue({ results: [] })
