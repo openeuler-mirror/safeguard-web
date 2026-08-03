@@ -81,4 +81,44 @@ describe('SystemLogs 页面测试', () => {
     })
   })
 
+  describe('日志级别筛选', () => {
+    it('改变 logLevel 时应重新加载日志', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ logLevel: 'error' })
+      await wrapper.vm.loadLogs()
+
+      expect(getSystemLogs).toHaveBeenCalledWith(1, { level: 'error' })
+    })
+
+    it('logLevel 为空时不传该参数', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ logLevel: '' })
+      await wrapper.vm.loadLogs()
+
+      expect(getSystemLogs).toHaveBeenCalledWith(1, {})
+    })
+  })
+
+  describe('API 失败时显示错误信息', () => {
+    it('getHost 失败时应显示错误', async () => {
+      getHost.mockRejectedValue(new Error('加载数据失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('加载数据失败')
+    })
+
+    it('getSystemLogs 失败时应显示错误', async () => {
+      getSystemLogs.mockRejectedValue(new Error('获取日志失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('获取日志失败')
+    })
+  })
+
 })
