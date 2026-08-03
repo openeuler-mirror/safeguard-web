@@ -82,4 +82,42 @@ describe('PolicyTasks 页面测试', () => {
     })
   })
 
+  describe('状态筛选', () => {
+    it('改变 filterStatus 时应重新加载任务', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterStatus: 'success' })
+      await wrapper.vm.loadTasks()
+
+      expect(getPolicyTasks).toHaveBeenCalledWith({ status: 'success' })
+    })
+  })
+
+  describe('任务详情弹窗', () => {
+    it('点击查看详情应打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.viewTask(mockTasks[0])
+      await flushPromises()
+
+      expect(getPolicyTask).toHaveBeenCalledWith(1)
+      expect(wrapper.vm.detailDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedTask).toEqual(mockTasks[0])
+    })
+
+    it('获取详情失败时应 alert', async () => {
+      getPolicyTask.mockRejectedValue(new Error('获取任务详情失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.viewTask(mockTasks[0])
+      await flushPromises()
+
+      expect(mockAlert).toHaveBeenCalledWith('获取任务详情失败')
+    })
+  })
+
 })
