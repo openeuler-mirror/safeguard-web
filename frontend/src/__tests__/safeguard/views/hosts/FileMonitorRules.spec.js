@@ -62,4 +62,76 @@ describe('FileMonitorRules 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始 loading 应为 true', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏 loading 状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('加载主机和规则列表', () => {
+    it('应调用 getHost 和 getFileMonitorRules API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(1)
+      expect(getFileMonitorRules).toHaveBeenCalledWith({ host_id: 1 })
+    })
+
+    it('应正确设置 host 和 rules 数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.host).toEqual(mockHost)
+      expect(wrapper.vm.rules).toEqual(mockRules)
+    })
+  })
+
+  describe('创建规则弹窗', () => {
+    it('点击创建按钮应打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('表单验证 - 路径为空时应显示错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.path).toBe('请输入监控路径')
+    })
+
+    it('表单验证 - 未选择监控类型时应 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.setData({ form: { ...wrapper.vm.form, path: '/test/path', monitor_types: [] } })
+      await wrapper.vm.submitForm()
+      expect(mockAlert).toHaveBeenCalledWith('请至少选择一种监控类型')
+    })
+
+    it('创建成功后应关闭弹窗并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      await wrapper.setData({ form: { ...wrapper.vm.form, path: '/test/path', monitor_types: ['read'] } })
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createFileMonitorRule).toHaveBeenCalled()
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+  })
+
 })
