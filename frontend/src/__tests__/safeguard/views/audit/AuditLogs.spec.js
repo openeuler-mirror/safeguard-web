@@ -152,4 +152,36 @@ describe('AuditLogs 页面测试', () => {
     })
   })
 
+  describe('API 失败时显示错误信息', () => {
+    it('getAuditLogs 失败时应显示错误', async () => {
+      getAuditLogs.mockRejectedValue(new Error('获取日志失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.error).toBe('获取日志失败')
+    })
+  })
+
+  describe('空数据处理', () => {
+    it('没有日志时应显示空状态', async () => {
+      getAuditLogs.mockResolvedValue({ results: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无日志')
+    })
+  })
+
+  describe('刷新按钮', () => {
+    it('点击刷新应重新加载日志', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.loadLogs()
+
+      expect(getAuditLogs).toHaveBeenCalledWith({})
+    })
+  })
 })
