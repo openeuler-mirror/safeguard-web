@@ -76,4 +76,38 @@ describe('AuditDashboard 页面测试', () => {
     })
   })
 
+  describe('getBarWidth 方法测试', () => {
+    it('应返回正确的宽度百分比', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      // 最大值是 100 (login)
+      expect(wrapper.vm.getBarWidth(50)).toBe(50)
+      expect(wrapper.vm.getBarWidth(100)).toBe(100)
+      expect(wrapper.vm.getBarWidth(70)).toBe(70)
+    })
+
+    it('无数据时应处理为 0', async () => {
+      getAuditStats.mockResolvedValue({})
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getBarWidth(50)).toBe(0)
+    })
+  })
+
+  describe('getBarColor 方法测试', () => {
+    it('应返回正确的颜色', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getBarColor('create')).toBe('#67c23a')
+      expect(wrapper.vm.getBarColor('update')).toBe('#e6a23c')
+      expect(wrapper.vm.getBarColor('delete')).toBe('#f56c6c')
+      expect(wrapper.vm.getBarColor('login')).toBe('#409eff')
+      expect(wrapper.vm.getBarColor('logout')).toBe('#909399')
+      expect(wrapper.vm.getBarColor('unknown')).toBe('#909399')
+    })
+  })
+
 })
