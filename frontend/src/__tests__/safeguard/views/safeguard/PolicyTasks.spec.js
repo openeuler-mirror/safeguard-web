@@ -146,4 +146,40 @@ describe('PolicyTasks 页面测试', () => {
     })
   })
 
+  describe('空数据处理', () => {
+    it('没有任务时应显示空状态', async () => {
+      getPolicyTasks.mockResolvedValue({ results: [] })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无任务')
+    })
+  })
+
+  describe('弹窗关闭功能', () => {
+    it('应能关闭详情弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.viewTask(mockTasks[0])
+      expect(wrapper.vm.detailDialogVisible).toBe(true)
+
+      await wrapper.vm.closeDetailDialog()
+      expect(wrapper.vm.detailDialogVisible).toBe(false)
+      expect(wrapper.vm.selectedTask).toBeNull()
+    })
+  })
+
+  describe('刷新按钮', () => {
+    it('点击刷新应重新加载任务列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      vi.clearAllMocks()
+      await wrapper.vm.loadTasks()
+
+      expect(getPolicyTasks).toHaveBeenCalledWith({})
+    })
+  })
 })
