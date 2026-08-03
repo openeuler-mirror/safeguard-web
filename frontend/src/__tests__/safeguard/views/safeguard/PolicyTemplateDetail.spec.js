@@ -98,4 +98,52 @@ describe('PolicyTemplateDetail 页面测试', () => {
     })
   })
 
+  describe('编辑模板弹窗', () => {
+    it('点击编辑按钮应打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog()
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.form.name).toBe('基础安全策略')
+      expect(wrapper.vm.form.description).toBe('基础安全配置')
+      expect(wrapper.vm.form.config.enable_firewall).toBe(true)
+    })
+
+    it('表单验证 - 名称为空时应显示错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog()
+      await wrapper.setData({ form: { ...wrapper.vm.form, name: '' } })
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.name).toBe('请输入模板名称')
+    })
+
+    it('编辑成功后应关闭弹窗并刷新数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog()
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updatePolicyTemplate).toHaveBeenCalledWith(1, expect.any(Object))
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+
+    it('编辑失败时应显示错误', async () => {
+      updatePolicyTemplate.mockRejectedValue(new Error('操作失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openEditDialog()
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('操作失败')
+    })
+  })
+
 })
