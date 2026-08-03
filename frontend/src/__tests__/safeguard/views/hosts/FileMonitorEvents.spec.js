@@ -121,4 +121,36 @@ describe('FileMonitorEvents 页面测试', () => {
     })
   })
 
+  describe('getEventTypeColor 方法测试', () => {
+    it('应返回正确的颜色类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getEventTypeColor('read')).toBe('info')
+      expect(wrapper.vm.getEventTypeColor('write')).toBe('warning')
+      expect(wrapper.vm.getEventTypeColor('create')).toBe('success')
+      expect(wrapper.vm.getEventTypeColor('delete')).toBe('danger')
+      expect(wrapper.vm.getEventTypeColor('modify')).toBe('info')
+      expect(wrapper.vm.getEventTypeColor('unknown')).toBe('info')
+    })
+  })
+
+  describe('formatDate 方法测试', () => {
+    it('应正确格式化日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate('2024-01-01T00:00:00Z')
+      expect(typeof result).toBe('string')
+    })
+
+    it('应处理 null 日期', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const result = wrapper.vm.formatDate(null)
+      expect(result).toBe('-')
+    })
+  })
+
 })
