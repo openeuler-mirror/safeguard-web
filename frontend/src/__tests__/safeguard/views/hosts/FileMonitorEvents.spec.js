@@ -55,4 +55,70 @@ describe('FileMonitorEvents 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始 loading 应为 true', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏 loading 状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('加载主机和事件列表', () => {
+    it('应调用 getHost 和 getFileMonitorEvents API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(1)
+      expect(getFileMonitorEvents).toHaveBeenCalledWith({ host_id: 1 })
+    })
+
+    it('应正确设置 host 和 events 数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.host).toEqual(mockHost)
+      expect(wrapper.vm.events).toEqual(mockEvents)
+    })
+  })
+
+  describe('事件类型筛选', () => {
+    it('改变 filterType 时应重新加载事件', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.setData({ filterType: 'read' })
+      await wrapper.vm.loadEvents()
+
+      expect(getFileMonitorEvents).toHaveBeenCalledWith({ host_id: 1, event_type: 'read' })
+    })
+  })
+
+  describe('采集事件功能', () => {
+    it('调用 collectEvents 时应触发采集并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.collectEvents()
+      await flushPromises()
+
+      expect(collectFileMonitorEvents).toHaveBeenCalledWith(1)
+      expect(mockAlert).toHaveBeenCalledWith('事件采集任务已触发')
+    })
+
+    it('采集失败时应显示错误', async () => {
+      collectFileMonitorEvents.mockRejectedValue(new Error('触发采集失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.collectEvents()
+      await flushPromises()
+
+      expect(mockAlert).toHaveBeenCalledWith('触发采集失败')
+    })
+  })
+
 })
