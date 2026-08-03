@@ -246,4 +246,27 @@ describe('FileMonitorRules 页面测试', () => {
     })
   })
 
+  describe('弹窗关闭功能', () => {
+    it('应能关闭创建/编辑弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      expect(wrapper.vm.dialogVisible).toBe(true)
+
+      await wrapper.vm.closeDialog()
+      expect(wrapper.vm.dialogVisible).toBe(false)
+    })
+
+    it('应能关闭删除确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockRules[0])
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+
+      await wrapper.vm.closeDeleteDialog()
+      expect(wrapper.vm.deleteDialogVisible).toBe(false)
+    })
+  })
 })
