@@ -120,4 +120,30 @@ describe('PolicyTasks 页面测试', () => {
     })
   })
 
+  describe('getStatusType 方法测试', () => {
+    it('应返回正确的颜色类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getStatusType('pending')).toBe('warning')
+      expect(wrapper.vm.getStatusType('running')).toBe('info')
+      expect(wrapper.vm.getStatusType('success')).toBe('success')
+      expect(wrapper.vm.getStatusType('failed')).toBe('danger')
+      expect(wrapper.vm.getStatusType('unknown')).toBe('info')
+    })
+  })
+
+  describe('getStatusText 方法测试', () => {
+    it('应返回正确的状态文本', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.getStatusText('pending')).toBe('待执行')
+      expect(wrapper.vm.getStatusText('running')).toBe('执行中')
+      expect(wrapper.vm.getStatusText('success')).toBe('成功')
+      expect(wrapper.vm.getStatusText('failed')).toBe('失败')
+      expect(wrapper.vm.getStatusText('unknown')).toBe('unknown')
+    })
+  })
+
 })
