@@ -108,4 +108,51 @@ describe('HostSafeguardPolicy 页面测试', () => {
     })
   })
 
+  describe('绑定策略弹窗', () => {
+    it('点击绑定按钮应打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openBindDialog()
+      expect(wrapper.vm.bindDialogVisible).toBe(true)
+    })
+
+    it('表单验证 - 未选择模板时应显示错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openBindDialog()
+      await wrapper.vm.submitBind()
+      expect(wrapper.vm.errors.template_id).toBe('请选择策略模板')
+    })
+
+    it('绑定成功后应关闭弹窗、alert 并刷新数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openBindDialog()
+      await wrapper.setData({ bindForm: { template_id: 1 } })
+      await wrapper.vm.submitBind()
+      await flushPromises()
+
+      expect(bindHostPolicy).toHaveBeenCalledWith(1, { template_id: 1 })
+      expect(wrapper.vm.bindDialogVisible).toBe(false)
+      expect(mockAlert).toHaveBeenCalledWith('策略绑定成功')
+    })
+
+    it('绑定失败时应显示错误', async () => {
+      bindHostPolicy.mockRejectedValue(new Error('操作失败'))
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openBindDialog()
+      await wrapper.setData({ bindForm: { template_id: 1 } })
+      await wrapper.vm.submitBind()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('操作失败')
+    })
+  })
+
 })
