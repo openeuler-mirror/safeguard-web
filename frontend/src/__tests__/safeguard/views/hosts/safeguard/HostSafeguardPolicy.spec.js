@@ -69,4 +69,43 @@ describe('HostSafeguardPolicy 页面测试', () => {
     })
   }
 
+  describe('页面加载时显示 loading 状态', () => {
+    it('初始 loading 应为 true', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.loading).toBe(true)
+    })
+
+    it('数据加载完成后应隐藏 loading 状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.loading).toBe(false)
+    })
+  })
+
+  describe('加载主机、策略和模板列表', () => {
+    it('应调用 getHost、getHostPolicy 和 getPolicyTemplates API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(getHost).toHaveBeenCalledWith(1)
+      expect(getHostPolicy).toHaveBeenCalledWith(1)
+      expect(getPolicyTemplates).toHaveBeenCalled()
+    })
+
+    it('应正确设置 host、currentPolicy 和 templates 数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.host).toEqual(mockHost)
+      expect(wrapper.vm.currentPolicy).toEqual(mockPolicy)
+      expect(wrapper.vm.templates).toEqual(mockTemplates)
+    })
+
+    it('没有策略时 currentPolicy 应为 null', async () => {
+      getHostPolicy.mockResolvedValue(null)
+
+      wrapper = createWrapper()
+      await flushPromises()
+      expect(wrapper.vm.currentPolicy).toBeNull()
+    })
+  })
+
 })
