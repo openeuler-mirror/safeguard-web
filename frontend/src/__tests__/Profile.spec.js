@@ -218,4 +218,73 @@ describe('Profile 页面测试', () => {
     })
   })
 
+  describe('编辑模式', () => {
+    it('点击编辑信息按钮进入编辑模式', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+
+      expect(wrapper.vm.editing).toBe(true)
+    })
+
+    it('进入编辑模式时表单数据从用户信息初始化', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+
+      expect(wrapper.vm.form.nickname).toBe('Test User')
+      expect(wrapper.vm.form.phone).toBe('13800138000')
+      expect(wrapper.vm.form.email).toBe('test@example.com')
+    })
+
+    it('进入编辑模式时清空消息', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.message = '之前的消息'
+
+      await wrapper.find('button').trigger('click')
+
+      expect(wrapper.vm.message).toBe('')
+    })
+
+    it('编辑模式下显示输入框而非文本', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.findAll('.edit-input').length).toBe(3)
+    })
+
+    it('编辑模式下显示取消和保存按钮', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('取消')
+      expect(wrapper.text()).toContain('保存')
+    })
+
+    it('点击取消按钮退出编辑模式', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      await wrapper.findAll('button')[0].trigger('click')
+
+      expect(wrapper.vm.editing).toBe(false)
+    })
+
+    it('点击取消按钮清空消息', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      wrapper.vm.message = '测试消息'
+      await wrapper.vm.cancelEdit()
+
+      expect(wrapper.vm.message).toBe('')
+    })
+  })
+
 })
