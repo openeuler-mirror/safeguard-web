@@ -200,4 +200,97 @@ describe('Register 页面测试', () => {
     })
   })
 
+  describe('发送验证码功能', () => {
+    it('未输入邮箱时点击发送验证码显示错误', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('.send-code-btn').trigger('click')
+
+      expect(wrapper.vm.error).toBe('请先输入邮箱')
+    })
+
+    it('输入邮箱后点击发送验证码调用 API', async () => {
+      wrapper = createWrapper()
+      sendVerificationCode.mockResolvedValue({})
+
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleSendCode()
+
+      expect(sendVerificationCode).toHaveBeenCalledWith('test@example.com', 'register')
+    })
+
+    it('发送验证码成功后启动 60 秒倒计时', async () => {
+      wrapper = createWrapper()
+      sendVerificationCode.mockResolvedValue({})
+
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleSendCode()
+      await flushPromises()
+
+      expect(wrapper.vm.countdown).toBe(60)
+    })
+
+    it('倒计时过程中按钮显示倒计时', async () => {
+      wrapper = createWrapper()
+      sendVerificationCode.mockResolvedValue({})
+
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleSendCode()
+      await flushPromises()
+
+      expect(wrapper.find('.send-code-btn').text()).toBe('60s')
+    })
+
+    it('发送验证码返回本地验证URL时设置 localVerifyUrl', async () => {
+      wrapper = createWrapper()
+      sendVerificationCode.mockResolvedValue({ local_verify_url: 'http://test-verify.com' })
+
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleSendCode()
+      await flushPromises()
+
+      expect(wrapper.vm.localVerifyUrl).toBe('http://test-verify.com')
+    })
+
+    it('localVerifyUrl 存在时显示验证码输入框', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.localVerifyUrl = 'http://test-verify.com'
+      await flushPromises()
+
+      expect(wrapper.find('#code').exists()).toBe(true)
+    })
+
+    it('发送验证码失败显示错误信息', async () => {
+      wrapper = createWrapper()
+      sendVerificationCode.mockRejectedValue(new Error('发送验证码失败'))
+
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleSendCode()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('发送验证码失败')
+    })
+
+    it('发送验证码过程中 codeSending 为 true', async () => {
+      wrapper = createWrapper()
+      let resolveSendCode
+      sendVerificationCode.mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveSendCode = () => resolve({})
+        })
+      })
+
+      wrapper.vm.form.email = 'test@example.com'
+      const sendCodePromise = wrapper.vm.handleSendCode()
+
+      expect(wrapper.vm.codeSending).toBe(true)
+
+      resolveSendCode()
+      await sendCodePromise
+      await flushPromises()
+
+      expect(wrapper.vm.codeSending).toBe(false)
+    })
+  })
+
 })
