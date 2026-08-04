@@ -238,4 +238,55 @@ describe('Login 页面测试', () => {
     })
   })
 
+  describe('渲染链接', () => {
+    it('应有忘记密码链接', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('忘记密码？')
+    })
+
+    it('应有注册链接', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('没有账号？去注册')
+    })
+  })
+
+  describe('登录按钮状态', () => {
+    it('loading 时按钮被禁用', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.loading = true
+      await flushPromises()
+
+      expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    })
+
+    it('非 loading 时按钮可用', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.loading = false
+      await flushPromises()
+
+      expect(wrapper.find('button').attributes('disabled')).toBeUndefined()
+    })
+  })
+
+  describe('输入框属性', () => {
+    it('用户名输入框类型是 text', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#username').attributes('type')).toBe('text')
+    })
+
+    it('密码输入框类型是 password', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#password').attributes('type')).toBe('password')
+    })
+
+    it('用户名输入框有 required 属性', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#username').attributes('required')).toBeDefined()
+    })
+
+    it('密码输入框有 required 属性', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#password').attributes('required')).toBeDefined()
+    })
+  })
 })
