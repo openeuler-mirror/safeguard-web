@@ -67,4 +67,155 @@ describe('Clusters 页面测试', () => {
     })
   })
 
+  describe('创建集群', () => {
+    it('点击创建集群按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('表单初始值应该是空的', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+
+      expect(wrapper.vm.form.name).toBe('')
+      expect(wrapper.vm.form.description).toBe('')
+      expect(wrapper.vm.form.vcenter_id).toBe('')
+    })
+
+    it('创建集群成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createCluster.mockResolvedValue({})
+
+      await wrapper.vm.openCreateDialog()
+      wrapper.vm.form.name = 'new-cluster'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createCluster).toHaveBeenCalledWith({ name: 'new-cluster', description: '', vcenter_id: '' })
+      expect(getClusters).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('编辑集群', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('test-cluster-1')
+      expect(wrapper.vm.form.description).toBe('test description')
+    })
+
+    it('编辑集群成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateCluster.mockResolvedValue({})
+
+      await wrapper.vm.openEditDialog(mockClusters[0])
+      wrapper.vm.form.name = 'updated-cluster'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateCluster).toHaveBeenCalledWith(1, { name: 'updated-cluster', description: 'test description', vcenter_id: '' })
+      expect(getClusters).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除集群', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-delete')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedCluster.name).toBe('test-cluster-1')
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteCluster.mockResolvedValue({})
+      vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+      await wrapper.vm.confirmDelete(mockClusters[0])
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteCluster).toHaveBeenCalledWith(1)
+      expect(getClusters).toHaveBeenCalledTimes(2)
+    })
+
+    it('点击取消应该关闭弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockClusters[0])
+      await wrapper.vm.closeDeleteDialog()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(false)
+    })
+  })
+
+  describe('查看主机列表', () => {
+    it('点击主机按钮应该打开主机列表弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-info')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.hostDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedCluster.name).toBe('test-cluster-1')
+    })
+
+    it('打开主机列表弹窗应该调用 getClusterHosts', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openHostDialog(mockClusters[0])
+      await flushPromises()
+
+      expect(getClusterHosts).toHaveBeenCalledWith(1)
+    })
+
+    it('主机列表应该正确显示', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openHostDialog(mockClusters[0])
+      await flushPromises()
+
+      expect(wrapper.vm.clusterHosts).toEqual(mockHosts)
+    })
+
+    it('关闭主机列表弹窗应该清空数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openHostDialog(mockClusters[0])
+      await wrapper.vm.closeHostDialog()
+
+      expect(wrapper.vm.hostDialogVisible).toBe(false)
+      expect(wrapper.vm.clusterHosts).toEqual([])
+    })
+  })
+
 })
