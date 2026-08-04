@@ -39,4 +39,32 @@ describe('Clusters 页面测试', () => {
     })
   }
 
+  describe('页面初始加载', () => {
+    it('应该调用 getClusters', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getClusters).toHaveBeenCalled()
+    })
+
+    it('应该显示集群列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('test-cluster-1')
+      expect(wrapper.text()).toContain('test description')
+      expect(wrapper.text()).toContain('test-cluster-2')
+      expect(wrapper.text()).toContain('5')
+      expect(wrapper.text()).toContain('3')
+    })
+
+    it('没有描述时应该显示-', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const emptyDescriptionCells = wrapper.findAll('td').filter(td => td.text() === '-')
+      expect(emptyDescriptionCells.length).toBeGreaterThan(0)
+    })
+  })
+
 })
