@@ -53,4 +53,32 @@ describe('Hosts 页面测试', () => {
     })
   }
 
+  describe('页面初始加载', () => {
+    it('应该调用 getHosts 和 getClusterTree', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getHosts).toHaveBeenCalled()
+      expect(getClusterTree).toHaveBeenCalled()
+    })
+
+    it('应该显示主机列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('test-host-1')
+      expect(wrapper.text()).toContain('192.168.1.1')
+      expect(wrapper.text()).toContain('test-host-2')
+      expect(wrapper.text()).toContain('192.168.1.2')
+    })
+
+    it('应该显示在线/离线状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.status-online').exists()).toBe(true)
+      expect(wrapper.find('.status-offline').exists()).toBe(true)
+    })
+  })
+
 })
