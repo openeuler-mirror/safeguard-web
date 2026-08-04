@@ -287,4 +287,77 @@ describe('Profile 页面测试', () => {
     })
   })
 
+  describe('保存功能', () => {
+    it('点击保存按钮调用 updateMe API', async () => {
+      wrapper = createWrapper()
+      updateMe.mockResolvedValue({})
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      wrapper.vm.form.nickname = 'Updated User'
+      await wrapper.vm.saveProfile()
+      await flushPromises()
+
+      expect(updateMe).toHaveBeenCalledWith({
+        nickname: 'Updated User',
+        phone: '13800138000',
+        email: 'test@example.com'
+      })
+    })
+
+    it('保存成功后调用 fetchUser 刷新用户信息', async () => {
+      wrapper = createWrapper()
+      updateMe.mockResolvedValue({})
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      await wrapper.vm.saveProfile()
+      await flushPromises()
+
+      expect(mockFetchUser).toHaveBeenCalled()
+    })
+
+    it('保存成功后退出编辑模式', async () => {
+      wrapper = createWrapper()
+      updateMe.mockResolvedValue({})
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      await wrapper.vm.saveProfile()
+      await flushPromises()
+
+      expect(wrapper.vm.editing).toBe(false)
+    })
+
+    it('保存成功后显示成功消息', async () => {
+      wrapper = createWrapper()
+      updateMe.mockResolvedValue({})
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      await wrapper.vm.saveProfile()
+      await flushPromises()
+
+      expect(wrapper.vm.message).toBe('保存成功')
+      expect(wrapper.vm.messageType).toBe('success')
+      expect(wrapper.find('.message').exists()).toBe(true)
+      expect(wrapper.find('.message.success').exists()).toBe(true)
+    })
+
+    it('保存失败显示错误消息', async () => {
+      wrapper = createWrapper()
+      updateMe.mockRejectedValue(new Error('保存失败'))
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+      await wrapper.vm.saveProfile()
+      await flushPromises()
+
+      expect(wrapper.vm.message).toBe('保存失败')
+      expect(wrapper.vm.messageType).toBe('error')
+      expect(wrapper.find('.message').exists()).toBe(true)
+      expect(wrapper.find('.message.error').exists()).toBe(true)
+    })
+  })
+
 })
