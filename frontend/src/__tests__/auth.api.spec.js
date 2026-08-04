@@ -45,4 +45,62 @@ describe('auth API 测试', () => {
     })
   })
 
+  describe('getMe API 路径测试', () => {
+    it('应调用正确的URL获取当前用户信息', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await api.get('/users/me/')
+
+      expect(api.get).toHaveBeenCalledWith('/users/me/')
+    })
+  })
+
+  describe('getUsers API 路径测试', () => {
+    it('应调用正确的URL获取用户列表', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await api.get('/users/')
+
+      expect(api.get).toHaveBeenCalledWith('/users/')
+    })
+  })
+
+  describe('createUser API 路径测试', () => {
+    it('应调用正确的URL并传递用户数据', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const userData = { username: 'newuser', email: 'test@example.com' }
+
+      await api.put('/auth/register/', userData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/auth/register/',
+        userData
+      )
+    })
+  })
+
+  describe('updateUser API 路径测试', () => {
+    it('应调用正确的URL并传递用户ID和数据', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const userData = { username: 'updateduser' }
+
+      await api.put('/users/1/', userData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/users/1/',
+        userData
+      )
+    })
+  })
+
+  describe('deleteUser API 路径测试', () => {
+    it('应调用正确的URL并传递用户ID', async () => {
+      api.delete.mockResolvedValue(mockResponse)
+
+      await api.delete('/users/1/')
+
+      expect(api.delete).toHaveBeenCalledWith('/users/1/')
+    })
+  })
+
 })
