@@ -105,4 +105,43 @@ describe('user API 测试', () => {
     })
   })
 
+  describe('API 错误响应处理', () => {
+    it('getUsers 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(api.get('/users/')).rejects.toThrow('API Error')
+    })
+
+    it('getAuthorities 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(api.get('/authority/authorities/')).rejects.toThrow('API Error')
+    })
+
+    it('setUserAuthorities 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.put.mockRejectedValue(mockError)
+
+      await expect(api.put('/users/1/authorities/', { role_ids: [1] }))
+        .rejects.toThrow('API Error')
+    })
+
+    it('addUserAuthority 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(api.post('/users/1/authorities/add/', { authority_id: 1 }))
+        .rejects.toThrow('API Error')
+    })
+
+    it('removeUserAuthority 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.delete.mockRejectedValue(mockError)
+
+      await expect(api.delete('/users/1/authorities/', { data: { authority_id: 1 } }))
+        .rejects.toThrow('API Error')
+    })
+  })
 })
