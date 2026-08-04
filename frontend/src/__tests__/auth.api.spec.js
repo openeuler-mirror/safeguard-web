@@ -103,4 +103,88 @@ describe('auth API 测试', () => {
     })
   })
 
+  describe('changePassword API 路径测试', () => {
+    it('应调用正确的URL并传递新旧密码', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const passwordData = { old_password: 'oldpass', new_password: 'newpass' }
+
+      await api.put('/users/me/password/', passwordData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/users/me/password/',
+        passwordData
+      )
+    })
+  })
+
+  describe('resetPassword API 路径测试', () => {
+    it('应调用正确的URL并传递用户ID和新密码', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const passwordData = { new_password: 'newpass' }
+
+      await api.put('/users/1/password/', passwordData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/users/1/password/',
+        passwordData
+      )
+    })
+  })
+
+  describe('sendVerificationCode API 路径测试', () => {
+    it('应调用正确的URL并传递邮箱和用途', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await api.post('/auth/send-code/', { email: 'test@example.com', purpose: 'register' })
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/auth/send-code/',
+        { email: 'test@example.com', purpose: 'register' }
+      )
+    })
+  })
+
+  describe('verifyCode API 路径测试', () => {
+    it('应调用正确的URL并传递邮箱和验证码', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await api.post('/auth/verify-code/', { email: 'test@example.com', code: '123456' })
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/auth/verify-code/',
+        { email: 'test@example.com', code: '123456' }
+      )
+    })
+  })
+
+  describe('forgotPassword API 路径测试', () => {
+    it('应调用正确的URL并传递邮箱', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await api.post('/auth/forgot-password/', { email: 'test@example.com' })
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/auth/forgot-password/',
+        { email: 'test@example.com' }
+      )
+    })
+  })
+
+  describe('resetPasswordWithCode API 路径测试', () => {
+    it('应调用正确的URL并传递邮箱、验证码和新密码', async () => {
+      api.post.mockResolvedValue(mockResponse)
+
+      await api.post('/auth/reset-password/', {
+        email: 'test@example.com',
+        code: '123456',
+        new_password: 'newpass'
+      })
+
+      expect(api.post).toHaveBeenCalledWith(
+        '/auth/reset-password/',
+        { email: 'test@example.com', code: '123456', new_password: 'newpass' }
+      )
+    })
+  })
+
 })
