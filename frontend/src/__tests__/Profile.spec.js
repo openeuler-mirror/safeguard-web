@@ -360,4 +360,51 @@ describe('Profile 页面测试', () => {
     })
   })
 
+  describe('其他功能', () => {
+    it('点击修改密码按钮跳转到修改密码页面', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.vm.goToChangePassword()
+
+      expect(mockPush).toHaveBeenCalledWith('/change-password')
+    })
+
+    it('点击退出登录调用 logout action', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.vm.handleLogout()
+
+      expect(mockLogout).toHaveBeenCalled()
+    })
+
+    it('退出登录后跳转到登录页面', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.vm.handleLogout()
+
+      expect(mockPush).toHaveBeenCalledWith('/login')
+    })
+  })
+
+  describe('按钮显示', () => {
+    it('非编辑模式下显示编辑信息、修改密码、退出登录按钮', async () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.text()).toContain('编辑信息')
+      expect(wrapper.text()).toContain('修改密码')
+      expect(wrapper.text()).toContain('退出登录')
+    })
+
+    it('编辑模式下显示取消、保存、修改密码、退出登录按钮', async () => {
+      wrapper = createWrapper()
+
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('取消')
+      expect(wrapper.text()).toContain('保存')
+      expect(wrapper.text()).toContain('修改密码')
+      expect(wrapper.text()).toContain('退出登录')
+    })
+  })
 })
