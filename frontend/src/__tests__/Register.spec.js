@@ -293,4 +293,185 @@ describe('Register 页面测试', () => {
     })
   })
 
+  describe('注册功能', () => {
+    it('两次密码不一致时显示错误', async () => {
+      wrapper = createWrapper()
+
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password456'
+      await wrapper.vm.handleRegister()
+
+      expect(wrapper.vm.error).toBe('两次输入的密码不一致')
+      expect(createUser).not.toHaveBeenCalled()
+    })
+
+    it('两次密码一致时调用 createUser API', async () => {
+      wrapper = createWrapper()
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(createUser).toHaveBeenCalledWith(wrapper.vm.form)
+    })
+
+    it('本地验证模式且有验证码时先调用 verifyCode', async () => {
+      wrapper = createWrapper()
+      verifyCode.mockResolvedValue({})
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      wrapper.vm.localVerifyUrl = 'test-url'
+      wrapper.vm.verificationCode = '123456'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(verifyCode).toHaveBeenCalledWith('test@example.com', '123456')
+      expect(createUser).toHaveBeenCalled()
+    })
+
+    it('邮箱验证失败时不调用 createUser', async () => {
+      wrapper = createWrapper()
+      verifyCode.mockRejectedValue(new Error('验证失败'))
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      wrapper.vm.localVerifyUrl = 'test-url'
+      wrapper.vm.verificationCode = 'wrong-code'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('邮箱验证失败，请先完成验证')
+      expect(createUser).not.toHaveBeenCalled()
+    })
+
+    it('注册成功后设置 success 为 true', async () => {
+      wrapper = createWrapper()
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(wrapper.vm.success).toBe(true)
+    })
+
+    it('注册成功后显示成功消息', async () => {
+      wrapper = createWrapper()
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(wrapper.find('.success-message').exists()).toBe(true)
+      expect(wrapper.find('.success-message').text()).toBe('注册成功！正在跳转...')
+    })
+
+    it('注册成功后 1.5 秒跳转到登录页面', async () => {
+      wrapper = createWrapper()
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(mockPush).not.toHaveBeenCalled()
+
+      vi.advanceTimersByTime(1500)
+      await flushPromises()
+
+      expect(mockPush).toHaveBeenCalledWith('/login')
+    })
+
+    it('注册失败显示错误信息', async () => {
+      wrapper = createWrapper()
+      createUser.mockRejectedValue(new Error('用户名已存在'))
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      await wrapper.vm.handleRegister()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('用户名已存在')
+      expect(wrapper.vm.success).toBe(false)
+    })
+
+    it('注册过程中 loading 为 true', async () => {
+      wrapper = createWrapper()
+      let resolveRegister
+      createUser.mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveRegister = () => resolve({})
+        })
+      })
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      const registerPromise = wrapper.vm.handleRegister()
+
+      expect(wrapper.vm.loading).toBe(true)
+
+      resolveRegister()
+      await registerPromise
+      await flushPromises()
+
+      expect(wrapper.vm.loading).toBe(false)
+    })
+
+    it('注册过程中按钮显示"注册中..."', async () => {
+      wrapper = createWrapper()
+      createUser.mockResolvedValue({})
+
+      wrapper.vm.form.user = 'testuser'
+      wrapper.vm.form.password = 'password123'
+      wrapper.vm.confirmPassword = 'password123'
+      wrapper.vm.form.email = 'test@example.com'
+      wrapper.vm.loading = true
+      await flushPromises()
+
+      expect(wrapper.find('button[type="submit"]').text()).toBe('注册中...')
+    })
+  })
+
+  describe('输入框属性验证', () => {
+    it('密码输入框有 minlength="6" 属性', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#password').attributes('minlength')).toBe('6')
+    })
+
+    it('邮箱输入框类型是 email', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#email').attributes('type')).toBe('email')
+    })
+  })
+
+  describe('渲染链接', () => {
+    it('应有去登录的链接', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('已有账号？去登录')
+    })
+  })
 })
