@@ -218,4 +218,63 @@ describe('Clusters 页面测试', () => {
     })
   })
 
+  describe('搜索功能', () => {
+    it('按回车搜索应该调用 loadClusters', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('test')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getClusters).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('表单验证', () => {
+    it('集群名称不能为空', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.name).toBe('请输入集群名称')
+    })
+
+    it('集群名称为空时不调用 API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openCreateDialog()
+      wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+
+      expect(createCluster).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('空数据', () => {
+    it('没有集群数据时应该显示空提示', async () => {
+      getClusters.mockResolvedValue({ results: [] })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+
+    it('集群下没有主机时应该显示空提示', async () => {
+      getClusterHosts.mockResolvedValue([])
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openHostDialog(mockClusters[0])
+      await flushPromises()
+
+      expect(wrapper.vm.clusterHosts).toEqual([])
+    })
+  })
+
 })
