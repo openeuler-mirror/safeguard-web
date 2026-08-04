@@ -277,4 +277,72 @@ describe('Clusters 页面测试', () => {
     })
   })
 
+  describe('错误处理', () => {
+    it('加载失败时应该显示错误信息', async () => {
+      getClusters.mockRejectedValue(new Error('加载失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+
+    it('加载主机列表失败时应该显示 alert', async () => {
+      getClusterHosts.mockRejectedValue(new Error('加载主机失败'))
+      vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openHostDialog(mockClusters[0])
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('加载主机列表失败')
+    })
+
+    it('删除失败时应该显示 alert', async () => {
+      deleteCluster.mockRejectedValue(new Error('删除失败'))
+      vi.spyOn(window, 'alert').mockImplementation(() => { })
+
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.confirmDelete(mockClusters[0])
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('删除失败')
+    })
+  })
+
+  describe('日期格式化', () => {
+    it('formatDate 应该正确格式化日期', async () => {
+      wrapper = createWrapper()
+      const dateStr = '2024-01-01T00:00:00Z'
+      const formatted = wrapper.vm.formatDate(dateStr)
+
+      expect(formatted).toBeTruthy()
+      expect(typeof formatted).toBe('string')
+    })
+
+    it('formatDate 空值返回-', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatDate(null)).toBe('-')
+      expect(wrapper.vm.formatDate('')).toBe('-')
+    })
+  })
+
+  describe('弹窗关闭', () => {
+    it('关闭创建/编辑弹窗应该清空错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.formError = 'test error'
+      wrapper.vm.errors = { name: 'test' }
+      await wrapper.vm.closeDialog()
+
+      expect(wrapper.vm.formError).toBe('')
+      expect(wrapper.vm.errors).toEqual({})
+    })
+  })
 })
