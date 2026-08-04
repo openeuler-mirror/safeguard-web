@@ -238,4 +238,86 @@ describe('ChangePassword 页面测试', () => {
     })
   })
 
+  describe('输入框属性验证', () => {
+    it('旧密码输入框类型是 password', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#oldPassword').attributes('type')).toBe('password')
+    })
+
+    it('新密码输入框类型是 password', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#newPassword').attributes('type')).toBe('password')
+    })
+
+    it('确认密码输入框类型是 password', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#confirmPassword').attributes('type')).toBe('password')
+    })
+
+    it('新密码输入框有 minlength="6" 属性', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#newPassword').attributes('minlength')).toBe('6')
+    })
+
+    it('所有输入框都有 required 属性', async () => {
+      wrapper = createWrapper()
+      expect(wrapper.find('#oldPassword').attributes('required')).toBeDefined()
+      expect(wrapper.find('#newPassword').attributes('required')).toBeDefined()
+      expect(wrapper.find('#confirmPassword').attributes('required')).toBeDefined()
+    })
+  })
+
+  describe('按钮状态', () => {
+    it('loading 时按钮被禁用', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.loading = true
+      await flushPromises()
+
+      expect(wrapper.find('button').attributes('disabled')).toBeDefined()
+    })
+
+    it('非 loading 时按钮可用', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.loading = false
+      await flushPromises()
+
+      expect(wrapper.find('button').attributes('disabled')).toBeUndefined()
+    })
+  })
+
+  describe('消息显示', () => {
+    it('有 error 时显示错误消息', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.error = '测试错误'
+      await flushPromises()
+
+      expect(wrapper.find('.error-message').exists()).toBe(true)
+      expect(wrapper.find('.error-message').text()).toBe('测试错误')
+    })
+
+    it('有 success 时显示成功消息', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.success = '测试成功'
+      await flushPromises()
+
+      expect(wrapper.find('.success-message').exists()).toBe(true)
+      expect(wrapper.find('.success-message').text()).toBe('测试成功')
+    })
+
+    it('没有 error 时不显示错误消息', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.error = ''
+      await flushPromises()
+
+      expect(wrapper.find('.error-message').exists()).toBe(false)
+    })
+
+    it('没有 success 时不显示成功消息', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.success = ''
+      await flushPromises()
+
+      expect(wrapper.find('.success-message').exists()).toBe(false)
+    })
+  })
 })
