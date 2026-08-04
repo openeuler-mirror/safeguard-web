@@ -172,4 +172,91 @@ describe('Hosts 页面测试', () => {
     })
   })
 
+  describe('搜索和过滤', () => {
+    it('按回车搜索应该调用 loadHosts', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.searchName = 'test'
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('test')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getHosts).toHaveBeenCalledWith({ search: 'test' })
+    })
+
+    it('改变过滤条件应该调用 loadHosts', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterStatus = 'online'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getHosts).toHaveBeenCalledWith({ status: 'online' })
+    })
+  })
+
+  describe('导航到主机详情', () => {
+    it('点击详情按钮应该跳转到主机详情页', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.goToHostDetail(mockHosts[0])
+
+      expect(mockPush).toHaveBeenCalledWith('/hosts/1/dashboard')
+    })
+  })
+
+  describe('表单验证', () => {
+    it('主机名不能为空', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.hostname = ''
+      wrapper.vm.form.ip_address = '192.168.1.1'
+      wrapper.vm.form.username = 'root'
+
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.hostname).toBe('请输入主机名')
+    })
+
+    it('IP地址不能为空', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.hostname = 'test'
+      wrapper.vm.form.ip_address = ''
+      wrapper.vm.form.username = 'root'
+
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.ip_address).toBe('请输入IP地址')
+    })
+
+    it('用户名不能为空', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.hostname = 'test'
+      wrapper.vm.form.ip_address = '192.168.1.1'
+      wrapper.vm.form.username = ''
+
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.username).toBe('请输入用户名')
+    })
+  })
+
 })
