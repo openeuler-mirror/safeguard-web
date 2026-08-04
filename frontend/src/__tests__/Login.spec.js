@@ -114,4 +114,128 @@ describe('Login 页面测试', () => {
     })
   })
 
+  describe('登录成功流程', () => {
+    it('点击登录按钮调用 login action', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: true })
+
+      const usernameInput = wrapper.find('#username')
+      const passwordInput = wrapper.find('#password')
+      await usernameInput.setValue('testuser')
+      await passwordInput.setValue('testpass')
+
+      await wrapper.find('form').trigger('submit.prevent')
+
+      expect(mockLogin).toHaveBeenCalledWith('auth/login', { username: 'testuser', password: 'testpass' })
+    })
+
+    it('登录成功后跳转到 dashboard', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: true })
+
+      wrapper.vm.form.username = 'testuser'
+      wrapper.vm.form.password = 'testpass'
+      await wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(mockPush).toHaveBeenCalledWith('/dashboard')
+    })
+
+    it('登录过程中显示 loading 状态', async () => {
+      wrapper = createWrapper()
+      let resolveLogin
+      mockLogin.mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveLogin = () => resolve({ success: true })
+        })
+      })
+
+      wrapper.vm.form.username = 'testuser'
+      wrapper.vm.form.password = 'testpass'
+      const loginPromise = wrapper.vm.handleLogin()
+
+      expect(wrapper.vm.loading).toBe(true)
+
+      resolveLogin()
+      await loginPromise
+      await flushPromises()
+
+      expect(wrapper.vm.loading).toBe(false)
+    })
+
+    it('登录过程中按钮显示"登录中..."', async () => {
+      wrapper = createWrapper()
+      let resolveLogin
+      mockLogin.mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveLogin = () => resolve({ success: true })
+        })
+      })
+
+      wrapper.vm.form.username = 'testuser'
+      wrapper.vm.form.password = 'testpass'
+      const loginPromise = wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(wrapper.find('button').text()).toBe('登录中...')
+
+      resolveLogin()
+      await loginPromise
+      await flushPromises()
+
+      expect(wrapper.find('button').text()).toBe('登录')
+    })
+  })
+
+  describe('登录失败流程', () => {
+    it('登录失败显示错误信息', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: false, error: '用户名或密码错误' })
+
+      wrapper.vm.form.username = 'wronguser'
+      wrapper.vm.form.password = 'wrongpass'
+      await wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('用户名或密码错误')
+    })
+
+    it('登录失败不跳转路由', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: false, error: '用户名或密码错误' })
+
+      wrapper.vm.form.username = 'wronguser'
+      wrapper.vm.form.password = 'wrongpass'
+      await wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('登录失败后 loading 状态应为 false', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: false, error: '用户名或密码错误' })
+
+      wrapper.vm.form.username = 'wronguser'
+      wrapper.vm.form.password = 'wrongpass'
+      await wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(wrapper.vm.loading).toBe(false)
+    })
+
+    it('登录失败后错误信息显示在页面上', async () => {
+      wrapper = createWrapper()
+      mockLogin.mockResolvedValue({ success: false, error: '用户名或密码错误' })
+
+      wrapper.vm.form.username = 'wronguser'
+      wrapper.vm.form.password = 'wrongpass'
+      await wrapper.vm.handleLogin()
+      await flushPromises()
+
+      expect(wrapper.find('.error-message').exists()).toBe(true)
+      expect(wrapper.find('.error-message').text()).toBe('用户名或密码错误')
+    })
+  })
+
 })
