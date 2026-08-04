@@ -28,4 +28,25 @@ describe('user API 测试', () => {
     })
   })
 
+  describe('getUsers API 路径测试', () => {
+    it('应调用正确的URL获取用户列表', async () => {
+      api.get.mockResolvedValue(mockResponse)
+
+      await api.get('/users/')
+
+      expect(api.get).toHaveBeenCalledWith('/users/')
+    })
+  })
+
+  describe('getUser API 路径测试', () => {
+    it('应调用正确的URL获取用户详情', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const userId = 1
+
+      await api.get(`/users/${userId}/`)
+
+      expect(api.get).toHaveBeenCalledWith('/users/1/')
+    })
+  })
+
 })
