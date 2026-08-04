@@ -133,4 +133,71 @@ describe('Register 页面测试', () => {
     })
   })
 
+  describe('表单数据绑定', () => {
+    it('v-model 正确绑定用户名', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#username')
+
+      await input.setValue('testuser')
+
+      expect(wrapper.vm.form.user).toBe('testuser')
+    })
+
+    it('v-model 正确绑定密码', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#password')
+
+      await input.setValue('password123')
+
+      expect(wrapper.vm.form.password).toBe('password123')
+    })
+
+    it('v-model 正确绑定确认密码', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#confirmPassword')
+
+      await input.setValue('password123')
+
+      expect(wrapper.vm.confirmPassword).toBe('password123')
+    })
+
+    it('v-model 正确绑定昵称', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#nickname')
+
+      await input.setValue('Test User')
+
+      expect(wrapper.vm.form.nickname).toBe('Test User')
+    })
+
+    it('v-model 正确绑定手机号', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#phone')
+
+      await input.setValue('13800138000')
+
+      expect(wrapper.vm.form.phone).toBe('13800138000')
+    })
+
+    it('v-model 正确绑定邮箱', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#email')
+
+      await input.setValue('test@example.com')
+
+      expect(wrapper.vm.form.email).toBe('test@example.com')
+    })
+
+    it('v-model 正确绑定验证码', async () => {
+      wrapper = createWrapper()
+      wrapper.vm.localVerifyUrl = 'test-url'
+      await flushPromises()
+
+      const input = wrapper.find('#code')
+      await input.setValue('123456')
+
+      expect(wrapper.vm.verificationCode).toBe('123456')
+    })
+  })
+
 })
