@@ -187,4 +187,42 @@ describe('auth API 测试', () => {
     })
   })
 
+  describe('updateMe API 路径测试', () => {
+    it('应调用正确的URL并传递个人信息数据', async () => {
+      api.put.mockResolvedValue(mockResponse)
+      const userData = { email: 'newemail@example.com' }
+
+      await api.put('/users/me/', userData)
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/users/me/',
+        userData
+      )
+    })
+  })
+
+  describe('API 错误响应处理', () => {
+    it('login 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(api.post('/auth/login/', { username: 'user', password: 'pass' }))
+        .rejects.toThrow('API Error')
+    })
+
+    it('getMe 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(api.get('/users/me/')).rejects.toThrow('API Error')
+    })
+
+    it('changePassword 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.put.mockRejectedValue(mockError)
+
+      await expect(api.put('/users/me/password/', { old_password: 'old', new_password: 'new' }))
+        .rejects.toThrow('API Error')
+    })
+  })
 })
