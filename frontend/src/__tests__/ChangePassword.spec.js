@@ -76,4 +76,166 @@ describe('ChangePassword 页面测试', () => {
     })
   })
 
+  describe('表单数据绑定', () => {
+    it('v-model 正确绑定旧密码', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#oldPassword')
+
+      await input.setValue('oldpassword')
+
+      expect(wrapper.vm.form.old_password).toBe('oldpassword')
+    })
+
+    it('v-model 正确绑定新密码', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#newPassword')
+
+      await input.setValue('newpassword123')
+
+      expect(wrapper.vm.form.new_password).toBe('newpassword123')
+    })
+
+    it('v-model 正确绑定确认密码', async () => {
+      wrapper = createWrapper()
+      const input = wrapper.find('#confirmPassword')
+
+      await input.setValue('newpassword123')
+
+      expect(wrapper.vm.confirmPassword).toBe('newpassword123')
+    })
+  })
+
+  describe('修改密码功能', () => {
+    it('两次新密码不一致时显示错误', async () => {
+      wrapper = createWrapper()
+
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'password123'
+      wrapper.vm.confirmPassword = 'password456'
+      await wrapper.vm.handleChangePassword()
+
+      expect(wrapper.vm.error).toBe('两次输入的新密码不一致')
+      expect(changePassword).not.toHaveBeenCalled()
+    })
+
+    it('两次密码一致时调用 changePassword API', async () => {
+      wrapper = createWrapper()
+      changePassword.mockResolvedValue({})
+
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(changePassword).toHaveBeenCalledWith('oldpassword', 'newpassword123')
+    })
+
+    it('修改密码成功后显示成功消息', async () => {
+      wrapper = createWrapper()
+      changePassword.mockResolvedValue({})
+
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(wrapper.vm.success).toBe('密码修改成功')
+      expect(wrapper.find('.success-message').exists()).toBe(true)
+      expect(wrapper.find('.success-message').text()).toBe('密码修改成功')
+    })
+
+    it('修改密码成功后清空表单', async () => {
+      wrapper = createWrapper()
+      changePassword.mockResolvedValue({})
+
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(wrapper.vm.form.old_password).toBe('')
+      expect(wrapper.vm.form.new_password).toBe('')
+      expect(wrapper.vm.confirmPassword).toBe('')
+    })
+
+    it('修改密码失败显示错误信息', async () => {
+      wrapper = createWrapper()
+      changePassword.mockRejectedValue(new Error('旧密码错误'))
+
+      wrapper.vm.form.old_password = 'wrongpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('旧密码错误')
+      expect(wrapper.find('.error-message').exists()).toBe(true)
+      expect(wrapper.find('.error-message').text()).toBe('旧密码错误')
+    })
+
+    it('修改密码过程中 loading 为 true', async () => {
+      wrapper = createWrapper()
+      let resolveChangePassword
+      changePassword.mockImplementation(() => {
+        return new Promise(resolve => {
+          resolveChangePassword = () => resolve({})
+        })
+      })
+
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      const changePasswordPromise = wrapper.vm.handleChangePassword()
+
+      expect(wrapper.vm.loading).toBe(true)
+
+      resolveChangePassword()
+      await changePasswordPromise
+      await flushPromises()
+
+      expect(wrapper.vm.loading).toBe(false)
+    })
+
+    it('修改密码过程中按钮显示"修改中..."', async () => {
+      wrapper = createWrapper()
+      changePassword.mockResolvedValue({})
+
+      wrapper.vm.loading = true
+      await flushPromises()
+
+      expect(wrapper.find('button[type="submit"]').text()).toBe('修改中...')
+    })
+
+    it('修改密码成功后清空错误信息', async () => {
+      wrapper = createWrapper()
+      changePassword.mockResolvedValue({})
+
+      wrapper.vm.error = '之前的错误'
+      wrapper.vm.form.old_password = 'oldpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('')
+    })
+
+    it('修改密码失败后清空成功信息', async () => {
+      wrapper = createWrapper()
+      changePassword.mockRejectedValue(new Error('旧密码错误'))
+
+      wrapper.vm.success = '之前的成功'
+      wrapper.vm.form.old_password = 'wrongpassword'
+      wrapper.vm.form.new_password = 'newpassword123'
+      wrapper.vm.confirmPassword = 'newpassword123'
+      await wrapper.vm.handleChangePassword()
+      await flushPromises()
+
+      expect(wrapper.vm.success).toBe('')
+    })
+  })
+
 })
