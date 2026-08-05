@@ -33,4 +33,31 @@ describe('Listeners 页面测试', () => {
     })
   }
 
+  describe('页面初始加载', () => {
+    it('应该调用 getListeners', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getListeners).toHaveBeenCalled()
+    })
+
+    it('应该显示监听器列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('test-listener-1')
+      expect(wrapper.text()).toContain('lb-1')
+      expect(wrapper.text()).toContain('test-listener-2')
+      expect(wrapper.text()).toContain('lb-2')
+    })
+
+    it('应该显示协议类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('HTTP')
+      expect(wrapper.text()).toContain('HTTPS')
+    })
+  })
+
 })
