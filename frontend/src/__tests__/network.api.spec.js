@@ -251,4 +251,60 @@ describe('network API 测试', () => {
     })
   })
 
+  // ========== Member 测试 ==========
+  describe('Member API 测试', () => {
+    describe('getMembers API 路径测试', () => {
+      it('应调用正确的URL获取池成员列表', async () => {
+        api.get.mockResolvedValue(mockResponse)
+        const params = { page: 1, page_size: 10 }
+
+        await getMembers(params)
+
+        expect(api.get).toHaveBeenCalledWith('/members/', { params })
+      })
+    })
+
+    describe('getMember API 路径测试', () => {
+      it('应调用正确的URL获取池成员详情', async () => {
+        api.get.mockResolvedValue(mockResponse)
+
+        await getMember(1)
+
+        expect(api.get).toHaveBeenCalledWith('/members/1/')
+      })
+    })
+
+    describe('createMember API 路径测试', () => {
+      it('应调用正确的URL并传递池成员数据', async () => {
+        api.post.mockResolvedValue(mockResponse)
+        const memberData = { name: 'test-member', address: '192.168.1.1' }
+
+        await createMember(memberData)
+
+        expect(api.post).toHaveBeenCalledWith('/members/', memberData)
+      })
+    })
+
+    describe('updateMember API 路径测试', () => {
+      it('应调用正确的URL并传递池成员ID和数据', async () => {
+        api.put.mockResolvedValue(mockResponse)
+        const memberData = { name: 'updated-member' }
+
+        await updateMember(1, memberData)
+
+        expect(api.put).toHaveBeenCalledWith('/members/1/', memberData)
+      })
+    })
+
+    describe('deleteMember API 路径测试', () => {
+      it('应调用正确的URL并传递池成员ID', async () => {
+        api.delete.mockResolvedValue(mockResponse)
+
+        await deleteMember(1)
+
+        expect(api.delete).toHaveBeenCalledWith('/members/1/')
+      })
+    })
+  })
+
 })
