@@ -139,4 +139,60 @@ describe('network API 测试', () => {
     })
   })
 
+  // ========== Listener 测试 ==========
+  describe('Listener API 测试', () => {
+    describe('getListeners API 路径测试', () => {
+      it('应调用正确的URL获取监听器列表', async () => {
+        api.get.mockResolvedValue(mockResponse)
+        const params = { page: 1, page_size: 10 }
+
+        await getListeners(params)
+
+        expect(api.get).toHaveBeenCalledWith('/listeners/', { params })
+      })
+    })
+
+    describe('getListener API 路径测试', () => {
+      it('应调用正确的URL获取监听器详情', async () => {
+        api.get.mockResolvedValue(mockResponse)
+
+        await getListener(1)
+
+        expect(api.get).toHaveBeenCalledWith('/listeners/1/')
+      })
+    })
+
+    describe('createListener API 路径测试', () => {
+      it('应调用正确的URL并传递监听器数据', async () => {
+        api.post.mockResolvedValue(mockResponse)
+        const listenerData = { name: 'test-listener', protocol: 'HTTP' }
+
+        await createListener(listenerData)
+
+        expect(api.post).toHaveBeenCalledWith('/listeners/', listenerData)
+      })
+    })
+
+    describe('updateListener API 路径测试', () => {
+      it('应调用正确的URL并传递监听器ID和数据', async () => {
+        api.put.mockResolvedValue(mockResponse)
+        const listenerData = { name: 'updated-listener' }
+
+        await updateListener(1, listenerData)
+
+        expect(api.put).toHaveBeenCalledWith('/listeners/1/', listenerData)
+      })
+    })
+
+    describe('deleteListener API 路径测试', () => {
+      it('应调用正确的URL并传递监听器ID', async () => {
+        api.delete.mockResolvedValue(mockResponse)
+
+        await deleteListener(1)
+
+        expect(api.delete).toHaveBeenCalledWith('/listeners/1/')
+      })
+    })
+  })
+
 })
