@@ -150,4 +150,80 @@ describe('LoadBalancers 页面测试', () => {
     })
   })
 
+  describe('搜索和过滤', () => {
+    it('按回车搜索应该调用 loadLBs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('test')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getLBs).toHaveBeenCalledTimes(2)
+    })
+
+    it('改变过滤条件应该调用 loadLBs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterStatus = 'active'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getLBs).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('扩展功能', () => {
+    it('点击扩展视图应该显示扩展面板', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-info')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.showExtension).toBe(true)
+    })
+
+    it('按项目查询应该调用 getLBsByProject', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getLBsByProject.mockResolvedValue({ data: [] })
+
+      wrapper.vm.extProjectId = '123'
+      await wrapper.vm.handleByProject()
+      await flushPromises()
+
+      expect(getLBsByProject).toHaveBeenCalledWith('123')
+    })
+
+    it('按K8s查询应该调用 getLBsByK8s', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getLBsByK8s.mockResolvedValue({ data: [] })
+
+      wrapper.vm.extK8sCluster = 'k8s-cluster-1'
+      await wrapper.vm.handleByK8s()
+      await flushPromises()
+
+      expect(getLBsByK8s).toHaveBeenCalledWith('k8s-cluster-1')
+    })
+
+    it('加载AZ列表应该调用 getLBAzNames', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getLBAzNames.mockResolvedValue(['az1', 'az2'])
+
+      await wrapper.vm.handleLoadAzNames()
+      await flushPromises()
+
+      expect(getLBAzNames).toHaveBeenCalled()
+      expect(wrapper.vm.azNames).toEqual(['az1', 'az2'])
+    })
+  })
+
 })
