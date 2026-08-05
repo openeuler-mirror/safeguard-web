@@ -363,4 +363,48 @@ describe('network API 测试', () => {
     })
   })
 
+  // ========== API 错误响应处理 ==========
+  describe('API 错误响应处理', () => {
+    it('getLBs 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getLBs({})).rejects.toThrow('API Error')
+    })
+
+    it('createLB 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(createLB({})).rejects.toThrow('API Error')
+    })
+
+    it('getListeners 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getListeners({})).rejects.toThrow('API Error')
+    })
+
+    it('getPools 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getPools({})).rejects.toThrow('API Error')
+    })
+
+    it('getMembers 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getMembers({})).rejects.toThrow('API Error')
+    })
+
+    it('getHealthMonitors 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getHealthMonitors({})).rejects.toThrow('API Error')
+    })
+  })
 })
