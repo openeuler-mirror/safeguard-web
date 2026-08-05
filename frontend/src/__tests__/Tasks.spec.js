@@ -307,4 +307,74 @@ describe('Tasks 页面测试', () => {
     })
   })
 
+  describe('格式化函数测试', () => {
+    it('formatType 应该正确映射任务类型', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.formatType('os_install')).toBe('系统安装')
+      expect(wrapper.vm.formatType('os_migrate')).toBe('系统迁移')
+      expect(wrapper.vm.formatType('safeguard_deploy')).toBe('安全部署')
+      expect(wrapper.vm.formatType('safeguard_rollback')).toBe('安全回滚')
+      expect(wrapper.vm.formatType('hardware_collect')).toBe('硬件采集')
+      expect(wrapper.vm.formatType('repo_sync')).toBe('仓库同步')
+    })
+
+    it('formatType 应该返回原值对于未知类型', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.formatType('unknown_type')).toBe('unknown_type')
+    })
+
+    it('formatStatus 应该正确映射任务状态', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
+      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
+      expect(wrapper.vm.formatStatus('success')).toBe('成功')
+      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
+    })
+
+    it('formatStatus 应该返回原值对于未知状态', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.formatStatus('unknown_status')).toBe('unknown_status')
+    })
+
+    it('getStatusClass 应该返回正确的样式类', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
+      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
+      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
+      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
+    })
+
+    it('getProgressClass 应该返回正确的样式类', () => {
+      wrapper = createWrapper()
+
+      expect(wrapper.vm.getProgressClass('pending')).toBe('progress-pending')
+      expect(wrapper.vm.getProgressClass('running')).toBe('progress-running')
+      expect(wrapper.vm.getProgressClass('success')).toBe('progress-success')
+      expect(wrapper.vm.getProgressClass('failed')).toBe('progress-failed')
+    })
+  })
+
+  describe('API响应格式兼容性', () => {
+    it('应该兼容直接返回数组的响应格式', async () => {
+      getTasks.mockResolvedValue(mockTasks)
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.tasks).toEqual(mockTasks)
+    })
+
+    it('应该兼容带results字段的响应格式', async () => {
+      getTasks.mockResolvedValue({ results: mockTasks, count: 4 })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.tasks).toEqual(mockTasks)
+      expect(wrapper.vm.totalCount).toBe(4)
+    })
+  })
 })
