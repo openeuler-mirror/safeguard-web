@@ -307,4 +307,60 @@ describe('network API 测试', () => {
     })
   })
 
+  // ========== HealthMonitor 测试 ==========
+  describe('HealthMonitor API 测试', () => {
+    describe('getHealthMonitors API 路径测试', () => {
+      it('应调用正确的URL获取健康检查列表', async () => {
+        api.get.mockResolvedValue(mockResponse)
+        const params = { page: 1, page_size: 10 }
+
+        await getHealthMonitors(params)
+
+        expect(api.get).toHaveBeenCalledWith('/health-monitors/', { params })
+      })
+    })
+
+    describe('getHealthMonitor API 路径测试', () => {
+      it('应调用正确的URL获取健康检查详情', async () => {
+        api.get.mockResolvedValue(mockResponse)
+
+        await getHealthMonitor(1)
+
+        expect(api.get).toHaveBeenCalledWith('/health-monitors/1/')
+      })
+    })
+
+    describe('createHealthMonitor API 路径测试', () => {
+      it('应调用正确的URL并传递健康检查数据', async () => {
+        api.post.mockResolvedValue(mockResponse)
+        const hmData = { name: 'test-hm', type: 'HTTP' }
+
+        await createHealthMonitor(hmData)
+
+        expect(api.post).toHaveBeenCalledWith('/health-monitors/', hmData)
+      })
+    })
+
+    describe('updateHealthMonitor API 路径测试', () => {
+      it('应调用正确的URL并传递健康检查ID和数据', async () => {
+        api.put.mockResolvedValue(mockResponse)
+        const hmData = { name: 'updated-hm' }
+
+        await updateHealthMonitor(1, hmData)
+
+        expect(api.put).toHaveBeenCalledWith('/health-monitors/1/', hmData)
+      })
+    })
+
+    describe('deleteHealthMonitor API 路径测试', () => {
+      it('应调用正确的URL并传递健康检查ID', async () => {
+        api.delete.mockResolvedValue(mockResponse)
+
+        await deleteHealthMonitor(1)
+
+        expect(api.delete).toHaveBeenCalledWith('/health-monitors/1/')
+      })
+    })
+  })
+
 })
