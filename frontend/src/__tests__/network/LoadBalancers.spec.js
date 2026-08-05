@@ -60,4 +60,94 @@ describe('LoadBalancers 页面测试', () => {
     })
   })
 
+  describe('创建负载均衡器', () => {
+    it('点击创建按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createLB.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-lb'
+      wrapper.vm.form.vip_address = '192.168.1.102'
+      wrapper.vm.form.port = 8080
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createLB).toHaveBeenCalled()
+      expect(getLBs).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('编辑负载均衡器', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('test-lb-1')
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateLB.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateLB).toHaveBeenCalled()
+      expect(getLBs).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除负载均衡器', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteLB.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteLB).toHaveBeenCalledWith(1)
+      expect(getLBs).toHaveBeenCalledTimes(2)
+    })
+  })
+
 })
