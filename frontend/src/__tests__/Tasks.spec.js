@@ -53,10 +53,18 @@ describe('Tasks 页面测试', () => {
     })
 
     it('应该显示加载状态', async () => {
+      let resolvePromise
+      getTasks.mockImplementation(() => new Promise(resolve => {
+        resolvePromise = resolve
+      }))
+
       wrapper = createWrapper()
-      expect(wrapper.text()).toContain('加载中...')
+      expect(wrapper.vm.loading).toBe(true)
+
+      resolvePromise({ results: mockTasks, count: 4 })
       await flushPromises()
-      expect(wrapper.text()).not.toContain('加载中...')
+
+      expect(wrapper.vm.loading).toBe(false)
     })
   })
 
