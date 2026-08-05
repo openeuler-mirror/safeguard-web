@@ -33,4 +33,31 @@ describe('LoadBalancers 页面测试', () => {
     })
   }
 
+  describe('页面初始加载', () => {
+    it('应该调用 getLBs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getLBs).toHaveBeenCalled()
+    })
+
+    it('应该显示负载均衡器列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('test-lb-1')
+      expect(wrapper.text()).toContain('192.168.1.100')
+      expect(wrapper.text()).toContain('test-lb-2')
+      expect(wrapper.text()).toContain('192.168.1.101')
+    })
+
+    it('应该显示活跃/未激活状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.status-active').exists()).toBe(true)
+      expect(wrapper.find('.status-inactive').exists()).toBe(true)
+    })
+  })
+
 })
