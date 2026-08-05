@@ -195,4 +195,60 @@ describe('network API 测试', () => {
     })
   })
 
+  // ========== Pool 测试 ==========
+  describe('Pool API 测试', () => {
+    describe('getPools API 路径测试', () => {
+      it('应调用正确的URL获取后端池列表', async () => {
+        api.get.mockResolvedValue(mockResponse)
+        const params = { page: 1, page_size: 10 }
+
+        await getPools(params)
+
+        expect(api.get).toHaveBeenCalledWith('/pools/', { params })
+      })
+    })
+
+    describe('getPool API 路径测试', () => {
+      it('应调用正确的URL获取后端池详情', async () => {
+        api.get.mockResolvedValue(mockResponse)
+
+        await getPool(1)
+
+        expect(api.get).toHaveBeenCalledWith('/pools/1/')
+      })
+    })
+
+    describe('createPool API 路径测试', () => {
+      it('应调用正确的URL并传递后端池数据', async () => {
+        api.post.mockResolvedValue(mockResponse)
+        const poolData = { name: 'test-pool', protocol: 'HTTP' }
+
+        await createPool(poolData)
+
+        expect(api.post).toHaveBeenCalledWith('/pools/', poolData)
+      })
+    })
+
+    describe('updatePool API 路径测试', () => {
+      it('应调用正确的URL并传递后端池ID和数据', async () => {
+        api.put.mockResolvedValue(mockResponse)
+        const poolData = { name: 'updated-pool' }
+
+        await updatePool(1, poolData)
+
+        expect(api.put).toHaveBeenCalledWith('/pools/1/', poolData)
+      })
+    })
+
+    describe('deletePool API 路径测试', () => {
+      it('应调用正确的URL并传递后端池ID', async () => {
+        api.delete.mockResolvedValue(mockResponse)
+
+        await deletePool(1)
+
+        expect(api.delete).toHaveBeenCalledWith('/pools/1/')
+      })
+    })
+  })
+
 })
