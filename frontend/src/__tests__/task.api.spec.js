@@ -56,4 +56,55 @@ describe('task API 测试', () => {
     })
   })
 
+  describe('queryTasks API 路径测试', () => {
+    it('应调用正确的URL进行任务查询', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const queryData = { search: 'test', job_type: 'os_install' }
+
+      await queryTasks(queryData)
+
+      expect(api.post).toHaveBeenCalledWith('/tasks/query/', queryData)
+    })
+
+    it('应正确传递查询数据', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const queryData = { status: 'success', target: 'host1' }
+
+      await queryTasks(queryData)
+
+      expect(api.post).toHaveBeenCalledWith('/tasks/query/', queryData)
+    })
+  })
+
+  describe('pageTasks API 路径测试', () => {
+    it('应调用正确的URL进行分页任务查询', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const pageData = { page: 1, page_size: 20 }
+      const params = { sort: 'created_at' }
+
+      await pageTasks(pageData, params)
+
+      expect(api.post).toHaveBeenCalledWith('/tasks/page/', pageData, { params })
+    })
+
+    it('应正确传递分页数据和参数', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const pageData = { page: 2, page_size: 50, search: 'test' }
+      const params = { sort: '-created_at', status: 'pending' }
+
+      await pageTasks(pageData, params)
+
+      expect(api.post).toHaveBeenCalledWith('/tasks/page/', pageData, { params })
+    })
+
+    it('应正确处理params为undefined的情况', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const pageData = { page: 1 }
+
+      await pageTasks(pageData)
+
+      expect(api.post).toHaveBeenCalledWith('/tasks/page/', pageData, { params: undefined })
+    })
+  })
+
 })
