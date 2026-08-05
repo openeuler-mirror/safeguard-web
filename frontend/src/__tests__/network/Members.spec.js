@@ -52,4 +52,93 @@ describe('Members 页面测试', () => {
     })
   })
 
+  describe('创建成员', () => {
+    it('点击创建按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createMember.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-member'
+      wrapper.vm.form.address = '192.168.1.12'
+      wrapper.vm.form.port = 80
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createMember).toHaveBeenCalled()
+      expect(getMembers).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('编辑成员', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateMember.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateMember).toHaveBeenCalled()
+      expect(getMembers).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除成员', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteMember.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteMember).toHaveBeenCalledWith(1)
+      expect(getMembers).toHaveBeenCalledTimes(2)
+    })
+  })
+
 })
