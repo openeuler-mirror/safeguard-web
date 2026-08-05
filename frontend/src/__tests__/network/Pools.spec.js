@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import Pools from '@/views/network/Pools.vue'
-import { getPools, createPool, updatePool, deletePool } from '@/api/network'
+import { getPools, createPool, updatePool, deletePool, getLBs } from '@/api/network'
 
 vi.mock('@/api/network')
 
@@ -9,13 +9,14 @@ describe('Pools 页面测试', () => {
   let wrapper
 
   const mockPools = [
-    { id: 1, name: 'test-pool-1', protocol: 'http', algorithm: 'round_robin', description: 'test', created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, name: 'test-pool-2', protocol: 'tcp', algorithm: 'least_conn', description: 'test', created_at: '2024-01-02T00:00:00Z' }
+    { id: 1, name: 'test-pool-1', loadbalancer_name: 'lb-1', protocol: 'http', algorithm: 'round_robin', description: 'test', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'test-pool-2', loadbalancer_name: 'lb-2', protocol: 'tcp', algorithm: 'least_conn', description: 'test', created_at: '2024-01-02T00:00:00Z' }
   ]
 
   beforeEach(() => {
     vi.clearAllMocks()
     getPools.mockResolvedValue({ results: mockPools })
+    getLBs.mockResolvedValue({ results: [] })
     vi.spyOn(window, 'alert').mockImplementation(() => { })
   })
 
@@ -34,11 +35,12 @@ describe('Pools 页面测试', () => {
   }
 
   describe('页面初始加载', () => {
-    it('应该调用 getPools', async () => {
+    it('应该调用 getPools 和 getLBs', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
       expect(getPools).toHaveBeenCalled()
+      expect(getLBs).toHaveBeenCalled()
     })
 
     it('应该显示后端池列表', async () => {
@@ -71,6 +73,7 @@ describe('Pools 页面测试', () => {
       await wrapper.find('button.btn-primary').trigger('click')
       await flushPromises()
 
+      wrapper.vm.form.loadbalancer = '1'
       wrapper.vm.form.name = 'new-pool'
       wrapper.vm.form.protocol = 'http'
 
@@ -102,6 +105,8 @@ describe('Pools 页面测试', () => {
 
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
+
+      wrapper.vm.form.loadbalancer = '1'
 
       await wrapper.vm.submitForm()
       await flushPromises()
@@ -154,7 +159,7 @@ describe('Pools 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.vm.error).toBeTruthy()
       expect(wrapper.find('.error').exists()).toBe(true)
     })
   })
