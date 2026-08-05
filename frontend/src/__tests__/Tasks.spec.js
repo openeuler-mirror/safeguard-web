@@ -199,4 +199,66 @@ describe('Tasks 页面测试', () => {
     })
   })
 
+  describe('详情弹窗', () => {
+    it('点击详情按钮应该打开弹窗并显示任务信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-view')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.detailDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedTask).toEqual(mockTasks[0])
+    })
+
+    it('弹窗应该显示任务的详细信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openDetailDialog(mockTasks[0])
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('task-001')
+      expect(wrapper.text()).toContain('系统安装')
+      expect(wrapper.text()).toContain('host-01')
+      expect(wrapper.text()).toContain('100%')
+    })
+
+    it('失败任务应该显示错误信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openDetailDialog(mockTasks[3])
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('部署失败')
+    })
+
+    it('点击关闭按钮应该关闭弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openDetailDialog(mockTasks[0])
+      await flushPromises()
+
+      await wrapper.vm.closeDetailDialog()
+
+      expect(wrapper.vm.detailDialogVisible).toBe(false)
+      expect(wrapper.vm.selectedTask).toBeNull()
+    })
+
+    it('点击遮罩层应该关闭弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.vm.openDetailDialog(mockTasks[0])
+      await flushPromises()
+
+      const overlay = wrapper.find('.dialog-overlay')
+      await overlay.trigger('click')
+
+      expect(wrapper.vm.detailDialogVisible).toBe(false)
+    })
+  })
+
 })
