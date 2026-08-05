@@ -50,4 +50,92 @@ describe('HealthMonitors 页面测试', () => {
     })
   })
 
+  describe('创建健康检查', () => {
+    it('点击创建按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createHealthMonitor.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-hm'
+      wrapper.vm.form.type = 'http'
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createHealthMonitor).toHaveBeenCalled()
+      expect(getHealthMonitors).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('编辑健康检查', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateHealthMonitor.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateHealthMonitor).toHaveBeenCalled()
+      expect(getHealthMonitors).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除健康检查', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteHealthMonitor.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteHealthMonitor).toHaveBeenCalledWith(1)
+      expect(getHealthMonitors).toHaveBeenCalledTimes(2)
+    })
+  })
+
 })
