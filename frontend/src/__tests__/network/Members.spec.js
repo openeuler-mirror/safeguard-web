@@ -1,21 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Pools from '@/views/network/Pools.vue'
-import { getPools, createPool, updatePool, deletePool } from '@/api/network'
+import Members from '@/views/network/Members.vue'
+import { getMembers, createMember, updateMember, deleteMember } from '@/api/network'
 
 vi.mock('@/api/network')
 
-describe('Pools 页面测试', () => {
+describe('Members 页面测试', () => {
   let wrapper
 
-  const mockPools = [
-    { id: 1, name: 'test-pool-1', protocol: 'http', algorithm: 'round_robin', description: 'test', created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, name: 'test-pool-2', protocol: 'tcp', algorithm: 'least_conn', description: 'test', created_at: '2024-01-02T00:00:00Z' }
+  const mockMembers = [
+    { id: 1, name: 'test-member-1', address: '192.168.1.10', port: 80, weight: 1, status: 'active', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'test-member-2', address: '192.168.1.11', port: 80, weight: 1, status: 'inactive', created_at: '2024-01-02T00:00:00Z' }
   ]
 
   beforeEach(() => {
     vi.clearAllMocks()
-    getPools.mockResolvedValue({ results: mockPools })
+    getMembers.mockResolvedValue({ results: mockMembers })
     vi.spyOn(window, 'alert').mockImplementation(() => { })
   })
 
@@ -26,7 +26,7 @@ describe('Pools 页面测试', () => {
   })
 
   const createWrapper = () => {
-    return mount(Pools, {
+    return mount(Members, {
       global: {
         stubs: {}
       }
@@ -34,23 +34,25 @@ describe('Pools 页面测试', () => {
   }
 
   describe('页面初始加载', () => {
-    it('应该调用 getPools', async () => {
+    it('应该调用 getMembers', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(getPools).toHaveBeenCalled()
+      expect(getMembers).toHaveBeenCalled()
     })
 
-    it('应该显示后端池列表', async () => {
+    it('应该显示成员列表', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.text()).toContain('test-pool-1')
-      expect(wrapper.text()).toContain('test-pool-2')
+      expect(wrapper.text()).toContain('test-member-1')
+      expect(wrapper.text()).toContain('192.168.1.10')
+      expect(wrapper.text()).toContain('test-member-2')
+      expect(wrapper.text()).toContain('192.168.1.11')
     })
   })
 
-  describe('创建后端池', () => {
+  describe('创建成员', () => {
     it('点击创建按钮应该打开弹窗', async () => {
       wrapper = createWrapper()
       await flushPromises()
@@ -66,23 +68,24 @@ describe('Pools 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      createPool.mockResolvedValue({})
+      createMember.mockResolvedValue({})
 
       await wrapper.find('button.btn-primary').trigger('click')
       await flushPromises()
 
-      wrapper.vm.form.name = 'new-pool'
-      wrapper.vm.form.protocol = 'http'
+      wrapper.vm.form.name = 'new-member'
+      wrapper.vm.form.address = '192.168.1.12'
+      wrapper.vm.form.port = 80
 
       await wrapper.vm.submitForm()
       await flushPromises()
 
-      expect(createPool).toHaveBeenCalled()
-      expect(getPools).toHaveBeenCalledTimes(2)
+      expect(createMember).toHaveBeenCalled()
+      expect(getMembers).toHaveBeenCalledTimes(2)
     })
   })
 
-  describe('编辑后端池', () => {
+  describe('编辑成员', () => {
     it('点击编辑按钮应该打开弹窗并填充数据', async () => {
       wrapper = createWrapper()
       await flushPromises()
@@ -98,7 +101,7 @@ describe('Pools 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      updatePool.mockResolvedValue({})
+      updateMember.mockResolvedValue({})
 
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
@@ -106,12 +109,12 @@ describe('Pools 页面测试', () => {
       await wrapper.vm.submitForm()
       await flushPromises()
 
-      expect(updatePool).toHaveBeenCalled()
-      expect(getPools).toHaveBeenCalledTimes(2)
+      expect(updateMember).toHaveBeenCalled()
+      expect(getMembers).toHaveBeenCalledTimes(2)
     })
   })
 
-  describe('删除后端池', () => {
+  describe('删除成员', () => {
     it('点击删除按钮应该打开确认弹窗', async () => {
       wrapper = createWrapper()
       await flushPromises()
@@ -126,21 +129,21 @@ describe('Pools 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      deletePool.mockResolvedValue({})
+      deleteMember.mockResolvedValue({})
 
       await wrapper.findAll('button.btn-danger')[0].trigger('click')
       await flushPromises()
       await wrapper.vm.handleDelete()
       await flushPromises()
 
-      expect(deletePool).toHaveBeenCalledWith(1)
-      expect(getPools).toHaveBeenCalledTimes(2)
+      expect(deleteMember).toHaveBeenCalledWith(1)
+      expect(getMembers).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('空数据', () => {
     it('没有数据时应该显示空提示', async () => {
-      getPools.mockResolvedValue({ results: [] })
+      getMembers.mockResolvedValue({ results: [] })
       wrapper = createWrapper()
       await flushPromises()
 
@@ -150,7 +153,7 @@ describe('Pools 页面测试', () => {
 
   describe('错误处理', () => {
     it('加载失败时应该显示错误信息', async () => {
-      getPools.mockRejectedValue(new Error('加载失败'))
+      getMembers.mockRejectedValue(new Error('加载失败'))
       wrapper = createWrapper()
       await flushPromises()
 
