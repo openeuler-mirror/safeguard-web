@@ -316,4 +316,65 @@ describe('Safeguards 页面测试', () => {
     })
   })
 
+  describe('分页', () => {
+    it('点击下一页应该改变页码并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.page = 1
+      wrapper.vm.totalCount = 40
+      await wrapper.vm.handlePageChange(2)
+      await flushPromises()
+
+      expect(getSafeguards).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
+    })
+  })
+
+  describe('空数据', () => {
+    it('没有数据时应该显示空提示', async () => {
+      getSafeguards.mockResolvedValue({ results: [], count: 0 })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+  })
+
+  describe('错误处理', () => {
+    it('加载失败时应该显示错误信息', async () => {
+      getSafeguards.mockRejectedValue(new Error('加载失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+  })
+
+  describe('工具函数', () => {
+    it('formatArch 应该正确格式化架构', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatArch('x86')).toBe('X86')
+      expect(wrapper.vm.formatArch('arm')).toBe('ARM')
+      expect(wrapper.vm.formatArch('unknown')).toBe('unknown')
+    })
+
+    it('formatStatus 应该正确格式化状态', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
+      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
+      expect(wrapper.vm.formatStatus('success')).toBe('成功')
+      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
+      expect(wrapper.vm.formatStatus('unknown')).toBe('unknown')
+    })
+
+    it('getStatusClass 应该返回正确的 CSS 类', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
+      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
+      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
+      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
+      expect(wrapper.vm.getStatusClass('unknown')).toBe('')
+    })
+  })
 })
