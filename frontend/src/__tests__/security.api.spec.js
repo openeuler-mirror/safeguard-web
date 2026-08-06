@@ -125,4 +125,61 @@ describe('security API 测试', () => {
     })
   })
 
+  describe('API 错误响应处理', () => {
+    it('getSafeguards 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getSafeguards()).rejects.toThrow('API Error')
+    })
+
+    it('getSafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getSafeguard(1)).rejects.toThrow('API Error')
+    })
+
+    it('createSafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(createSafeguard({ name: 'test' })).rejects.toThrow('API Error')
+    })
+
+    it('updateSafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.put.mockRejectedValue(mockError)
+
+      await expect(updateSafeguard(1, { name: 'test' })).rejects.toThrow('API Error')
+    })
+
+    it('deleteSafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.delete.mockRejectedValue(mockError)
+
+      await expect(deleteSafeguard(1)).rejects.toThrow('API Error')
+    })
+
+    it('deploySafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(deploySafeguard(1)).rejects.toThrow('API Error')
+    })
+
+    it('rollbackSafeguard 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(rollbackSafeguard(1)).rejects.toThrow('API Error')
+    })
+
+    it('getSafeguardStatus 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getSafeguardStatus(1)).rejects.toThrow('API Error')
+    })
+  })
 })
