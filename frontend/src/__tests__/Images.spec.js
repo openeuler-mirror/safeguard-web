@@ -219,4 +219,67 @@ describe('Images 页面测试', () => {
     })
   })
 
+  describe('刷新镜像', () => {
+    it('点击刷新按钮应该调用 refreshImages 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      refreshImages.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-refresh')[0].trigger('click')
+      await flushPromises()
+
+      expect(refreshImages).toHaveBeenCalledWith(1)
+      expect(getImages).toHaveBeenCalledTimes(2)
+    })
+
+    it('刷新失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      refreshImages.mockRejectedValue(new Error('刷新失败'))
+
+      await wrapper.findAll('button.btn-refresh')[0].trigger('click')
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('刷新失败')
+    })
+  })
+
+  describe('搜索和过滤', () => {
+    it('按回车搜索应该调用 loadImages', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.searchName = 'centos'
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('centos')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getImages).toHaveBeenCalledWith(expect.objectContaining({ search: 'centos' }))
+    })
+
+    it('改变过滤条件应该调用 loadImages', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterHost = '1'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getImages).toHaveBeenCalledWith(expect.objectContaining({ host: '1' }))
+    })
+  })
+
+  describe('空数据', () => {
+    it('没有数据时应该显示空提示', async () => {
+      getImages.mockResolvedValue({ results: [] })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+  })
+
 })
