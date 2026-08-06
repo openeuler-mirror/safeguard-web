@@ -282,4 +282,48 @@ describe('Images 页面测试', () => {
     })
   })
 
+  describe('错误处理', () => {
+    it('加载镜像列表失败时应该显示错误信息', async () => {
+      getImages.mockRejectedValue(new Error('加载镜像列表失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载镜像列表失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+
+    it('加载宿主机列表失败时应该在控制台打印错误', async () => {
+      getHosts.mockRejectedValue(new Error('加载失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(console.error).toHaveBeenCalledWith('加载宿主机列表失败', expect.any(Error))
+    })
+  })
+
+  describe('工具函数', () => {
+    it('getOsTypeText 应该正确格式化操作系统类型', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.getOsTypeText('centos')).toBe('CentOS')
+      expect(wrapper.vm.getOsTypeText('culinux')).toBe('CULinux')
+      expect(wrapper.vm.getOsTypeText('openeuler')).toBe('OpenEuler')
+      expect(wrapper.vm.getOsTypeText('ubuntu')).toBe('Ubuntu')
+      expect(wrapper.vm.getOsTypeText('debian')).toBe('Debian')
+      expect(wrapper.vm.getOsTypeText('unknown')).toBe('unknown')
+      expect(wrapper.vm.getOsTypeText(null)).toBe('未知')
+    })
+
+    it('formatDate 应该正确格式化日期', () => {
+      wrapper = createWrapper()
+      const dateStr = '2024-01-01T00:00:00Z'
+      const result = wrapper.vm.formatDate(dateStr)
+      expect(result).not.toBe('-')
+    })
+
+    it('formatDate 处理空值应该返回 "-"', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatDate('')).toBe('-')
+      expect(wrapper.vm.formatDate(null)).toBe('-')
+    })
+  })
 })
