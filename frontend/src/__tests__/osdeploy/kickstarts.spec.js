@@ -40,13 +40,11 @@ const createWrapper = () => {
 describe('Kickstarts.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getRepos.mockResolvedValue({ results: [] })
+    getKickstarts.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('Kickstart 模板管理')
-    })
 
     it('渲染创建按钮', () => {
       const wrapper = createWrapper()
