@@ -100,4 +100,47 @@ describe('migrate API 测试', () => {
     })
   })
 
+  describe('API 错误响应处理', () => {
+    it('getMigrates 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getMigrates()).rejects.toThrow('API Error')
+    })
+
+    it('getMigrate 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getMigrate(1)).rejects.toThrow('API Error')
+    })
+
+    it('createMigrateInit 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(createMigrateInit({ source_host: 'test' })).rejects.toThrow('API Error')
+    })
+
+    it('createMigrate 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(createMigrate({ init_id: 1 })).rejects.toThrow('API Error')
+    })
+
+    it('createMigrateBack 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.post.mockRejectedValue(mockError)
+
+      await expect(createMigrateBack({ migrate_id: 1 })).rejects.toThrow('API Error')
+    })
+
+    it('getMigrateStatus 应正确处理API错误', async () => {
+      const mockError = new Error('API Error')
+      api.get.mockRejectedValue(mockError)
+
+      await expect(getMigrateStatus(1)).rejects.toThrow('API Error')
+    })
+  })
 })
