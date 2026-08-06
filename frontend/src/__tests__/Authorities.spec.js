@@ -10,12 +10,6 @@ import {
 } from '@/api/authority'
 
 vi.mock('@/api/authority')
-vi.mock('@/components/AuthorityMenuDialog.vue', () => ({
-  name: 'AuthorityMenuDialog',
-  template: '<div class="authority-menu-dialog"></div>',
-  props: ['visible', 'authorityInfo'],
-  emits: ['close', 'success']
-}))
 
 describe('Authorities 页面测试', () => {
   let wrapper
@@ -41,7 +35,9 @@ describe('Authorities 页面测试', () => {
   const createWrapper = () => {
     return mount(Authorities, {
       global: {
-        stubs: {}
+        stubs: {
+          AuthorityMenuDialog: true
+        }
       }
     })
   }

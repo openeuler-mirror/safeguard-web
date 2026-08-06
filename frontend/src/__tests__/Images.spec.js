@@ -70,6 +70,7 @@ describe('Images 页面测试', () => {
     it('应该显示加载状态', async () => {
       getImages.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })
@@ -168,6 +169,7 @@ describe('Images 页面测试', () => {
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
 
+      wrapper.vm.form.id = String(wrapper.vm.form.id)
       await wrapper.vm.submitForm()
       await flushPromises()
 

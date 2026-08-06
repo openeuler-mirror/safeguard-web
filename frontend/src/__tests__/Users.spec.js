@@ -4,12 +4,6 @@ import Users from '@/views/Users.vue'
 import { getUsers, getAuthorities } from '@/api/user'
 
 vi.mock('@/api/user')
-vi.mock('@/components/UserAuthorityDialog.vue', () => ({
-  name: 'UserAuthorityDialog',
-  template: '<div class="user-authority-dialog"></div>',
-  props: ['visible', 'userInfo', 'allRoles'],
-  emits: ['close', 'success']
-}))
 
 describe('Users 页面测试', () => {
   let wrapper
@@ -39,7 +33,9 @@ describe('Users 页面测试', () => {
   const createWrapper = () => {
     return mount(Users, {
       global: {
-        stubs: {}
+        stubs: {
+          UserAuthorityDialog: true
+        }
       }
     })
   }
