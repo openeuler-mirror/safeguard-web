@@ -74,4 +74,149 @@ describe('Images 页面测试', () => {
     })
   })
 
+  describe('创建镜像', () => {
+    it('点击添加镜像按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createImage.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.id = 'img-001'
+      wrapper.vm.form.name = 'Test-Image'
+      wrapper.vm.form.host = 1
+      wrapper.vm.form.path = '/path/to/image.qcow2'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createImage).toHaveBeenCalled()
+      expect(getImages).toHaveBeenCalledTimes(2)
+    })
+
+    it('表单验证应该正常工作', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.id = ''
+      wrapper.vm.form.name = ''
+      wrapper.vm.form.host = null
+      wrapper.vm.form.path = ''
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.id).toBe('请输入镜像ID')
+      expect(wrapper.vm.errors.name).toBe('请输入镜像名称')
+      expect(wrapper.vm.errors.host).toBe('请选择宿主机')
+      expect(wrapper.vm.errors.path).toBe('请输入镜像路径')
+      expect(createImage).not.toHaveBeenCalled()
+    })
+
+    it('创建失败时应该显示错误信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createImage.mockRejectedValue(new Error('创建失败'))
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.id = 'img-001'
+      wrapper.vm.form.name = 'Test-Image'
+      wrapper.vm.form.host = 1
+      wrapper.vm.form.path = '/path/to/image.qcow2'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('创建失败')
+    })
+  })
+
+  describe('编辑镜像', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('CentOS-7')
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateImage.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateImage).toHaveBeenCalled()
+      expect(getImages).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除镜像', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-delete')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteImage.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-delete')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteImage).toHaveBeenCalledWith(1)
+      expect(getImages).toHaveBeenCalledTimes(2)
+    })
+
+    it('删除失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteImage.mockRejectedValue(new Error('删除失败'))
+
+      await wrapper.findAll('button.btn-delete')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('删除失败')
+    })
+  })
+
 })
