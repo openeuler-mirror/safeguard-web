@@ -56,4 +56,48 @@ describe('migrate API 测试', () => {
     })
   })
 
+  describe('createMigrateInit API 路径测试', () => {
+    it('应调用正确的URL并传递数据创建迁移初始化', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const data = { source_host: '192.168.1.1', target_host: '192.168.1.2' }
+
+      await createMigrateInit(data)
+
+      expect(api.post).toHaveBeenCalledWith('/migrates/init/', data)
+    })
+  })
+
+  describe('createMigrate API 路径测试', () => {
+    it('应调用正确的URL并传递数据创建迁移', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const data = { init_id: 1, options: {} }
+
+      await createMigrate(data)
+
+      expect(api.post).toHaveBeenCalledWith('/migrates/migrate/', data)
+    })
+  })
+
+  describe('createMigrateBack API 路径测试', () => {
+    it('应调用正确的URL并传递数据创建回滚', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const data = { migrate_id: 1, options: {} }
+
+      await createMigrateBack(data)
+
+      expect(api.post).toHaveBeenCalledWith('/migrates/back/', data)
+    })
+  })
+
+  describe('getMigrateStatus API 路径测试', () => {
+    it('应调用正确的URL获取迁移状态', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const migrateId = 1
+
+      await getMigrateStatus(migrateId)
+
+      expect(api.get).toHaveBeenCalledWith('/migrates/1/status/')
+    })
+  })
+
 })
