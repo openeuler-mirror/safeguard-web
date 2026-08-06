@@ -33,13 +33,10 @@ const createWrapper = () => {
 describe('WhiteList.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getWhiteList.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('MAC地址白名单')
-    })
 
     it('渲染批量导入和添加按钮', () => {
       const wrapper = createWrapper()

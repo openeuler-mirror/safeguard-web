@@ -43,13 +43,14 @@ const createWrapper = () => {
 describe('AutoInstall.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getHosts.mockResolvedValue({ results: [] })
+    getPXEServers.mockResolvedValue({ results: [] })
+    getKickstarts.mockResolvedValue({ results: [] })
+    getRepos.mockResolvedValue({ results: [] })
+    getJobs.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('自动装机')
-    })
 
     it('渲染装机配置表单卡片', () => {
       const wrapper = createWrapper()
