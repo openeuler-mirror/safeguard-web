@@ -208,7 +208,7 @@ describe('AutoInstall.vue', () => {
 
       await wrapper.vm.handleSubmit()
 
-      expect(wrapper.vm.errors.kickstart_id).toBe('请选择模板')
+      expect(wrapper.vm.errors.kickstart_id).toBe('请选择Kickstart模板')
     })
 
     it('仓库必填验证', async () => {

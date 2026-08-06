@@ -64,7 +64,7 @@ describe('Jobs.vue', () => {
       getJobs.mockResolvedValue({ results: [], count: 0 })
       const wrapper = createWrapper()
       wrapper.vm.error = 'previous error'
-      await new Promise(r => setTimeout(r, 100))
+      await wrapper.vm.loadJobs()
       expect(wrapper.vm.error).toBe('')
     })
   })
