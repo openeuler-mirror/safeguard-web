@@ -4,12 +4,6 @@ import Users from '@/views/Users.vue'
 import { getUsers, getAuthorities } from '@/api/user'
 
 vi.mock('@/api/user')
-vi.mock('@/components/UserAuthorityDialog.vue', () => ({
-  name: 'UserAuthorityDialog',
-  template: '<div class="user-authority-dialog"></div>',
-  props: ['visible', 'userInfo', 'allRoles'],
-  emits: ['close', 'success']
-}))
 
 describe('Users 页面测试', () => {
   let wrapper
@@ -39,7 +33,9 @@ describe('Users 页面测试', () => {
   const createWrapper = () => {
     return mount(Users, {
       global: {
-        stubs: {}
+        stubs: {
+          UserAuthorityDialog: true
+        }
       }
     })
   }
@@ -74,6 +70,7 @@ describe('Users 页面测试', () => {
     it('应该显示加载状态', async () => {
       getUsers.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })

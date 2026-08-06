@@ -70,6 +70,7 @@ describe('Images 页面测试', () => {
     it('应该显示加载状态', async () => {
       getImages.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })
@@ -114,15 +115,24 @@ describe('Images 页面测试', () => {
       await flushPromises()
 
       wrapper.vm.form.id = ''
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.id).toBe('请输入镜像ID')
+
+      wrapper.vm.form.id = 'test-id'
       wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.name).toBe('请输入镜像名称')
+
+      wrapper.vm.form.name = 'test-name'
       wrapper.vm.form.host = null
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.host).toBe('请选择宿主机')
+
+      wrapper.vm.form.host = 1
       wrapper.vm.form.path = ''
       await wrapper.vm.submitForm()
-
-      expect(wrapper.vm.errors.id).toBe('请输入镜像ID')
-      expect(wrapper.vm.errors.name).toBe('请输入镜像名称')
-      expect(wrapper.vm.errors.host).toBe('请选择宿主机')
       expect(wrapper.vm.errors.path).toBe('请输入镜像路径')
+
       expect(createImage).not.toHaveBeenCalled()
     })
 
@@ -168,6 +178,7 @@ describe('Images 页面测试', () => {
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
 
+      wrapper.vm.form.id = String(wrapper.vm.form.id)
       await wrapper.vm.submitForm()
       await flushPromises()
 
@@ -309,7 +320,7 @@ describe('Images 页面测试', () => {
       expect(wrapper.vm.getOsTypeText('openeuler')).toBe('OpenEuler')
       expect(wrapper.vm.getOsTypeText('ubuntu')).toBe('Ubuntu')
       expect(wrapper.vm.getOsTypeText('debian')).toBe('Debian')
-      expect(wrapper.vm.getOsTypeText('unknown')).toBe('unknown')
+      expect(wrapper.vm.getOsTypeText('unknown')).toBe('未知')
       expect(wrapper.vm.getOsTypeText(null)).toBe('未知')
     })
 

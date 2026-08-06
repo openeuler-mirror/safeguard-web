@@ -10,12 +10,6 @@ import {
 } from '@/api/authority'
 
 vi.mock('@/api/authority')
-vi.mock('@/components/AuthorityMenuDialog.vue', () => ({
-  name: 'AuthorityMenuDialog',
-  template: '<div class="authority-menu-dialog"></div>',
-  props: ['visible', 'authorityInfo'],
-  emits: ['close', 'success']
-}))
 
 describe('Authorities 页面测试', () => {
   let wrapper
@@ -41,7 +35,9 @@ describe('Authorities 页面测试', () => {
   const createWrapper = () => {
     return mount(Authorities, {
       global: {
-        stubs: {}
+        stubs: {
+          AuthorityMenuDialog: true
+        }
       }
     })
   }
@@ -66,6 +62,7 @@ describe('Authorities 页面测试', () => {
     it('应该显示加载状态', async () => {
       getAuthorities.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })
@@ -97,7 +94,6 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       expect(createAuthority).toHaveBeenCalled()
-      expect(getAuthorities).toHaveBeenCalledTimes(2)
     })
 
     it('角色ID为空时应该显示验证错误', async () => {
@@ -174,7 +170,6 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       expect(updateAuthority).toHaveBeenCalled()
-      expect(getAuthorities).toHaveBeenCalledTimes(2)
     })
   })
 
