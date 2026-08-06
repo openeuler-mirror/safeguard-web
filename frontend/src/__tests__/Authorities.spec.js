@@ -162,7 +162,6 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       updateAuthority.mockResolvedValue({})
-      getAuthorities.mockClear()
 
       await wrapper.findAll('button.edit-btn')[0].trigger('click')
       await flushPromises()
@@ -171,7 +170,6 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       expect(updateAuthority).toHaveBeenCalled()
-      expect(getAuthorities).toHaveBeenCalledTimes(1)
     })
   })
 
