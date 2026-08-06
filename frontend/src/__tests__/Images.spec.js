@@ -1,0 +1,77 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import Images from '@/views/Images.vue'
+import { getImages, createImage, updateImage, deleteImage, refreshImages, getHosts } from '@/api/host'
+
+vi.mock('@/api/host')
+
+describe('Images 页面测试', () => {
+  let wrapper
+
+  const mockImages = [
+    { id: 1, name: 'CentOS-7', ostype: 'centos', path: '/var/lib/libvirt/images/centos7.qcow2', host: 1, host_name: 'host-1', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'Ubuntu-20.04', ostype: 'ubuntu', path: '/var/lib/libvirt/images/ubuntu20.qcow2', host: 2, host_name: 'host-2', created_at: '2024-01-02T00:00:00Z' }
+  ]
+
+  const mockHostList = [
+    { id: 1, hostname: 'host-1', ip_address: '192.168.1.100' },
+    { id: 2, hostname: 'host-2', ip_address: '192.168.1.101' }
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getImages.mockResolvedValue({ results: mockImages })
+    getHosts.mockResolvedValue({ results: mockHostList })
+    vi.spyOn(window, 'alert').mockImplementation(() => { })
+    vi.spyOn(console, 'error').mockImplementation(() => { })
+  })
+
+  afterEach(() => {
+    if (wrapper) {
+      wrapper.unmount()
+    }
+  })
+
+  const createWrapper = () => {
+    return mount(Images, {
+      global: {
+        stubs: {}
+      }
+    })
+  }
+
+  describe('页面初始加载', () => {
+    it('应该调用 getImages 和 getHosts', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getImages).toHaveBeenCalled()
+      expect(getHosts).toHaveBeenCalled()
+    })
+
+    it('应该显示镜像列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('CentOS-7')
+      expect(wrapper.text()).toContain('Ubuntu-20.04')
+      expect(wrapper.text()).toContain('host-1')
+      expect(wrapper.text()).toContain('host-2')
+    })
+
+    it('应该显示操作系统类型', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('CentOS')
+      expect(wrapper.text()).toContain('Ubuntu')
+    })
+
+    it('应该显示加载状态', async () => {
+      getImages.mockImplementation(() => new Promise(() => { }))
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('加载中...')
+    })
+  })
+
+})
