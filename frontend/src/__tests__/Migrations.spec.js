@@ -301,4 +301,61 @@ describe('Migrations 页面测试', () => {
     })
   })
 
+  describe('空数据', () => {
+    it('没有数据时应该显示空提示', async () => {
+      getMigrates.mockResolvedValue({ results: [], count: 0 })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+  })
+
+  describe('错误处理', () => {
+    it('加载失败时应该显示错误信息', async () => {
+      getMigrates.mockRejectedValue(new Error('加载迁移任务列表失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载迁移任务列表失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+  })
+
+  describe('工具函数', () => {
+    it('formatJobType 应该正确格式化任务类型', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatJobType('init')).toBe('初始化')
+      expect(wrapper.vm.formatJobType('migrate')).toBe('迁移')
+      expect(wrapper.vm.formatJobType('back')).toBe('回滚')
+      expect(wrapper.vm.formatJobType('unknown')).toBe('unknown')
+    })
+
+    it('formatStatus 应该正确格式化状态', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
+      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
+      expect(wrapper.vm.formatStatus('success')).toBe('成功')
+      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
+      expect(wrapper.vm.formatStatus('unknown')).toBe('unknown')
+    })
+
+    it('getStatusClass 应该返回正确的 CSS 类', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
+      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
+      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
+      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
+      expect(wrapper.vm.getStatusClass('unknown')).toBe('')
+    })
+
+    it('getProgressClass 应该返回正确的 CSS 类', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.getProgressClass('pending')).toBe('progress-pending')
+      expect(wrapper.vm.getProgressClass('running')).toBe('progress-running')
+      expect(wrapper.vm.getProgressClass('success')).toBe('progress-success')
+      expect(wrapper.vm.getProgressClass('failed')).toBe('progress-failed')
+      expect(wrapper.vm.getProgressClass('unknown')).toBe('')
+    })
+  })
 })
