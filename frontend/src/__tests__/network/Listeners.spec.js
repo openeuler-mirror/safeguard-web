@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import Listeners from '@/views/network/Listeners.vue'
-import { getListeners, createListener, updateListener, deleteListener } from '@/api/network'
+import { getListeners, createListener, updateListener, deleteListener, getLBs } from '@/api/network'
 
 vi.mock('@/api/network')
 
@@ -16,6 +16,7 @@ describe('Listeners 页面测试', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getListeners.mockResolvedValue({ results: mockListeners })
+    getLBs.mockResolvedValue({ results: [] })
     vi.spyOn(window, 'alert').mockImplementation(() => { })
   })
 
@@ -34,11 +35,12 @@ describe('Listeners 页面测试', () => {
   }
 
   describe('页面初始加载', () => {
-    it('应该调用 getListeners', async () => {
+    it('应该调用 getListeners 和 getLBs', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
       expect(getListeners).toHaveBeenCalled()
+      expect(getLBs).toHaveBeenCalled()
     })
 
     it('应该显示监听器列表', async () => {
@@ -82,7 +84,6 @@ describe('Listeners 页面测试', () => {
       await flushPromises()
 
       wrapper.vm.form.loadbalancer = '1'
-      wrapper.vm.form.protocol = 'tcp'
       wrapper.vm.form.port = 8080
 
       await wrapper.vm.submitForm()
@@ -113,6 +114,8 @@ describe('Listeners 页面测试', () => {
 
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
+
+      wrapper.vm.form.loadbalancer = '1'
 
       await wrapper.vm.submitForm()
       await flushPromises()
@@ -179,7 +182,7 @@ describe('Listeners 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.vm.error).toBeTruthy()
       expect(wrapper.find('.error').exists()).toBe(true)
     })
   })

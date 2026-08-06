@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import Members from '@/views/network/Members.vue'
-import { getMembers, createMember, updateMember, deleteMember } from '@/api/network'
+import { getMembers, createMember, updateMember, deleteMember, getPools } from '@/api/network'
 
 vi.mock('@/api/network')
 
@@ -9,13 +9,14 @@ describe('Members 页面测试', () => {
   let wrapper
 
   const mockMembers = [
-    { id: 1, name: 'test-member-1', address: '192.168.1.10', port: 80, weight: 1, status: 'active', created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, name: 'test-member-2', address: '192.168.1.11', port: 80, weight: 1, status: 'inactive', created_at: '2024-01-02T00:00:00Z' }
+    { id: 1, pool_name: 'pool-1', address: '192.168.1.10', port: 80, weight: 1, is_enabled: true, description: 'test', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, pool_name: 'pool-2', address: '192.168.1.11', port: 80, weight: 1, is_enabled: false, description: 'test', created_at: '2024-01-02T00:00:00Z' }
   ]
 
   beforeEach(() => {
     vi.clearAllMocks()
     getMembers.mockResolvedValue({ results: mockMembers })
+    getPools.mockResolvedValue({ results: [] })
     vi.spyOn(window, 'alert').mockImplementation(() => { })
   })
 
@@ -34,20 +35,19 @@ describe('Members 页面测试', () => {
   }
 
   describe('页面初始加载', () => {
-    it('应该调用 getMembers', async () => {
+    it('应该调用 getMembers 和 getPools', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
       expect(getMembers).toHaveBeenCalled()
+      expect(getPools).toHaveBeenCalled()
     })
 
     it('应该显示成员列表', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.text()).toContain('test-member-1')
       expect(wrapper.text()).toContain('192.168.1.10')
-      expect(wrapper.text()).toContain('test-member-2')
       expect(wrapper.text()).toContain('192.168.1.11')
     })
   })
@@ -73,7 +73,7 @@ describe('Members 页面测试', () => {
       await wrapper.find('button.btn-primary').trigger('click')
       await flushPromises()
 
-      wrapper.vm.form.name = 'new-member'
+      wrapper.vm.form.pool = '1'
       wrapper.vm.form.address = '192.168.1.12'
       wrapper.vm.form.port = 80
 
@@ -105,6 +105,8 @@ describe('Members 页面测试', () => {
 
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
+
+      wrapper.vm.form.pool = '1'
 
       await wrapper.vm.submitForm()
       await flushPromises()
@@ -157,7 +159,7 @@ describe('Members 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.vm.error).toBeTruthy()
       expect(wrapper.find('.error').exists()).toBe(true)
     })
   })

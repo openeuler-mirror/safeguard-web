@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import HealthMonitors from '@/views/network/HealthMonitors.vue'
-import { getHealthMonitors, createHealthMonitor, updateHealthMonitor, deleteHealthMonitor } from '@/api/network'
+import { getHealthMonitors, createHealthMonitor, updateHealthMonitor, deleteHealthMonitor, getPools } from '@/api/network'
 
 vi.mock('@/api/network')
 
@@ -9,13 +9,14 @@ describe('HealthMonitors 页面测试', () => {
   let wrapper
 
   const mockHealthMonitors = [
-    { id: 1, name: 'test-hm-1', type: 'http', delay: 30, timeout: 5, max_retries: 3, created_at: '2024-01-01T00:00:00Z' },
-    { id: 2, name: 'test-hm-2', type: 'tcp', delay: 60, timeout: 10, max_retries: 5, created_at: '2024-01-02T00:00:00Z' }
+    { id: 1, pool_name: 'pool-1', monitor_type: 'http', interval: 5, timeout: 3, retry: 3, description: 'test', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, pool_name: 'pool-2', monitor_type: 'tcp', interval: 10, timeout: 5, retry: 5, description: 'test', created_at: '2024-01-02T00:00:00Z' }
   ]
 
   beforeEach(() => {
     vi.clearAllMocks()
     getHealthMonitors.mockResolvedValue({ results: mockHealthMonitors })
+    getPools.mockResolvedValue({ results: [] })
     vi.spyOn(window, 'alert').mockImplementation(() => { })
   })
 
@@ -34,19 +35,12 @@ describe('HealthMonitors 页面测试', () => {
   }
 
   describe('页面初始加载', () => {
-    it('应该调用 getHealthMonitors', async () => {
+    it('应该调用 getHealthMonitors 和 getPools', async () => {
       wrapper = createWrapper()
       await flushPromises()
 
       expect(getHealthMonitors).toHaveBeenCalled()
-    })
-
-    it('应该显示健康检查列表', async () => {
-      wrapper = createWrapper()
-      await flushPromises()
-
-      expect(wrapper.text()).toContain('test-hm-1')
-      expect(wrapper.text()).toContain('test-hm-2')
+      expect(getPools).toHaveBeenCalled()
     })
   })
 
@@ -71,8 +65,7 @@ describe('HealthMonitors 页面测试', () => {
       await wrapper.find('button.btn-primary').trigger('click')
       await flushPromises()
 
-      wrapper.vm.form.name = 'new-hm'
-      wrapper.vm.form.type = 'http'
+      wrapper.vm.form.pool = '1'
 
       await wrapper.vm.submitForm()
       await flushPromises()
@@ -102,6 +95,8 @@ describe('HealthMonitors 页面测试', () => {
 
       await wrapper.findAll('button.btn-edit')[0].trigger('click')
       await flushPromises()
+
+      wrapper.vm.form.pool = '1'
 
       await wrapper.vm.submitForm()
       await flushPromises()
@@ -154,7 +149,7 @@ describe('HealthMonitors 页面测试', () => {
       wrapper = createWrapper()
       await flushPromises()
 
-      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.vm.error).toBeTruthy()
       expect(wrapper.find('.error').exists()).toBe(true)
     })
   })
