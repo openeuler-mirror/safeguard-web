@@ -73,4 +73,135 @@ describe('Safeguards 页面测试', () => {
     })
   })
 
+  describe('创建安全防护', () => {
+    it('点击创建部署按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createSafeguard.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-sg'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createSafeguard).toHaveBeenCalled()
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('名称为空时应该显示验证错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.name).toBe('请输入名称')
+      expect(createSafeguard).not.toHaveBeenCalled()
+    })
+
+    it('创建失败时应该显示错误信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createSafeguard.mockRejectedValue(new Error('创建失败'))
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-sg'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('创建失败')
+    })
+  })
+
+  describe('编辑安全防护', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('test-sg-1')
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateSafeguard.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateSafeguard).toHaveBeenCalled()
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除安全防护', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteSafeguard.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteSafeguard).toHaveBeenCalledWith(1)
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('删除失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteSafeguard.mockRejectedValue(new Error('删除失败'))
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('删除失败')
+    })
+  })
+
 })
