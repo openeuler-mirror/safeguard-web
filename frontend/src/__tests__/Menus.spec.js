@@ -63,6 +63,7 @@ describe('Menus 页面测试', () => {
     it('应该显示加载状态', async () => {
       getMenuTree.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })

@@ -311,7 +311,7 @@ describe('Images 页面测试', () => {
       expect(wrapper.vm.getOsTypeText('openeuler')).toBe('OpenEuler')
       expect(wrapper.vm.getOsTypeText('ubuntu')).toBe('Ubuntu')
       expect(wrapper.vm.getOsTypeText('debian')).toBe('Debian')
-      expect(wrapper.vm.getOsTypeText('unknown')).toBe('unknown')
+      expect(wrapper.vm.getOsTypeText('unknown')).toBe('未知')
       expect(wrapper.vm.getOsTypeText(null)).toBe('未知')
     })
 
