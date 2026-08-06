@@ -118,4 +118,39 @@ describe('Users 页面测试', () => {
     })
   })
 
+  describe('错误处理', () => {
+    it('加载用户列表失败时应该显示错误信息', async () => {
+      getUsers.mockRejectedValue(new Error('加载用户列表失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载用户列表失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+
+    it('加载角色列表失败时应该在控制台打印错误', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+      getAuthorities.mockRejectedValue(new Error('加载角色列表失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(consoleSpy).toHaveBeenCalled()
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('工具函数', () => {
+    it('formatDate 应该正确格式化日期', () => {
+      wrapper = createWrapper()
+      const dateStr = '2024-01-01T00:00:00Z'
+      const result = wrapper.vm.formatDate(dateStr)
+      expect(result).not.toBe('-')
+    })
+
+    it('formatDate 处理空值应该返回 "-"', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatDate('')).toBe('-')
+      expect(wrapper.vm.formatDate(null)).toBe('-')
+    })
+  })
 })
