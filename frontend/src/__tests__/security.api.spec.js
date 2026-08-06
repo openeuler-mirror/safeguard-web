@@ -92,4 +92,37 @@ describe('security API 测试', () => {
     })
   })
 
+  describe('deploySafeguard API 路径测试', () => {
+    it('应调用正确的URL部署安全防护', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const safeguardId = 1
+
+      await deploySafeguard(safeguardId)
+
+      expect(api.post).toHaveBeenCalledWith('/safeguards/1/deploy/')
+    })
+  })
+
+  describe('rollbackSafeguard API 路径测试', () => {
+    it('应调用正确的URL回滚安全防护', async () => {
+      api.post.mockResolvedValue(mockResponse)
+      const safeguardId = 1
+
+      await rollbackSafeguard(safeguardId)
+
+      expect(api.post).toHaveBeenCalledWith('/safeguards/1/rollback/')
+    })
+  })
+
+  describe('getSafeguardStatus API 路径测试', () => {
+    it('应调用正确的URL获取安全防护状态', async () => {
+      api.get.mockResolvedValue(mockResponse)
+      const safeguardId = 1
+
+      await getSafeguardStatus(safeguardId)
+
+      expect(api.get).toHaveBeenCalledWith('/safeguards/1/status/')
+    })
+  })
+
 })
