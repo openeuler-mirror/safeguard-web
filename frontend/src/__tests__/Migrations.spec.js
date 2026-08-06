@@ -210,4 +210,95 @@ describe('Migrations 页面测试', () => {
     })
   })
 
+  describe('查看详情', () => {
+    it('点击详情按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-view')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.detailDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedJob).toEqual(mockJobs[0])
+    })
+
+    it('刷新状态应该调用 getMigrateStatus', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getMigrateStatus.mockResolvedValue({ data: { status: 'success' } })
+
+      await wrapper.findAll('button.btn-view')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.fetchStatus()
+      await flushPromises()
+
+      expect(getMigrateStatus).toHaveBeenCalledWith(1)
+    })
+
+    it('获取状态失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getMigrateStatus.mockRejectedValue(new Error('获取状态失败'))
+
+      await wrapper.findAll('button.btn-view')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.fetchStatus()
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('获取状态失败')
+    })
+  })
+
+  describe('搜索和过滤', () => {
+    it('按回车搜索应该调用 loadJobs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('192.168.1.1')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getMigrates).toHaveBeenCalledWith(expect.objectContaining({ search: '192.168.1.1' }))
+    })
+
+    it('改变任务类型过滤应该调用 loadJobs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterType = 'migrate'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getMigrates).toHaveBeenCalledWith(expect.objectContaining({ job_type: 'migrate' }))
+    })
+
+    it('改变状态过滤应该调用 loadJobs', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterStatus = 'success'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getMigrates).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+    })
+  })
+
+  describe('分页', () => {
+    it('点击下一页应该改变页码并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.page = 1
+      wrapper.vm.totalCount = 40
+      await wrapper.vm.handlePageChange(2)
+      await flushPromises()
+
+      expect(getMigrates).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
+    })
+  })
+
 })
