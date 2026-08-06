@@ -280,4 +280,39 @@ describe('Authorities 页面测试', () => {
     })
   })
 
+  describe('空数据', () => {
+    it('没有数据时应该显示空状态', async () => {
+      getAuthorities.mockResolvedValue({ results: [] })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.authorities-table').exists()).toBe(true)
+    })
+  })
+
+  describe('错误处理', () => {
+    it('加载失败时应该显示错误信息', async () => {
+      getAuthorities.mockRejectedValue(new Error('加载角色列表失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载角色列表失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+  })
+
+  describe('工具函数', () => {
+    it('formatDate 应该正确格式化日期', () => {
+      wrapper = createWrapper()
+      const dateStr = '2024-01-01T00:00:00Z'
+      const result = wrapper.vm.formatDate(dateStr)
+      expect(result).not.toBe('-')
+    })
+
+    it('formatDate 处理空值应该返回 "-"', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatDate('')).toBe('-')
+      expect(wrapper.vm.formatDate(null)).toBe('-')
+    })
+  })
 })
