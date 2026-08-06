@@ -1,0 +1,380 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import Safeguards from '@/views/security/Safeguards.vue'
+import {
+  getSafeguards,
+  createSafeguard,
+  updateSafeguard,
+  deleteSafeguard,
+  deploySafeguard,
+  rollbackSafeguard,
+  getSafeguardStatus
+} from '@/api/security'
+
+vi.mock('@/api/security')
+
+describe('Safeguards 页面测试', () => {
+  let wrapper
+
+  const mockSafeguards = [
+    { id: 1, name: 'test-sg-1', safeguard_type: 'safeguardx86', arch: 'x86', host: '192.168.1.1', status: 'success', created_at: '2024-01-01T00:00:00Z' },
+    { id: 2, name: 'test-sg-2', safeguard_type: 'safeguardx86', arch: 'arm', host: '192.168.1.2', status: 'failed', created_at: '2024-01-02T00:00:00Z' }
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getSafeguards.mockResolvedValue({ results: mockSafeguards, count: 2 })
+    vi.spyOn(window, 'alert').mockImplementation(() => { })
+  })
+
+  afterEach(() => {
+    if (wrapper) {
+      wrapper.unmount()
+    }
+  })
+
+  const createWrapper = () => {
+    return mount(Safeguards, {
+      global: {
+        stubs: {}
+      }
+    })
+  }
+
+  describe('页面初始加载', () => {
+    it('应该调用 getSafeguards', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(getSafeguards).toHaveBeenCalled()
+    })
+
+    it('应该显示安全防护列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('test-sg-1')
+      expect(wrapper.text()).toContain('test-sg-2')
+      expect(wrapper.text()).toContain('192.168.1.1')
+    })
+
+    it('应该显示状态标签', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.find('.status-success').exists()).toBe(true)
+      expect(wrapper.find('.status-failed').exists()).toBe(true)
+    })
+
+    it('应该显示加载状态', async () => {
+      getSafeguards.mockImplementation(() => new Promise(() => { }))
+      wrapper = createWrapper()
+      expect(wrapper.text()).toContain('加载中...')
+    })
+  })
+
+  describe('创建安全防护', () => {
+    it('点击创建部署按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createSafeguard.mockResolvedValue({})
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-sg'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(createSafeguard).toHaveBeenCalled()
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('名称为空时应该显示验证错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+
+      expect(wrapper.vm.errors.name).toBe('请输入名称')
+      expect(createSafeguard).not.toHaveBeenCalled()
+    })
+
+    it('创建失败时应该显示错误信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createSafeguard.mockRejectedValue(new Error('创建失败'))
+
+      await wrapper.find('button.btn-primary').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.form.name = 'new-sg'
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('创建失败')
+    })
+  })
+
+  describe('编辑安全防护', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.form.name).toBe('test-sg-1')
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateSafeguard.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-edit')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.submitForm()
+      await flushPromises()
+
+      expect(updateSafeguard).toHaveBeenCalled()
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('删除安全防护', () => {
+    it('点击删除按钮应该打开确认弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.deleteDialogVisible).toBe(true)
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteSafeguard.mockResolvedValue({})
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(deleteSafeguard).toHaveBeenCalledWith(1)
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('删除失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteSafeguard.mockRejectedValue(new Error('删除失败'))
+
+      await wrapper.findAll('button.btn-danger')[0].trigger('click')
+      await flushPromises()
+      await wrapper.vm.handleDelete()
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('删除失败')
+    })
+  })
+
+  describe('部署安全防护', () => {
+    it('点击部署按钮应该调用 deploySafeguard', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deploySafeguard.mockResolvedValue({})
+
+      // 选择失败状态的条目，应该显示部署按钮
+      await wrapper.findAll('button.btn-primary')[1].trigger('click')
+      await flushPromises()
+
+      expect(deploySafeguard).toHaveBeenCalledWith(2)
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('部署失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deploySafeguard.mockRejectedValue(new Error('部署启动失败'))
+
+      await wrapper.findAll('button.btn-primary')[1].trigger('click')
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('部署启动失败')
+    })
+  })
+
+  describe('回滚安全防护', () => {
+    it('点击回滚按钮应该调用 rollbackSafeguard', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      rollbackSafeguard.mockResolvedValue({})
+
+      // 选择成功状态的条目，应该显示回滚按钮
+      await wrapper.findAll('button.btn-warning')[0].trigger('click')
+      await flushPromises()
+
+      expect(rollbackSafeguard).toHaveBeenCalledWith(1)
+      expect(getSafeguards).toHaveBeenCalledTimes(2)
+    })
+
+    it('回滚失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      rollbackSafeguard.mockRejectedValue(new Error('回滚启动失败'))
+
+      await wrapper.findAll('button.btn-warning')[0].trigger('click')
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('回滚启动失败')
+    })
+  })
+
+  describe('查看状态', () => {
+    it('点击状态按钮应该打开弹窗并加载状态', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getSafeguardStatus.mockResolvedValue({ status: 'success', result: {} })
+
+      await wrapper.findAll('button.btn-info')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.statusDialogVisible).toBe(true)
+      expect(getSafeguardStatus).toHaveBeenCalledWith(1)
+    })
+
+    it('刷新状态应该重新调用 API', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getSafeguardStatus.mockResolvedValue({ status: 'success' })
+
+      await wrapper.findAll('button.btn-info')[0].trigger('click')
+      await flushPromises()
+      getSafeguardStatus.mockClear()
+
+      await wrapper.vm.refreshStatus()
+      await flushPromises()
+
+      expect(getSafeguardStatus).toHaveBeenCalledWith(1)
+    })
+  })
+
+  describe('搜索和过滤', () => {
+    it('按回车搜索应该调用 loadSafeguards', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      const searchInput = wrapper.find('input.search-input')
+      await searchInput.setValue('test')
+      await searchInput.trigger('keyup.enter')
+      await flushPromises()
+
+      expect(getSafeguards).toHaveBeenCalledWith(expect.objectContaining({ search: 'test' }))
+    })
+
+    it('改变过滤状态应该调用 loadSafeguards', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.filterStatus = 'success'
+      await wrapper.vm.handleFilter()
+      await flushPromises()
+
+      expect(getSafeguards).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+    })
+  })
+
+  describe('分页', () => {
+    it('点击下一页应该改变页码并刷新', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      wrapper.vm.page = 1
+      wrapper.vm.totalCount = 40
+      await wrapper.vm.handlePageChange(2)
+      await flushPromises()
+
+      expect(getSafeguards).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
+    })
+  })
+
+  describe('空数据', () => {
+    it('没有数据时应该显示空提示', async () => {
+      getSafeguards.mockResolvedValue({ results: [], count: 0 })
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('暂无数据')
+    })
+  })
+
+  describe('错误处理', () => {
+    it('加载失败时应该显示错误信息', async () => {
+      getSafeguards.mockRejectedValue(new Error('加载失败'))
+      wrapper = createWrapper()
+      await flushPromises()
+
+      expect(wrapper.vm.error).toBe('加载失败')
+      expect(wrapper.find('.error').exists()).toBe(true)
+    })
+  })
+
+  describe('工具函数', () => {
+    it('formatArch 应该正确格式化架构', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatArch('x86')).toBe('X86')
+      expect(wrapper.vm.formatArch('arm')).toBe('ARM')
+      expect(wrapper.vm.formatArch('unknown')).toBe('unknown')
+    })
+
+    it('formatStatus 应该正确格式化状态', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.formatStatus('pending')).toBe('等待中')
+      expect(wrapper.vm.formatStatus('running')).toBe('运行中')
+      expect(wrapper.vm.formatStatus('success')).toBe('成功')
+      expect(wrapper.vm.formatStatus('failed')).toBe('失败')
+      expect(wrapper.vm.formatStatus('unknown')).toBe('unknown')
+    })
+
+    it('getStatusClass 应该返回正确的 CSS 类', () => {
+      wrapper = createWrapper()
+      expect(wrapper.vm.getStatusClass('pending')).toBe('status-pending')
+      expect(wrapper.vm.getStatusClass('running')).toBe('status-running')
+      expect(wrapper.vm.getStatusClass('success')).toBe('status-success')
+      expect(wrapper.vm.getStatusClass('failed')).toBe('status-failed')
+      expect(wrapper.vm.getStatusClass('unknown')).toBe('')
+    })
+  })
+})
