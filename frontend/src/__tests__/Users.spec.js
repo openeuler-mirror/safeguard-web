@@ -78,4 +78,44 @@ describe('Users 页面测试', () => {
     })
   })
 
+  describe('授权管理', () => {
+    it('点击授权按钮应该打开授权对话框', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.auth-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.selectedUser).toEqual(mockUsers[0])
+    })
+
+    it('授权对话框成功回调应该刷新用户列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.auth-btn')[0].trigger('click')
+      await flushPromises()
+
+      getUsers.mockClear()
+      await wrapper.vm.handleAuthSuccess()
+      await flushPromises()
+
+      expect(getUsers).toHaveBeenCalled()
+    })
+  })
+
+  describe('刷新列表', () => {
+    it('点击刷新按钮应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      getUsers.mockClear()
+      await wrapper.find('button.refresh-btn').trigger('click')
+      await flushPromises()
+
+      expect(getUsers).toHaveBeenCalled()
+    })
+  })
+
 })
