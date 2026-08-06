@@ -31,6 +31,7 @@ const createWrapper = () => {
 describe('OutIpSN.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getOutIpSNs.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {

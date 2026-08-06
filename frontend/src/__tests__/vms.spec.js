@@ -37,6 +37,9 @@ const createWrapper = () => {
 describe('VMs.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getVMs.mockResolvedValue({ results: [] })
+    getClusterTree.mockResolvedValue([])
+    getHosts.mockResolvedValue({ results: [] })
   })
 
   describe('UI 渲染', () => {

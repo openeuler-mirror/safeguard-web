@@ -48,7 +48,8 @@ describe('Kickstarts.vue', () => {
 
     it('渲染创建按钮', () => {
       const wrapper = createWrapper()
-      expect(wrapper.find('.btn-primary').text()).toBe('创建模板')
+      const buttons = wrapper.findAll('.btn-primary')
+      expect(buttons.filter(btn => btn.text() === '创建模板').length).toBe(1)
     })
 
     it('渲染仓库筛选下拉框', () => {
