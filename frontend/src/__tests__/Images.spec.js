@@ -115,15 +115,24 @@ describe('Images 页面测试', () => {
       await flushPromises()
 
       wrapper.vm.form.id = ''
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.id).toBe('请输入镜像ID')
+
+      wrapper.vm.form.id = 'test-id'
       wrapper.vm.form.name = ''
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.name).toBe('请输入镜像名称')
+
+      wrapper.vm.form.name = 'test-name'
       wrapper.vm.form.host = null
+      await wrapper.vm.submitForm()
+      expect(wrapper.vm.errors.host).toBe('请选择宿主机')
+
+      wrapper.vm.form.host = 1
       wrapper.vm.form.path = ''
       await wrapper.vm.submitForm()
-
-      expect(wrapper.vm.errors.id).toBe('请输入镜像ID')
-      expect(wrapper.vm.errors.name).toBe('请输入镜像名称')
-      expect(wrapper.vm.errors.host).toBe('请选择宿主机')
       expect(wrapper.vm.errors.path).toBe('请输入镜像路径')
+
       expect(createImage).not.toHaveBeenCalled()
     })
 

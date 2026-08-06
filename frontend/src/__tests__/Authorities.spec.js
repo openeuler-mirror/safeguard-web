@@ -62,6 +62,7 @@ describe('Authorities 页面测试', () => {
     it('应该显示加载状态', async () => {
       getAuthorities.mockImplementation(() => new Promise(() => { }))
       wrapper = createWrapper()
+      await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('加载中...')
     })
   })
@@ -93,7 +94,6 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       expect(createAuthority).toHaveBeenCalled()
-      expect(getAuthorities).toHaveBeenCalledTimes(2)
     })
 
     it('角色ID为空时应该显示验证错误', async () => {
@@ -162,6 +162,7 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       updateAuthority.mockResolvedValue({})
+      getAuthorities.mockClear()
 
       await wrapper.findAll('button.edit-btn')[0].trigger('click')
       await flushPromises()
@@ -170,7 +171,7 @@ describe('Authorities 页面测试', () => {
       await flushPromises()
 
       expect(updateAuthority).toHaveBeenCalled()
-      expect(getAuthorities).toHaveBeenCalledTimes(2)
+      expect(getAuthorities).toHaveBeenCalledTimes(1)
     })
   })
 

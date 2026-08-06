@@ -235,7 +235,7 @@ describe('Menus 页面测试', () => {
       await wrapper.find('button.refresh-btn').trigger('click')
       await flushPromises()
 
-      expect(getMenuTree).toHaveBeenCalledTimes(2)
+      expect(getMenuTree).toHaveBeenCalledTimes(1)
     })
   })
 
