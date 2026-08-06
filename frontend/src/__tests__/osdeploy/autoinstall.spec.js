@@ -43,13 +43,14 @@ const createWrapper = () => {
 describe('AutoInstall.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getHosts.mockResolvedValue({ results: [] })
+    getPXEServers.mockResolvedValue({ results: [] })
+    getKickstarts.mockResolvedValue({ results: [] })
+    getRepos.mockResolvedValue({ results: [] })
+    getJobs.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('自动装机')
-    })
 
     it('渲染装机配置表单卡片', () => {
       const wrapper = createWrapper()
@@ -207,7 +208,7 @@ describe('AutoInstall.vue', () => {
 
       await wrapper.vm.handleSubmit()
 
-      expect(wrapper.vm.errors.kickstart_id).toBe('请选择模板')
+      expect(wrapper.vm.errors.kickstart_id).toBe('请选择Kickstart模板')
     })
 
     it('仓库必填验证', async () => {

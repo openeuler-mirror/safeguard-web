@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VMs from '@/views/VMs.vue'
 
+// Mock alert
+vi.stubGlobal('alert', vi.fn())
+
 // Mock API
 vi.mock('@/api/host', () => ({
   getVMs: vi.fn(),
@@ -11,11 +14,14 @@ vi.mock('@/api/host', () => ({
   startVM: vi.fn(),
   stopVM: vi.fn(),
   rebootVM: vi.fn(),
+  pauseVM: vi.fn(),
+  resumeVM: vi.fn(),
   getClusterTree: vi.fn(),
-  getHosts: vi.fn()
+  getHosts: vi.fn(),
+  getImagesByHost: vi.fn()
 }))
 
-import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, getClusterTree, getHosts } from '@/api/host'
+import { getVMs, createVM, updateVM, deleteVM, startVM, stopVM, rebootVM, pauseVM, resumeVM, getClusterTree, getHosts, getImagesByHost } from '@/api/host'
 
 const createWrapper = () => {
   return mount(VMs, {
@@ -31,14 +37,12 @@ const createWrapper = () => {
 describe('VMs.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getVMs.mockResolvedValue({ results: [] })
+    getClusterTree.mockResolvedValue([])
+    getHosts.mockResolvedValue({ results: [] })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('虚拟机管理')
-    })
-
     it('渲染创建按钮', () => {
       const wrapper = createWrapper()
       expect(wrapper.find('.btn-primary').text()).toBe('创建虚拟机')

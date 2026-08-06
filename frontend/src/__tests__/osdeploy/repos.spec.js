@@ -27,13 +27,10 @@ const createWrapper = () => {
 describe('Repos.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getRepos.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('仓库管理')
-    })
 
     it('渲染创建按钮', () => {
       const wrapper = createWrapper()

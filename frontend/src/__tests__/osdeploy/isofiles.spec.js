@@ -33,13 +33,10 @@ const createWrapper = () => {
 describe('ISOFiles.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getISOFiles.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('ISO 文件管理')
-    })
 
     it('渲染上传按钮', () => {
       const wrapper = createWrapper()

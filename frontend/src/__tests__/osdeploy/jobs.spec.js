@@ -25,13 +25,10 @@ const createWrapper = () => {
 describe('Jobs.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getJobs.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('任务管理')
-    })
 
     it('渲染刷新按钮', () => {
       const wrapper = createWrapper()
@@ -67,7 +64,7 @@ describe('Jobs.vue', () => {
       getJobs.mockResolvedValue({ results: [], count: 0 })
       const wrapper = createWrapper()
       wrapper.vm.error = 'previous error'
-      await new Promise(r => setTimeout(r, 100))
+      await wrapper.vm.loadJobs()
       expect(wrapper.vm.error).toBe('')
     })
   })

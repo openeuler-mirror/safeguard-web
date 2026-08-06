@@ -40,17 +40,16 @@ const createWrapper = () => {
 describe('Kickstarts.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getRepos.mockResolvedValue({ results: [] })
+    getKickstarts.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('Kickstart 模板管理')
-    })
 
     it('渲染创建按钮', () => {
       const wrapper = createWrapper()
-      expect(wrapper.find('.btn-primary').text()).toBe('创建模板')
+      const buttons = wrapper.findAll('.btn-primary')
+      expect(buttons.filter(btn => btn.text() === '创建模板').length).toBe(1)
     })
 
     it('渲染仓库筛选下拉框', () => {

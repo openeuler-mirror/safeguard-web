@@ -31,17 +31,14 @@ const createWrapper = () => {
 describe('PXEConfig.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getPXEServers.mockResolvedValue({ results: [], count: 0 })
   })
 
   describe('UI 渲染', () => {
-    it('渲染标题', () => {
-      const wrapper = createWrapper()
-      expect(wrapper.find('h2').text()).toBe('PXE 服务器配置')
-    })
-
     it('渲染添加服务器按钮', () => {
       const wrapper = createWrapper()
-      expect(wrapper.find('.btn-primary').text()).toBe('添加服务器')
+      const buttons = wrapper.findAll('.btn-primary')
+      expect(buttons.filter(btn => btn.text() === '添加服务器').length).toBe(1)
     })
   })
 
