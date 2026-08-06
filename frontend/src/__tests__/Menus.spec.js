@@ -67,4 +67,148 @@ describe('Menus 页面测试', () => {
     })
   })
 
+  describe('创建菜单', () => {
+    it('点击新增菜单按钮应该打开弹窗', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.add-btn').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(false)
+    })
+
+    it('创建成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createMenu.mockResolvedValue({})
+
+      await wrapper.find('button.add-btn').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.formData.path = '/test'
+      wrapper.vm.formData.name = 'Test'
+      await wrapper.vm.handleSave()
+      await flushPromises()
+
+      expect(createMenu).toHaveBeenCalled()
+    })
+
+    it('路由路径为空时应该显示验证错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.add-btn').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.formData.path = ''
+      wrapper.vm.formData.name = 'Test'
+      await wrapper.vm.handleSave()
+
+      expect(wrapper.vm.formError).toBe('请输入路由路径')
+      expect(createMenu).not.toHaveBeenCalled()
+    })
+
+    it('路由名称为空时应该显示验证错误', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.add-btn').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.formData.path = '/test'
+      wrapper.vm.formData.name = ''
+      await wrapper.vm.handleSave()
+
+      expect(wrapper.vm.formError).toBe('请输入路由名称')
+      expect(createMenu).not.toHaveBeenCalled()
+    })
+
+    it('创建失败时应该显示错误信息', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      createMenu.mockRejectedValue(new Error('创建失败'))
+
+      await wrapper.find('button.add-btn').trigger('click')
+      await flushPromises()
+
+      wrapper.vm.formData.path = '/test'
+      wrapper.vm.formData.name = 'Test'
+      await wrapper.vm.handleSave()
+      await flushPromises()
+
+      expect(wrapper.vm.formError).toBe('创建失败')
+    })
+  })
+
+  describe('编辑菜单', () => {
+    it('点击编辑按钮应该打开弹窗并填充数据', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.edit-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.dialogVisible).toBe(true)
+      expect(wrapper.vm.isEdit).toBe(true)
+      expect(wrapper.vm.formData.path).toBe('/dashboard')
+    })
+
+    it('编辑成功后应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      updateMenu.mockResolvedValue({})
+
+      await wrapper.findAll('button.edit-btn')[0].trigger('click')
+      await flushPromises()
+
+      wrapper.vm.formData.path = '/dashboard'
+      wrapper.vm.formData.name = 'Dashboard'
+      await wrapper.vm.handleSave()
+      await flushPromises()
+
+      expect(updateMenu).toHaveBeenCalled()
+    })
+  })
+
+  describe('删除菜单', () => {
+    it('点击删除按钮应该显示确认对话框', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.delete-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(window.confirm).toHaveBeenCalled()
+    })
+
+    it('确认删除后应该调用 API 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteMenu.mockResolvedValue({})
+
+      await wrapper.findAll('button.delete-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(deleteMenu).toHaveBeenCalledWith(1)
+    })
+
+    it('删除失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      deleteMenu.mockRejectedValue(new Error('删除失败'))
+
+      await wrapper.findAll('button.delete-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('删除失败')
+    })
+  })
+
 })
