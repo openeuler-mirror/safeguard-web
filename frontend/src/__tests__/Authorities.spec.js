@@ -215,4 +215,69 @@ describe('Authorities 页面测试', () => {
     })
   })
 
+  describe('复制角色', () => {
+    it('点击复制按钮应该调用 copyAuthority 并刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      copyAuthority.mockResolvedValue({})
+
+      await wrapper.findAll('button.copy-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(copyAuthority).toHaveBeenCalledWith(1)
+      expect(getAuthorities).toHaveBeenCalledTimes(2)
+    })
+
+    it('复制失败时应该显示 alert', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      copyAuthority.mockRejectedValue(new Error('复制失败'))
+
+      await wrapper.findAll('button.copy-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(window.alert).toHaveBeenCalledWith('复制失败')
+    })
+  })
+
+  describe('菜单管理', () => {
+    it('点击菜单按钮应该打开菜单对话框', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.menu-btn')[0].trigger('click')
+      await flushPromises()
+
+      expect(wrapper.vm.menuDialogVisible).toBe(true)
+      expect(wrapper.vm.selectedAuthority).toEqual(mockAuthorities[0])
+    })
+
+    it('菜单对话框成功回调应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.findAll('button.menu-btn')[0].trigger('click')
+      await flushPromises()
+
+      await wrapper.vm.handleMenuSuccess()
+      await flushPromises()
+
+      expect(getAuthorities).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('刷新列表', () => {
+    it('点击刷新按钮应该刷新列表', async () => {
+      wrapper = createWrapper()
+      await flushPromises()
+
+      await wrapper.find('button.refresh-btn').trigger('click')
+      await flushPromises()
+
+      expect(getAuthorities).toHaveBeenCalledTimes(2)
+    })
+  })
+
 })
