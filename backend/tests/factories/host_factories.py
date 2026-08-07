@@ -71,3 +71,40 @@ class HostFactory:
             VMFactory.create(host=host)
         return host
 
+
+class VMFactory:
+    """虚拟机工厂"""
+
+    @staticmethod
+    def create(
+        name=None,
+        uuid=None,
+        host=None,
+        status="stopped",
+        vcpu=2,
+        memory=4294967296,
+        disk=107374182400,
+        **kwargs
+    ):
+        """创建虚拟机"""
+        if host is None:
+            host = HostFactory.create()
+
+        return VM.objects.create(
+            name=name or f"vm_{uuid.uuid4().hex[:8]}",
+            uuid=uuid or str(uuid.uuid4()),
+            host=host,
+            status=status,
+            vcpu=vcpu,
+            memory=memory,
+            disk=disk,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count=3, host=None, **kwargs):
+        """批量创建虚拟机"""
+        if host is None:
+            host = HostFactory.create()
+        return [VMFactory.create(host=host, **kwargs) for _ in range(count)]
+
