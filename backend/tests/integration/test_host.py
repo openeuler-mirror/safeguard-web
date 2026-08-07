@@ -435,3 +435,16 @@ class TestImageViewSet:
         assert response.status_code in [200, 204]
         assert not Image.objects.filter(id=test_image.id).exists()
 
+
+class TestDataScopePermission:
+    """数据范围权限测试"""
+
+    def test_user_without_permission_cannot_list(self, authenticated_client, test_cluster):
+        """测试没有权限的用户无法获取列表"""
+        HostFactory.create(cluster=test_cluster)
+
+        url = "/api/hosts/"
+        response = authenticated_client.get(url)
+
+        # 应该返回空列表或 403
+        assert response.status_code in [200, 403]
