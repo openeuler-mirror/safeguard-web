@@ -1453,6 +1453,73 @@ class AuditService:
             raise OperationError(str(e))
 
     @staticmethod
+    def get_previous_states(rules: List[Dict[str, Any]]) -> Dict[int, Dict[str, Dict[str, Any]]]:
+        """
+        获取之前的文件状态
+
+        Args:
+            rules: 监控规则列表
+
+        Returns:
+            状态字典 {rule_id: {path: state_dict}}
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+
+        states = {}
+        rule_ids = [r['id'] for r in rules]
+
+        try:
+            state_objs = FileMonitorState.objects.filter(rule_id__in=rule_ids)
+            for state in state_objs:
+                rule_id = state.rule_id
+                if rule_id not in states:
+                    states[rule_id] = {}
+                states[rule_id][state.path] = {
+                    'path': state.path,
+                    'mtime': int(state.mtime.timestamp()),
+                    'ctime': int(state.ctime.timestamp()),
+                    'size': state.size,
+                    'uid': state.uid,
+                    'gid': state.gid,
+                    'mode': state.mode,
+                }
+        except Exception as e:
+            logger.error(f"Error getting previous states: {e}")
+
+        return states
+
+    @staticmethod
+    def update_states(new_states: Dict[int, Dict[str, Dict[str, Any]]]) -> None:
+        """
+        更新文件状态
+
+        Args:
+            new_states: 新状态字典 {rule_id: {path: state_dict}}
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+        from django.utils import timezone
+
+        try:
+            with transaction.atomic():
+                for rule_id, path_states in new_states.items():
+                    for path, state in path_states.items():
+                        defaults = {
+                            'mtime': timezone.make_aware(datetime.fromtimestamp(state['mtime'])),
+                            'ctime': timezone.make_aware(datetime.fromtimestamp(state['ctime'])),
+                            'size': state['size'],
+                            'uid': state['uid'],
+                            'gid': state['gid'],
+                            'mode': state['mode'],
+                        }
+                        FileMonitorState.objects.update_or_create(
+                            rule_id=rule_id,
+                            path=path,
+                            defaults=defaults,
+                        )
+        except Exception as e:
+            logger.error(f"Error updating states: {e}")
+
+    @staticmethod
     def collect_file_events(host_id: Optional[int] = None) -> Dict[str, Any]:
         """
         收集文件监控事件
