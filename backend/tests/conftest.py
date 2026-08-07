@@ -43,3 +43,28 @@ def admin_client(api_client, admin_user):
     refresh = RefreshToken.for_user(admin_user)
     api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     return api_client
+
+
+@pytest.fixture
+def test_authority(db):
+    """测试角色"""
+    return AuthorityFactory.create()
+
+
+@pytest.fixture
+def test_user_with_authority(db, test_user, test_authority):
+    """带角色的用户"""
+    UserAuthorityFactory.create(user=test_user, authority=test_authority)
+    return test_user
+
+
+@pytest.fixture
+def test_cluster(db):
+    """测试集群"""
+    return ClusterFactory.create()
+
+
+@pytest.fixture
+def multiple_clusters(db):
+    """多个测试集群"""
+    return ClusterFactory.create_batch(3)
