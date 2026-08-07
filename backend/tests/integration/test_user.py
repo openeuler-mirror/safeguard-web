@@ -166,3 +166,81 @@ class TestUserMenus:
         assert response.status_code == 200
         assert response.data['errno'] == 0
         assert isinstance(response.data['data'], list)
+
+
+class TestUserAvatarTheme:
+    """用户头像和主题接口测试"""
+
+    @pytest.mark.p1
+    def test_upload_avatar_success(self, authenticated_client, test_user, clear_redis):
+        """测试上传头像成功"""
+        clear_redis(test_user.id)
+
+        file_data = BytesIO(b'fake image data')
+        file_data.name = 'test.png'
+
+        response = authenticated_client.post(
+            '/api/users/me/avatar/',
+            {'file': file_data},
+            format='multipart'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert 'avatar' in response.data['data']
+        assert response.data['data']['avatar'].startswith('/media/avatars/')
+
+        test_user.refresh_from_db()
+        assert test_user.avatar.startswith('/media/avatars/')
+
+    @pytest.mark.p0
+    def test_upload_avatar_no_file(self, authenticated_client, test_user, clear_redis):
+        """测试不上传文件应报错"""
+        clear_redis(test_user.id)
+        response = authenticated_client.post('/api/users/me/avatar/', {}, format='multipart')
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_upload_avatar_without_auth(self, api_client):
+        """测试无认证上传头像应返回401"""
+        file_data = BytesIO(b'fake image data')
+        file_data.name = 'test.png'
+        response = api_client.post(
+            '/api/users/me/avatar/',
+            {'file': file_data},
+            format='multipart'
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.p0
+    def test_set_theme_success(self, authenticated_client, test_user, clear_redis):
+        """测试设置主题成功"""
+        clear_redis(test_user.id)
+        response = authenticated_client.put('/api/users/me/theme/', {'theme': 'dark'}, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['data']['theme'] == 'dark'
+
+        test_user.refresh_from_db()
+        assert test_user.theme == 'dark'
+
+    @pytest.mark.p0
+    def test_set_theme_auto(self, authenticated_client, test_user, clear_redis):
+        """测试设置 auto 主题"""
+        clear_redis(test_user.id)
+        response = authenticated_client.put('/api/users/me/theme/', {'theme': 'auto'}, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['data']['theme'] == 'auto'
+
+    @pytest.mark.p0
+    def test_set_theme_invalid(self, authenticated_client, test_user, clear_redis):
+        """测试设置无效主题应报错"""
+        clear_redis(test_user.id)
+        response = authenticated_client.put('/api/users/me/theme/', {'theme': 'invalid'}, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
