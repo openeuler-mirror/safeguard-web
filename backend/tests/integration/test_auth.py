@@ -472,3 +472,31 @@ class TestLocalVerifyView:
 
         assert response.status_code == 200
         assert "验证码已失效" in response.content.decode()
+
+
+class TestJWTAuthentication:
+    """JWT 认证测试"""
+
+    def test_access_protected_route_without_token(self, api_client):
+        """测试未认证访问受保护路由"""
+        url = "/api/users/me/"
+        response = api_client.get(url)
+
+        assert response.status_code == 401
+
+    def test_access_protected_route_with_token(self, authenticated_client, test_user):
+        """测试已认证访问受保护路由"""
+        url = "/api/users/me/"
+        response = authenticated_client.get(url)
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+
+    def test_access_protected_route_with_invalid_token(self, api_client):
+        """测试使用无效 token 访问"""
+        api_client.credentials(HTTP_AUTHORIZATION='Bearer invalid_token')
+
+        url = "/api/users/me/"
+        response = api_client.get(url)
+
+        assert response.status_code == 401
