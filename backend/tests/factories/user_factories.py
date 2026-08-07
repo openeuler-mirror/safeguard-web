@@ -55,3 +55,18 @@ class AuthorityFactory:
             AuthorityMenu.objects.create(authority=authority, menu=menu)
         return authority
 
+
+class MenuFactory:
+    """菜单工厂"""
+
+    @staticmethod
+    def create(path=None, name=None, component=None, parent=None, **kwargs):
+        """创建菜单"""
+        return Menu.objects.create(
+            path=path or f"/test-path-{uuid.uuid4().hex[:4]}",
+            name=name or f"TestMenu{uuid.uuid4().hex[:4]}",
+            component=component or "",
+            parent=parent,
+            **kwargs
+        )
+
