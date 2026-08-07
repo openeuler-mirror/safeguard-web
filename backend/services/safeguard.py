@@ -1659,3 +1659,66 @@ class AuditService:
             logger.error(f'Error saving file events: {e}')
 
         return saved_count
+
+    @staticmethod
+    def delete_file_monitor_rule(rule_id: int) -> None:
+        """
+        删除文件监控规则及其相关数据
+
+        Args:
+            rule_id: 规则ID
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+
+        try:
+            with transaction.atomic():
+                # 删除关联的状态
+                FileMonitorState.objects.filter(rule_id=rule_id).delete()
+                # 删除规则本身
+                FileMonitorRule.objects.filter(id=rule_id).delete()
+            logger.info(f"File monitor rule {rule_id} deleted")
+        except Exception as e:
+            logger.error(f"Error deleting file monitor rule: {e}")
+            raise OperationError(str(e))
+
+    @staticmethod
+    def get_file_monitor_statistics(host_id: Optional[int] = None, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None) -> Dict[str, Any]:
+        """
+        获取文件监控统计信息
+
+        Args:
+            host_id: 主机ID（可选）
+            start_time: 开始时间（可选）
+            end_time: 结束时间（可选）
+
+        Returns:
+            统计信息字典
+        """
+        try:
+            query = FileMonitorEvent.objects.all()
+
+            if host_id:
+                query = query.filter(host_id=host_id)
+            if start_time:
+                query = query.filter(timestamp__gte=start_time)
+            if end_time:
+                query = query.filter(timestamp__lte=end_time)
+
+            # 获取总事件数
+            total_events = query.count()
+
+            # 按事件类型统计
+            from django.db.models import Count
+            type_stats = query.values('event_type').annotate(count=Count('id')).order_by('-count')
+
+            # 按主机统计
+            host_stats = query.values('host_id', 'host__hostname').annotate(count=Count('id')).order_by('-count')
+
+            return {
+                'total_events': total_events,
+                'by_type': list(type_stats),
+                'by_host': list(host_stats),
+            }
+        except Exception as e:
+            logger.error(f"Error getting file monitor statistics: {e}")
+            raise OperationError(str(e))
