@@ -31,3 +31,27 @@ class UserFactory:
         admin_auth = AuthorityFactory.create(authority_id=888, authority_name="超级管理员")
         UserAuthority.objects.create(user=user, authority=admin_auth)
         return user
+
+
+class AuthorityFactory:
+    """角色工厂"""
+
+    @staticmethod
+    def create(authority_id=None, authority_name=None, parent=None, **kwargs):
+        """创建角色"""
+        return Authority.objects.create(
+            authority_id=authority_id or 100,
+            authority_name=authority_name or "测试角色",
+            parent=parent,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_with_menu(authority_id=None, authority_name=None, menu_count=1, **kwargs):
+        """创建带菜单权限的角色"""
+        authority = AuthorityFactory.create(authority_id, authority_name, **kwargs)
+        for i in range(menu_count):
+            menu = MenuFactory.create()
+            AuthorityMenu.objects.create(authority=authority, menu=menu)
+        return authority
+
