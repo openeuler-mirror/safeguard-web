@@ -24,6 +24,14 @@ class UserFactory:
         return user_obj
 
     @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建用户"""
+        users = []
+        for i in range(count):
+            users.append(UserFactory.create(**kwargs))
+        return users
+
+    @staticmethod
     def create_admin(user="admin", password="admin123", **kwargs):
         """创建管理员用户"""
         user = UserFactory.create(user=user, password=password, **kwargs)
@@ -31,6 +39,11 @@ class UserFactory:
         admin_auth = AuthorityFactory.create(authority_id=888, authority_name="超级管理员")
         UserAuthority.objects.create(user=user, authority=admin_auth)
         return user
+
+    @staticmethod
+    def create_frozen(user=None, password=None, **kwargs):
+        """创建被冻结的用户"""
+        return UserFactory.create(user=user, password=password, enable=2, **kwargs)
 
 
 class AuthorityFactory:
@@ -47,6 +60,17 @@ class AuthorityFactory:
         )
 
     @staticmethod
+    def create_batch(count, start_id=200, **kwargs):
+        """批量创建角色"""
+        authorities = []
+        for i in range(count):
+            authorities.append(AuthorityFactory.create(
+                authority_id=start_id + i,
+                **kwargs
+            ))
+        return authorities
+
+    @staticmethod
     def create_with_menu(authority_id=None, authority_name=None, menu_count=1, **kwargs):
         """创建带菜单权限的角色"""
         authority = AuthorityFactory.create(authority_id, authority_name, **kwargs)
@@ -54,6 +78,53 @@ class AuthorityFactory:
             menu = MenuFactory.create()
             AuthorityMenu.objects.create(authority=authority, menu=menu)
         return authority
+
+    @staticmethod
+    def create_with_button(authority_id=None, authority_name=None, button_count=1, **kwargs):
+        """创建带按钮权限的角色"""
+        authority = AuthorityFactory.create(authority_id, authority_name, **kwargs)
+        for i in range(button_count):
+            menu = MenuFactory.create()
+            button = MenuButtonFactory.create(menu=menu)
+            AuthorityButton.objects.create(authority=authority, menu=menu, button=button)
+        return authority
+
+
+class AuthorityMenuFactory:
+    """角色菜单关联工厂"""
+
+    @staticmethod
+    def create(authority=None, menu=None, **kwargs):
+        """创建角色菜单关联"""
+        if not authority:
+            authority = AuthorityFactory.create()
+        if not menu:
+            menu = MenuFactory.create()
+        return AuthorityMenu.objects.create(
+            authority=authority,
+            menu=menu,
+            **kwargs
+        )
+
+
+class AuthorityButtonFactory:
+    """角色按钮权限关联工厂"""
+
+    @staticmethod
+    def create(authority=None, menu=None, button=None, **kwargs):
+        """创建角色按钮权限关联"""
+        if not authority:
+            authority = AuthorityFactory.create()
+        if not menu:
+            menu = MenuFactory.create()
+        if not button:
+            button = MenuButtonFactory.create(menu=menu)
+        return AuthorityButton.objects.create(
+            authority=authority,
+            menu=menu,
+            button=button,
+            **kwargs
+        )
 
 
 class MenuFactory:

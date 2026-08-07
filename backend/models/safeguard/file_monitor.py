@@ -2,66 +2,6 @@ from django.db import models
 from backend.models.host import Host
 
 
-class FileMonitorState(models.Model):
-    """文件监控状态，用于跟踪文件变化"""
-    rule = models.ForeignKey(
-        FileMonitorRule,
-        on_delete=models.CASCADE,
-        related_name='states',
-        verbose_name='监控规则',
-    )
-    path = models.CharField(
-        max_length=500,
-        verbose_name='文件路径',
-    )
-    # 文件关键属性快照
-    mtime = models.DateTimeField(
-        verbose_name='最后修改时间',
-    )
-    ctime = models.DateTimeField(
-        verbose_name='最后状态变更时间',
-    )
-    size = models.BigIntegerField(
-        verbose_name='文件大小',
-    )
-    uid = models.IntegerField(
-        verbose_name='用户ID',
-    )
-    gid = models.IntegerField(
-        verbose_name='组ID',
-    )
-    mode = models.CharField(
-        max_length=10,
-        verbose_name='权限模式',
-    )
-    file_hash = models.CharField(
-        max_length=64,
-        blank=True,
-        verbose_name='文件哈希',
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='创建时间',
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='更新时间',
-    )
-
-    class Meta:
-        db_table = 'file_monitor_states'
-        ordering = ['-updated_at']
-        indexes = [
-            models.Index(fields=['rule', 'path']),
-        ]
-        verbose_name = '文件监控状态'
-        verbose_name_plural = verbose_name
-        unique_together = ('rule', 'path')
-
-    def __str__(self):
-        return f'{self.rule.id} - {self.path}'
-
-
 class FileMonitorRule(models.Model):
     """文件监控规则"""
 
@@ -144,6 +84,66 @@ class FileMonitorRule(models.Model):
 
     def __str__(self):
         return f'{self.host.hostname} - {self.path}'
+
+
+class FileMonitorState(models.Model):
+    """文件监控状态，用于跟踪文件变化"""
+    rule = models.ForeignKey(
+        FileMonitorRule,
+        on_delete=models.CASCADE,
+        related_name='states',
+        verbose_name='监控规则',
+    )
+    path = models.CharField(
+        max_length=500,
+        verbose_name='文件路径',
+    )
+    # 文件关键属性快照
+    mtime = models.DateTimeField(
+        verbose_name='最后修改时间',
+    )
+    ctime = models.DateTimeField(
+        verbose_name='最后状态变更时间',
+    )
+    size = models.BigIntegerField(
+        verbose_name='文件大小',
+    )
+    uid = models.IntegerField(
+        verbose_name='用户ID',
+    )
+    gid = models.IntegerField(
+        verbose_name='组ID',
+    )
+    mode = models.CharField(
+        max_length=10,
+        verbose_name='权限模式',
+    )
+    file_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name='文件哈希',
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='创建时间',
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='更新时间',
+    )
+
+    class Meta:
+        db_table = 'file_monitor_states'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['rule', 'path']),
+        ]
+        verbose_name = '文件监控状态'
+        verbose_name_plural = verbose_name
+        unique_together = ('rule', 'path')
+
+    def __str__(self):
+        return f'{self.rule.id} - {self.path}'
 
 
 class FileMonitorEvent(models.Model):
