@@ -105,3 +105,64 @@ class TestAuthorityCRUD:
         if response.status_code == 200:
             assert response.data['errno'] == 0
         assert not Authority.objects.filter(id=authority_id).exists()
+
+
+class TestAuthorityMenu:
+    """角色菜单权限管理接口测试"""
+
+    @pytest.mark.p0
+    def test_get_authority_menus(self, admin_client, authority_with_menu):
+        """测试获取角色菜单列表"""
+        response = admin_client.get(f'/api/authority/authorities/{authority_with_menu.id}/menus/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert isinstance(response.data['data'], list)
+        assert len(response.data['data']) >= 1
+
+    @pytest.mark.p0
+    def test_set_authority_menus(self, admin_client, test_authority, multiple_menus):
+        """测试为角色分配菜单权限"""
+        menu_ids = [menu.id for menu in multiple_menus]
+        data = {'menu_ids': menu_ids}
+
+        response = admin_client.put(f'/api/authority/authorities/{test_authority.id}/menus/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert '菜单绑定成功' in response.data['errmsg']
+
+        # 验证菜单已分配
+        assigned_menus = AuthorityMenu.objects.filter(authority=test_authority)
+        assert assigned_menus.count() == len(menu_ids)
+        for menu_id in menu_ids:
+            assert assigned_menus.filter(menu_id=menu_id).exists()
+
+    @pytest.mark.p0
+    def test_set_authority_menus_invalid_menu_id(self, admin_client, test_authority):
+        """测试设置菜单权限时使用无效的菜单 ID 应该失败"""
+        data = {'menu_ids': [999999]}  # 不存在的菜单 ID
+
+        response = admin_client.put(f'/api/authority/authorities/{test_authority.id}/menus/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_set_authority_menus_replaces_existing(self, admin_client, authority_with_menu, multiple_menus):
+        """测试设置菜单权限时会替换原有的菜单权限"""
+        old_menu_count = AuthorityMenu.objects.filter(authority=authority_with_menu).count()
+        assert old_menu_count > 0
+
+        menu_ids = [menu.id for menu in multiple_menus]
+        data = {'menu_ids': menu_ids}
+
+        response = admin_client.put(f'/api/authority/authorities/{authority_with_menu.id}/menus/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+        # 验证旧菜单已被替换
+        new_menu_count = AuthorityMenu.objects.filter(authority=authority_with_menu).count()
+        assert new_menu_count == len(menu_ids)
+
