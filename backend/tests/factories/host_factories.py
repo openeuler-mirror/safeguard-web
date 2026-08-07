@@ -108,3 +108,21 @@ class VMFactory:
             host = HostFactory.create()
         return [VMFactory.create(host=host, **kwargs) for _ in range(count)]
 
+
+class ImageFactory:
+    """镜像工厂"""
+
+    @staticmethod
+    def create(id=None, name=None, ostype=None, path=None, host=None, **kwargs):
+        """创建镜像"""
+        if host is None:
+            host = HostFactory.create()
+
+        return Image.objects.create(
+            id=id or uuid.uuid4().hex[:12],
+            name=name or f"image_{uuid.uuid4().hex[:8]}",
+            ostype=ostype or "linux",
+            path=path or f"/images/{uuid.uuid4().hex[:8]}.iso",
+            host=host,
+            **kwargs
+        )
