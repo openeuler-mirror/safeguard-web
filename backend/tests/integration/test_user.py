@@ -347,3 +347,187 @@ class TestUserAdminCRUD:
         response = authenticated_client.delete(f'/api/users/{test_user.pk}/')
         assert response.status_code in (200, 403)
 
+
+class TestAdminSetPassword:
+    """管理员重置用户密码接口测试"""
+
+    @pytest.mark.p0
+    def test_admin_set_password_success(self, admin_client, test_user):
+        """测试管理员重置用户密码成功"""
+        data = {'new_password': 'newresetpass123'}
+        response = admin_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['errmsg'] == '密码重置成功'
+
+        # 验证密码已更新
+        test_user.refresh_from_db()
+        assert check_password('newresetpass123', test_user.password)
+
+    @pytest.mark.p0
+    def test_set_password_without_auth(self, api_client, test_user):
+        """测试无认证重置密码应返回401"""
+        data = {'new_password': 'newpass123'}
+        response = api_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+        assert response.status_code == 401
+
+    @pytest.mark.p0
+    def test_set_password_regular_user_forbidden(self, authenticated_client, test_user):
+        """测试普通用户不能重置其他用户密码"""
+        data = {'new_password': 'newpass123'}
+        response = authenticated_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+        assert response.status_code in (200, 403)
+
+
+class TestUserAuthorities:
+    """用户角色管理接口测试"""
+
+    @pytest.mark.p0
+    def test_get_user_authorities(self, admin_client, test_user, test_authority):
+        """测试获取用户角色列表"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        response = admin_client.get(f'/api/users/{test_user.pk}/authorities/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert isinstance(response.data['data'], list)
+
+    @pytest.mark.p0
+    def test_set_user_authorities(self, admin_client, test_user):
+        """测试设置用户角色（覆盖）"""
+        auth1 = AuthorityFactory.create(authority_id=101, authority_name='角色1')
+        auth2 = AuthorityFactory.create(authority_id=102, authority_name='角色2')
+
+        data = {'role_ids': [auth1.pk, auth2.pk]}
+        response = admin_client.put(f'/api/users/{test_user.pk}/authorities/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert UserAuthority.objects.filter(user=test_user).count() == 2
+
+    @pytest.mark.p0
+    def test_add_user_authority(self, admin_client, test_user, test_authority):
+        """测试为用户添加角色"""
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.post(f'/api/users/{test_user.pk}/authorities/add/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert UserAuthority.objects.filter(user=test_user, authority=test_authority).exists()
+
+    @pytest.mark.p0
+    def test_add_duplicate_authority(self, admin_client, test_user, test_authority):
+        """测试添加重复角色应失败"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.post(f'/api/users/{test_user.pk}/authorities/add/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_remove_user_authority(self, admin_client, test_user, test_authority):
+        """测试移除用户角色"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.delete(
+            f'/api/users/{test_user.pk}/authorities/',
+            data=data,
+            format='json'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert not UserAuthority.objects.filter(user=test_user, authority=test_authority).exists()
+
+    @pytest.mark.p0
+    def test_remove_nonexistent_authority(self, admin_client, test_user):
+        """测试移除不存在的角色应失败"""
+        data = {'authority_id': 9999}
+        response = admin_client.delete(
+            f'/api/users/{test_user.pk}/authorities/',
+            data=data,
+            format='json'
+        )
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+
+class TestUserImportExport:
+    """用户导入导出接口测试"""
+
+    @pytest.mark.p1
+    def test_import_users_success(self, admin_client):
+        """测试批量导入用户"""
+        import openpyxl
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname', 'phone', 'email', 'enable', 'theme', 'password'])
+        ws.append(['importuser1', '导入用户1', '13800138001', 'import1@test.com', 1, 'light', 'pass123'])
+        ws.append(['importuser2', '导入用户2', '13800138002', 'import2@test.com', 1, 'dark', 'pass456'])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = admin_client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert 'created' in response.data['data']
+        assert Users.objects.filter(user='importuser1').exists()
+        assert Users.objects.filter(user='importuser2').exists()
+
+    @pytest.mark.p1
+    def test_import_users_update_existing(self, admin_client):
+        """测试导入已存在用户时更新"""
+        import openpyxl
+
+        Users.objects.create(user='existing', password='oldpass', nickname='旧昵称')
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname'])
+        ws.append(['existing', '新昵称'])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = admin_client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert 'updated' in response.data['data']
+
+        user = Users.objects.get(user='existing')
+        assert user.nickname == '新昵称'
+
+    @pytest.mark.p0
+    def test_import_users_no_file(self, admin_client):
+        """测试不上传文件应报错"""
+        response = admin_client.post('/api/users/import/', {}, format='multipart')
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p1
+    def test_export_users(self, admin_client, multiple_users):
+        """测试导出用户"""
+        response = admin_client.get('/api/users/export/')
+
+        assert response.status_code == 200
+        assert response['Content-Type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        assert 'attachment' in response['Content-Disposition']
