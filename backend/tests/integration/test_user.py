@@ -378,3 +378,80 @@ class TestAdminSetPassword:
         data = {'new_password': 'newpass123'}
         response = authenticated_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
         assert response.status_code in (200, 403)
+
+
+class TestUserAuthorities:
+    """用户角色管理接口测试"""
+
+    @pytest.mark.p0
+    def test_get_user_authorities(self, admin_client, test_user, test_authority):
+        """测试获取用户角色列表"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        response = admin_client.get(f'/api/users/{test_user.pk}/authorities/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert isinstance(response.data['data'], list)
+
+    @pytest.mark.p0
+    def test_set_user_authorities(self, admin_client, test_user):
+        """测试设置用户角色（覆盖）"""
+        auth1 = AuthorityFactory.create(authority_id=101, authority_name='角色1')
+        auth2 = AuthorityFactory.create(authority_id=102, authority_name='角色2')
+
+        data = {'role_ids': [auth1.pk, auth2.pk]}
+        response = admin_client.put(f'/api/users/{test_user.pk}/authorities/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert UserAuthority.objects.filter(user=test_user).count() == 2
+
+    @pytest.mark.p0
+    def test_add_user_authority(self, admin_client, test_user, test_authority):
+        """测试为用户添加角色"""
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.post(f'/api/users/{test_user.pk}/authorities/add/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert UserAuthority.objects.filter(user=test_user, authority=test_authority).exists()
+
+    @pytest.mark.p0
+    def test_add_duplicate_authority(self, admin_client, test_user, test_authority):
+        """测试添加重复角色应失败"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.post(f'/api/users/{test_user.pk}/authorities/add/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_remove_user_authority(self, admin_client, test_user, test_authority):
+        """测试移除用户角色"""
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        data = {'authority_id': test_authority.pk}
+        response = admin_client.delete(
+            f'/api/users/{test_user.pk}/authorities/',
+            data=data,
+            format='json'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert not UserAuthority.objects.filter(user=test_user, authority=test_authority).exists()
+
+    @pytest.mark.p0
+    def test_remove_nonexistent_authority(self, admin_client, test_user):
+        """测试移除不存在的角色应失败"""
+        data = {'authority_id': 9999}
+        response = admin_client.delete(
+            f'/api/users/{test_user.pk}/authorities/',
+            data=data,
+            format='json'
+        )
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
