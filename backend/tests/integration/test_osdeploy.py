@@ -258,3 +258,39 @@ class TestKickstartViewSet:
         response = authenticated_client.get(f'/api/kickstarts/{test_kickstart.id}/')
         assert response.status_code == 200
         assert response.data['errno'] == 0
+
+
+class TestISOViewSet:
+    """ISO 视图集测试"""
+
+    def test_get_isos_authenticated(self, authenticated_client, test_iso):
+        """测试已认证用户获取 ISO 列表"""
+        response = authenticated_client.get('/api/isos/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_iso_detail(self, authenticated_client, test_iso):
+        """测试获取 ISO 详情"""
+        response = authenticated_client.get(f'/api/isos/{test_iso.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestOutIPSNSNViewSet:
+    """出口 IP 序列号视图集测试"""
+
+    def test_get_outipsn_authenticated(self, authenticated_client, test_outipsn):
+        """测试已认证用户获取出口 IP 序列号列表"""
+        response = authenticated_client.get('/api/outipsn/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestSensorViewSet:
+    """传感器视图集测试"""
+
+    def test_get_sensor_data_authenticated(self, authenticated_client, test_sensor_data):
+        """测试已认证用户获取传感器数据"""
+        response = authenticated_client.get('/api/sensors/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
