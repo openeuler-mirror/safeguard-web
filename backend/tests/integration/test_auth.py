@@ -358,3 +358,145 @@ class TestVerifyCodeView:
 
         assert response.status_code == 200
         assert response.data["errno"] != 0
+
+
+class TestResetPasswordView:
+    """通过验证码重置密码接口测试"""
+
+    def test_reset_password_success(self, api_client, test_user):
+        """测试重置密码成功"""
+        test_user.email = "reset@example.com"
+        test_user.save()
+
+        verification = EmailVerificationFactory.create(
+            email="reset@example.com",
+            code="123456",
+            user=test_user,
+            used=False,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset@example.com",
+            "code": "123456",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+
+        # 验证密码已更新
+        test_user.refresh_from_db()
+        from django.contrib.auth.hashers import check_password
+        assert check_password("newpassword123", test_user.password)
+
+        # 验证验证码已使用
+        verification.refresh_from_db()
+        assert verification.used is True
+
+    def test_reset_password_failed_wrong_code(self, api_client, test_user):
+        """测试验证码错误重置失败"""
+        test_user.email = "reset2@example.com"
+        test_user.save()
+
+        EmailVerificationFactory.create(
+            email="reset2@example.com",
+            code="123456",
+            user=test_user,
+            used=False
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset2@example.com",
+            "code": "654321",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+    def test_reset_password_failed_expired_code(self, api_client, test_user):
+        """测试验证码过期重置失败"""
+        test_user.email = "reset3@example.com"
+        test_user.save()
+
+        EmailVerificationFactory.create(
+            email="reset3@example.com",
+            code="123456",
+            user=test_user,
+            used=False,
+            expires_at=timezone.now() - timedelta(minutes=1)
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset3@example.com",
+            "code": "123456",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+
+class TestLocalVerifyView:
+    """本地验证页面测试"""
+
+    def test_local_verify_success(self, api_client):
+        """测试本地验证页面显示验证码"""
+        EmailVerificationFactory.create(
+            email="local@example.com",
+            code="123456",
+            used=False,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        url = f"/api/auth/local-verify/local@example.com/123456/"
+        response = api_client.get(url)
+
+        assert response.status_code == 200
+        assert "123456" in response.content.decode()
+
+    def test_local_verify_failed(self, api_client):
+        """测试本地验证页面显示失败"""
+        url = "/api/auth/local-verify/invalid@example.com/999999/"
+        response = api_client.get(url)
+
+        assert response.status_code == 200
+        assert "验证码已失效" in response.content.decode()
+
+
+class TestJWTAuthentication:
+    """JWT 认证测试"""
+
+    def test_access_protected_route_without_token(self, api_client):
+        """测试未认证访问受保护路由"""
+        url = "/api/users/me/"
+        response = api_client.get(url)
+
+        assert response.status_code == 401
+
+    def test_access_protected_route_with_token(self, authenticated_client, test_user):
+        """测试已认证访问受保护路由"""
+        url = "/api/users/me/"
+        response = authenticated_client.get(url)
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+
+    def test_access_protected_route_with_invalid_token(self, api_client):
+        """测试使用无效 token 访问"""
+        api_client.credentials(HTTP_AUTHORIZATION='Bearer invalid_token')
+
+        url = "/api/users/me/"
+        response = api_client.get(url)
+
+        assert response.status_code == 401
