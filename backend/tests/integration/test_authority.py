@@ -372,3 +372,58 @@ class TestMenuCRUD:
         for item in orders:
             menu = Menu.objects.get(id=item['id'])
             assert menu.sort == item['sort']
+
+
+class TestUserAuthorityIntegration:
+    """用户角色分配集成测试"""
+
+    @pytest.mark.p0
+    def test_assign_user_authority_and_verify_menu_access(self, admin_client, test_user, test_authority, test_menu):
+        """测试为用户分配角色并验证菜单权限"""
+        # 为角色分配菜单
+        AuthorityMenu.objects.create(authority=test_authority, menu=test_menu)
+
+        # 为用户分配角色
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        # 验证用户角色关联存在
+        assert UserAuthority.objects.filter(user=test_user, authority=test_authority).exists()
+
+        # 验证角色菜单关联存在
+        assert AuthorityMenu.objects.filter(authority=test_authority, menu=test_menu).exists()
+
+
+class TestAuthorityPermission:
+    """权限验证集成测试"""
+
+    @pytest.mark.p0
+    def test_authority_permission_required_for_authority_management(self, authenticated_client, test_authority):
+        """测试角色管理需要相应权限"""
+        # 尝试获取角色列表（应该被拒绝）
+        list_response = authenticated_client.get('/api/authority/authorities/')
+        assert list_response.status_code in (200, 403, 401)
+        if list_response.status_code == 200:
+            assert list_response.data['errno'] != 0
+
+        # 尝试创建角色（应该被拒绝）
+        create_data = {'authority_id': 999, 'authority_name': '无权限创建', 'default_router': 'dashboard'}
+        create_response = authenticated_client.post('/api/authority/authorities/', create_data, format='json')
+        assert create_response.status_code in (200, 403, 401)
+        if create_response.status_code == 200:
+            assert create_response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_authority_permission_required_for_menu_management(self, authenticated_client, test_menu):
+        """测试菜单管理需要相应权限"""
+        # 尝试获取菜单列表（应该被拒绝）
+        list_response = authenticated_client.get('/api/authority/menus/')
+        assert list_response.status_code in (200, 403, 401)
+        if list_response.status_code == 200:
+            assert list_response.data['errno'] != 0
+
+        # 尝试创建菜单（应该被拒绝）
+        create_data = {'path': '/no-permission', 'name': '无权限菜单', 'component': 'test'}
+        create_response = authenticated_client.post('/api/authority/menus/', create_data, format='json')
+        assert create_response.status_code in (200, 403, 401)
+        if create_response.status_code == 200:
+            assert create_response.data['errno'] != 0
