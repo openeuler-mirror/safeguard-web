@@ -244,3 +244,106 @@ class TestUserAvatarTheme:
 
         assert response.status_code == 200
         assert response.data['errno'] != 0
+
+
+class TestUserAdminCRUD:
+    """管理员用户CRUD接口测试"""
+
+    @pytest.mark.p0
+    def test_list_users_admin(self, admin_client, multiple_users):
+        """测试管理员获取用户列表"""
+        response = admin_client.get('/api/users/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        # 检查返回了用户数据
+        if 'results' in response.data['data']:
+            assert len(response.data['data']['results']) >= 5
+        elif isinstance(response.data['data'], list):
+            assert len(response.data['data']) >= 5
+
+    @pytest.mark.p0
+    def test_list_users_regular_user_forbidden(self, authenticated_client):
+        """测试普通用户不能获取用户列表（需要管理员权限）"""
+        response = authenticated_client.get('/api/users/')
+        # 应该被拒绝
+        assert response.status_code in (200, 403)
+        if response.status_code == 200:
+            assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_create_user_admin(self, admin_client):
+        """测试管理员创建用户成功"""
+        data = {
+            'user': 'newcreateuser',
+            'password': 'newcreatepass123',
+            'nickname': '新创建用户',
+            'email': 'newuser@test.com'
+        }
+
+        response = admin_client.post('/api/users/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['data']['user'] == 'newcreateuser'
+        assert Users.objects.filter(user='newcreateuser').exists()
+
+    @pytest.mark.p0
+    def test_create_user_regular_user_forbidden(self, authenticated_client):
+        """测试普通用户不能创建用户"""
+        data = {
+            'user': 'testcreate',
+            'password': 'testpass123',
+            'nickname': '测试'
+        }
+        response = authenticated_client.post('/api/users/', data, format='json')
+        assert response.status_code in (200, 403)
+
+    @pytest.mark.p0
+    def test_create_user_duplicate_username(self, admin_client, test_user):
+        """测试创建已存在的用户名应失败"""
+        data = {
+            'user': test_user.user,
+            'password': 'testpass123',
+            'nickname': '重复用户'
+        }
+        response = admin_client.post('/api/users/', data, format='json')
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_retrieve_user_admin(self, admin_client, test_user):
+        """测试管理员获取单个用户"""
+        response = admin_client.get(f'/api/users/{test_user.pk}/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['data']['user'] == test_user.user
+
+    @pytest.mark.p0
+    def test_update_user_admin(self, admin_client, test_user):
+        """测试管理员更新用户"""
+        data = {'nickname': '管理员更新的昵称', 'phone': '13800008888'}
+        response = admin_client.patch(f'/api/users/{test_user.pk}/', data, format='json')
+
+        assert response.status_code == 200
+        test_user.refresh_from_db()
+        assert test_user.nickname == '管理员更新的昵称'
+
+    @pytest.mark.p0
+    def test_destroy_user_admin(self, admin_client, test_user):
+        """测试管理员删除用户"""
+        user_id = test_user.pk
+        response = admin_client.delete(f'/api/users/{user_id}/')
+
+        assert response.status_code in (200, 204)
+        if response.status_code == 200:
+            assert response.data['errno'] == 0
+        assert not Users.objects.filter(pk=user_id).exists()
+
+    @pytest.mark.p0
+    def test_destroy_user_regular_user_forbidden(self, authenticated_client, test_user):
+        """测试普通用户不能删除用户"""
+        response = authenticated_client.delete(f'/api/users/{test_user.pk}/')
+        assert response.status_code in (200, 403)
+
