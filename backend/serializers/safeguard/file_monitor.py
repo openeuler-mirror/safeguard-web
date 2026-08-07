@@ -57,3 +57,20 @@ class FileMonitorEventSerializer(serializers.ModelSerializer):
             'timestamp', 'details', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class FileMonitorStateSerializer(serializers.ModelSerializer):
+    """文件监控状态序列化器"""
+
+    class Meta:
+        model = None
+        fields = [
+            'id', 'rule', 'path', 'mtime', 'ctime', 'size',
+            'uid', 'gid', 'mode', 'file_hash', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from backend.models.safeguard.file_monitor import FileMonitorState
+        self.Meta.model = FileMonitorState

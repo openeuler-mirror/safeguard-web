@@ -1453,6 +1453,73 @@ class AuditService:
             raise OperationError(str(e))
 
     @staticmethod
+    def get_previous_states(rules: List[Dict[str, Any]]) -> Dict[int, Dict[str, Dict[str, Any]]]:
+        """
+        获取之前的文件状态
+
+        Args:
+            rules: 监控规则列表
+
+        Returns:
+            状态字典 {rule_id: {path: state_dict}}
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+
+        states = {}
+        rule_ids = [r['id'] for r in rules]
+
+        try:
+            state_objs = FileMonitorState.objects.filter(rule_id__in=rule_ids)
+            for state in state_objs:
+                rule_id = state.rule_id
+                if rule_id not in states:
+                    states[rule_id] = {}
+                states[rule_id][state.path] = {
+                    'path': state.path,
+                    'mtime': int(state.mtime.timestamp()),
+                    'ctime': int(state.ctime.timestamp()),
+                    'size': state.size,
+                    'uid': state.uid,
+                    'gid': state.gid,
+                    'mode': state.mode,
+                }
+        except Exception as e:
+            logger.error(f"Error getting previous states: {e}")
+
+        return states
+
+    @staticmethod
+    def update_states(new_states: Dict[int, Dict[str, Dict[str, Any]]]) -> None:
+        """
+        更新文件状态
+
+        Args:
+            new_states: 新状态字典 {rule_id: {path: state_dict}}
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+        from django.utils import timezone
+
+        try:
+            with transaction.atomic():
+                for rule_id, path_states in new_states.items():
+                    for path, state in path_states.items():
+                        defaults = {
+                            'mtime': timezone.make_aware(datetime.fromtimestamp(state['mtime'])),
+                            'ctime': timezone.make_aware(datetime.fromtimestamp(state['ctime'])),
+                            'size': state['size'],
+                            'uid': state['uid'],
+                            'gid': state['gid'],
+                            'mode': state['mode'],
+                        }
+                        FileMonitorState.objects.update_or_create(
+                            rule_id=rule_id,
+                            path=path,
+                            defaults=defaults,
+                        )
+        except Exception as e:
+            logger.error(f"Error updating states: {e}")
+
+    @staticmethod
     def collect_file_events(host_id: Optional[int] = None) -> Dict[str, Any]:
         """
         收集文件监控事件
@@ -1471,7 +1538,8 @@ class AuditService:
 
             rules = list(query.values('id', 'host_id', 'path', 'monitor_type',
                                       'watch_create', 'watch_modify', 'watch_delete',
-                                      'watch_access', 'watch_perm', 'recursive'))
+                                      'watch_access', 'watch_perm', 'recursive',
+                                      'includes', 'excludes'))
 
             if not rules:
                 return {
@@ -1479,6 +1547,9 @@ class AuditService:
                     'events': [],
                     'total_events': 0,
                 }
+
+            # 获取之前的状态
+            previous_states = AuditService.get_previous_states(rules)
 
             # 按主机分组规则
             from collections import defaultdict
@@ -1488,14 +1559,25 @@ class AuditService:
 
             # 收集每个主机的事件
             all_events = []
+            all_new_states = {}
             for h_id, host_rules in rules_by_host.items():
                 try:
                     host = Host.objects.get(id=h_id)
-                    result = collect_file_events(host, host_rules)
+                    # 获取该主机规则的之前状态
+                    host_previous_states = {
+                        r['id']: previous_states.get(r['id'], {})
+                        for r in host_rules
+                    }
+                    result = collect_file_events(host, host_rules, host_previous_states)
                     if result['success']:
                         all_events.extend(result['events'])
+                        all_new_states.update(result['new_states'])
                 except Host.DoesNotExist:
                     continue
+
+            # 更新状态
+            if all_new_states:
+                AuditService.update_states(all_new_states)
 
             # 保存事件到数据库
             saved_count = AuditService.save_file_events(all_events)
@@ -1543,6 +1625,7 @@ class AuditService:
 
         saved_count = 0
         try:
+            events_to_create = []
             for event in events:
                 try:
                     rule_id = event.get('rule_id')
@@ -1550,18 +1633,25 @@ class AuditService:
                         # 查找对应的规则
                         rule = FileMonitorRule.objects.filter(id=rule_id).first()
                         if rule:
-                            FileMonitorEvent.objects.create(
+                            events_to_create.append(FileMonitorEvent(
                                 host=rule.host,
                                 rule=rule,
                                 event_type=event.get('event_type', 'unknown'),
                                 path=event.get('path', ''),
+                                process_name=event.get('process_name', ''),
+                                process_id=event.get('process_id'),
+                                user=event.get('user', ''),
                                 details=event.get('details', {}),
                                 timestamp=parse_event_timestamp(event),
-                            )
+                            ))
                             saved_count += 1
                 except Exception as e:
                     logger.error(f'Error saving file event: {e}')
                     continue
+
+            # 批量创建以提高性能
+            if events_to_create:
+                FileMonitorEvent.objects.bulk_create(events_to_create, batch_size=100)
 
             logger.info(f'Saved {saved_count} file monitor events')
 
@@ -1569,3 +1659,66 @@ class AuditService:
             logger.error(f'Error saving file events: {e}')
 
         return saved_count
+
+    @staticmethod
+    def delete_file_monitor_rule(rule_id: int) -> None:
+        """
+        删除文件监控规则及其相关数据
+
+        Args:
+            rule_id: 规则ID
+        """
+        from backend.models.safeguard.file_monitor import FileMonitorState
+
+        try:
+            with transaction.atomic():
+                # 删除关联的状态
+                FileMonitorState.objects.filter(rule_id=rule_id).delete()
+                # 删除规则本身
+                FileMonitorRule.objects.filter(id=rule_id).delete()
+            logger.info(f"File monitor rule {rule_id} deleted")
+        except Exception as e:
+            logger.error(f"Error deleting file monitor rule: {e}")
+            raise OperationError(str(e))
+
+    @staticmethod
+    def get_file_monitor_statistics(host_id: Optional[int] = None, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None) -> Dict[str, Any]:
+        """
+        获取文件监控统计信息
+
+        Args:
+            host_id: 主机ID（可选）
+            start_time: 开始时间（可选）
+            end_time: 结束时间（可选）
+
+        Returns:
+            统计信息字典
+        """
+        try:
+            query = FileMonitorEvent.objects.all()
+
+            if host_id:
+                query = query.filter(host_id=host_id)
+            if start_time:
+                query = query.filter(timestamp__gte=start_time)
+            if end_time:
+                query = query.filter(timestamp__lte=end_time)
+
+            # 获取总事件数
+            total_events = query.count()
+
+            # 按事件类型统计
+            from django.db.models import Count
+            type_stats = query.values('event_type').annotate(count=Count('id')).order_by('-count')
+
+            # 按主机统计
+            host_stats = query.values('host_id', 'host__hostname').annotate(count=Count('id')).order_by('-count')
+
+            return {
+                'total_events': total_events,
+                'by_type': list(type_stats),
+                'by_host': list(host_stats),
+            }
+        except Exception as e:
+            logger.error(f"Error getting file monitor statistics: {e}")
+            raise OperationError(str(e))
