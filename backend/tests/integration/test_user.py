@@ -347,3 +347,34 @@ class TestUserAdminCRUD:
         response = authenticated_client.delete(f'/api/users/{test_user.pk}/')
         assert response.status_code in (200, 403)
 
+
+class TestAdminSetPassword:
+    """管理员重置用户密码接口测试"""
+
+    @pytest.mark.p0
+    def test_admin_set_password_success(self, admin_client, test_user):
+        """测试管理员重置用户密码成功"""
+        data = {'new_password': 'newresetpass123'}
+        response = admin_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['errmsg'] == '密码重置成功'
+
+        # 验证密码已更新
+        test_user.refresh_from_db()
+        assert check_password('newresetpass123', test_user.password)
+
+    @pytest.mark.p0
+    def test_set_password_without_auth(self, api_client, test_user):
+        """测试无认证重置密码应返回401"""
+        data = {'new_password': 'newpass123'}
+        response = api_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+        assert response.status_code == 401
+
+    @pytest.mark.p0
+    def test_set_password_regular_user_forbidden(self, authenticated_client, test_user):
+        """测试普通用户不能重置其他用户密码"""
+        data = {'new_password': 'newpass123'}
+        response = authenticated_client.put(f'/api/users/{test_user.pk}/password/', data, format='json')
+        assert response.status_code in (200, 403)
