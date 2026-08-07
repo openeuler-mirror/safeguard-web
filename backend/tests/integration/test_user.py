@@ -127,3 +127,42 @@ class TestCurrentUserPassword:
         data = {'old_password': 'oldpass', 'new_password': 'newpass123'}
         response = api_client.put('/api/users/me/password/', data, format='json')
         assert response.status_code == 401
+
+
+class TestUserMenus:
+    """用户菜单接口测试"""
+
+    @pytest.mark.p0
+    def test_get_menus_success(self, authenticated_client, test_user, test_authority, clear_redis):
+        """测试获取当前用户菜单成功"""
+        clear_redis(test_user.id)
+
+        # 创建菜单并分配给角色
+        menu1 = MenuFactory.create(path='/test1', name='TestMenu1')
+        menu2 = MenuFactory.create(path='/test2', name='TestMenu2')
+        AuthorityMenu.objects.create(authority=test_authority, menu=menu1)
+        AuthorityMenu.objects.create(authority=test_authority, menu=menu2)
+
+        # 为用户分配角色
+        UserAuthority.objects.create(user=test_user, authority=test_authority)
+
+        response = authenticated_client.get('/api/users/menus/')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert isinstance(response.data['data'], list)
+
+    @pytest.mark.p0
+    def test_get_menus_without_auth(self, api_client):
+        """测试无认证获取菜单应返回401"""
+        response = api_client.get('/api/users/menus/')
+        assert response.status_code == 401
+
+    @pytest.mark.p1
+    def test_get_menus_no_permissions(self, authenticated_client, test_user, clear_redis):
+        """测试没有菜单权限时返回空列表"""
+        clear_redis(test_user.id)
+        response = authenticated_client.get('/api/users/menus/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert isinstance(response.data['data'], list)
