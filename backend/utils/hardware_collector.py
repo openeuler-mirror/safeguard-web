@@ -2176,6 +2176,89 @@ def _get_file_state(client: SSHClient, path: str, safe_path: str) -> Optional[Di
         return None
 
 
+def _compare_file_states(old_state: Optional[Dict[str, Any]], new_state: Dict[str, Any], rule: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    比较文件状态变化，生成事件
+
+    Args:
+        old_state: 旧状态（None 表示新文件）
+        new_state: 新状态
+        rule: 监控规则
+
+    Returns:
+        事件列表
+    """
+    events = []
+    event_time = datetime.now().isoformat()
+
+    if old_state is None:
+        # 新文件
+        if rule.get('watch_create', True):
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'create',
+                'timestamp': event_time,
+                'details': {
+                    'size': new_state['size'],
+                    'uid': new_state['uid'],
+                    'gid': new_state['gid'],
+                    'mode': new_state['mode'],
+                    'file_type': new_state['file_type'],
+                },
+            })
+        return events
+
+    # 检查修改
+    if rule.get('watch_modify', True):
+        if old_state['mtime'] != new_state['mtime'] or old_state['size'] != new_state['size']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'modify',
+                'timestamp': event_time,
+                'details': {
+                    'old_size': old_state['size'],
+                    'new_size': new_state['size'],
+                    'old_mtime': datetime.fromtimestamp(old_state['mtime']).isoformat(),
+                    'new_mtime': datetime.fromtimestamp(new_state['mtime']).isoformat(),
+                },
+            })
+
+    # 检查权限变更
+    if rule.get('watch_perm', True):
+        if old_state['mode'] != new_state['mode'] or old_state['uid'] != new_state['uid'] or old_state['gid'] != new_state['gid']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'perm_change',
+                'timestamp': event_time,
+                'details': {
+                    'old_mode': old_state['mode'],
+                    'new_mode': new_state['mode'],
+                    'old_uid': old_state['uid'],
+                    'new_uid': new_state['uid'],
+                    'old_gid': old_state['gid'],
+                    'new_gid': new_state['gid'],
+                },
+            })
+
+    # 检查访问（只在状态变化时）
+    if rule.get('watch_access', False):
+        if old_state['ctime'] != new_state['ctime'] and old_state['mtime'] == new_state['mtime']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'access',
+                'timestamp': event_time,
+                'details': {
+                    'ctime': datetime.fromtimestamp(new_state['ctime']).isoformat(),
+                },
+            })
+
+    return events
+
+
 def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]], previous_states: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """
     收集文件监控事件（通过检查文件状态变化）
