@@ -1625,6 +1625,7 @@ class AuditService:
 
         saved_count = 0
         try:
+            events_to_create = []
             for event in events:
                 try:
                     rule_id = event.get('rule_id')
@@ -1632,18 +1633,25 @@ class AuditService:
                         # 查找对应的规则
                         rule = FileMonitorRule.objects.filter(id=rule_id).first()
                         if rule:
-                            FileMonitorEvent.objects.create(
+                            events_to_create.append(FileMonitorEvent(
                                 host=rule.host,
                                 rule=rule,
                                 event_type=event.get('event_type', 'unknown'),
                                 path=event.get('path', ''),
+                                process_name=event.get('process_name', ''),
+                                process_id=event.get('process_id'),
+                                user=event.get('user', ''),
                                 details=event.get('details', {}),
                                 timestamp=parse_event_timestamp(event),
-                            )
+                            ))
                             saved_count += 1
                 except Exception as e:
                     logger.error(f'Error saving file event: {e}')
                     continue
+
+            # 批量创建以提高性能
+            if events_to_create:
+                FileMonitorEvent.objects.bulk_create(events_to_create, batch_size=100)
 
             logger.info(f'Saved {saved_count} file monitor events')
 
