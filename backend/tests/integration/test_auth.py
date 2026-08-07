@@ -358,3 +358,90 @@ class TestVerifyCodeView:
 
         assert response.status_code == 200
         assert response.data["errno"] != 0
+
+
+class TestResetPasswordView:
+    """通过验证码重置密码接口测试"""
+
+    def test_reset_password_success(self, api_client, test_user):
+        """测试重置密码成功"""
+        test_user.email = "reset@example.com"
+        test_user.save()
+
+        verification = EmailVerificationFactory.create(
+            email="reset@example.com",
+            code="123456",
+            user=test_user,
+            used=False,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset@example.com",
+            "code": "123456",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+
+        # 验证密码已更新
+        test_user.refresh_from_db()
+        from django.contrib.auth.hashers import check_password
+        assert check_password("newpassword123", test_user.password)
+
+        # 验证验证码已使用
+        verification.refresh_from_db()
+        assert verification.used is True
+
+    def test_reset_password_failed_wrong_code(self, api_client, test_user):
+        """测试验证码错误重置失败"""
+        test_user.email = "reset2@example.com"
+        test_user.save()
+
+        EmailVerificationFactory.create(
+            email="reset2@example.com",
+            code="123456",
+            user=test_user,
+            used=False
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset2@example.com",
+            "code": "654321",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+    def test_reset_password_failed_expired_code(self, api_client, test_user):
+        """测试验证码过期重置失败"""
+        test_user.email = "reset3@example.com"
+        test_user.save()
+
+        EmailVerificationFactory.create(
+            email="reset3@example.com",
+            code="123456",
+            user=test_user,
+            used=False,
+            expires_at=timezone.now() - timedelta(minutes=1)
+        )
+
+        url = "/api/auth/reset-password/"
+        data = {
+            "email": "reset3@example.com",
+            "code": "123456",
+            "new_password": "newpassword123"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
