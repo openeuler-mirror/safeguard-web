@@ -193,3 +193,84 @@ class TestRegisterView:
         assert response.data["errno"] == 0
         user = Users.objects.get(user="userwithrole")
         assert UserAuthority.objects.filter(user=user).exists()
+
+
+class TestSendVerificationCodeView:
+    """发送邮箱验证码接口测试"""
+
+    @patch("backend.views.auth.send_mail")
+    @patch("safeguard_web.settings.IS_LOCAL", new=False)
+    def test_send_code_for_register_success(self, mock_send_mail, api_client):
+        """测试发送注册验证码成功"""
+        url = "/api/auth/send-code/"
+        data = {
+            "email": "register@example.com",
+            "purpose": "register"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+        assert EmailVerification.objects.filter(email="register@example.com").exists()
+
+    @patch("safeguard_web.settings.IS_LOCAL", new=True)
+    def test_send_code_local_mode(self, api_client):
+        """测试本地模式发送验证码"""
+        url = "/api/auth/send-code/"
+        data = {
+            "email": "local@example.com",
+            "purpose": "register"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+        assert "local_verify_url" in response.data["data"]
+        assert "code" in response.data["data"]
+
+    def test_send_code_for_register_email_exists(self, api_client, test_user):
+        """测试注册时邮箱已存在"""
+        test_user.email = "exists@example.com"
+        test_user.save()
+
+        url = "/api/auth/send-code/"
+        data = {
+            "email": "exists@example.com",
+            "purpose": "register"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+    def test_send_code_for_forgot_password_success(self, api_client, test_user):
+        """测试发送忘记密码验证码成功"""
+        test_user.email = "forgot@example.com"
+        test_user.save()
+
+        url = "/api/auth/send-code/"
+        data = {
+            "email": "forgot@example.com",
+            "purpose": "forgot"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+
+    def test_send_code_for_forgot_password_email_not_found(self, api_client):
+        """测试忘记密码时邮箱不存在"""
+        url = "/api/auth/send-code/"
+        data = {
+            "email": "notfound@example.com",
+            "purpose": "forgot"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
