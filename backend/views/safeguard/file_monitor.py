@@ -79,6 +79,37 @@ class FileMonitorRuleViewSet(UnifiedModelViewSet):
         except FileMonitorRule.DoesNotExist:
             return ErrorResponse(ErrCode.NOT_FOUND, errmsg='监控规则不存在')
 
+    def perform_destroy(self, instance):
+        """删除规则时清理关联数据"""
+        AuditService.delete_file_monitor_rule(instance.id)
+
+    @action(detail=False, methods=['get'], url_path='statistics')
+    def get_statistics(self, request):
+        """获取文件监控统计信息"""
+        host_id = request.query_params.get('host_id')
+        start_time_str = request.query_params.get('start_time')
+        end_time_str = request.query_params.get('end_time')
+
+        host_id_int = int(host_id) if host_id else None
+        start_time = None
+        end_time = None
+
+        from django.utils.dateparse import parse_datetime
+        if start_time_str:
+            start_time = parse_datetime(start_time_str)
+        if end_time_str:
+            end_time = parse_datetime(end_time_str)
+
+        try:
+            stats = AuditService.get_file_monitor_statistics(
+                host_id=host_id_int,
+                start_time=start_time,
+                end_time=end_time
+            )
+            return SuccessResponse(stats)
+        except Exception as e:
+            return ErrorResponse(ErrCode.INTERNAL_ERROR, errmsg=str(e))
+
 
 class FileMonitorEventViewSet(UnifiedModelViewSet):
     """文件监控事件视图集"""
