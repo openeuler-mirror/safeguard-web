@@ -1538,7 +1538,8 @@ class AuditService:
 
             rules = list(query.values('id', 'host_id', 'path', 'monitor_type',
                                       'watch_create', 'watch_modify', 'watch_delete',
-                                      'watch_access', 'watch_perm', 'recursive'))
+                                      'watch_access', 'watch_perm', 'recursive',
+                                      'includes', 'excludes'))
 
             if not rules:
                 return {
@@ -1546,6 +1547,9 @@ class AuditService:
                     'events': [],
                     'total_events': 0,
                 }
+
+            # 获取之前的状态
+            previous_states = AuditService.get_previous_states(rules)
 
             # 按主机分组规则
             from collections import defaultdict
@@ -1555,14 +1559,25 @@ class AuditService:
 
             # 收集每个主机的事件
             all_events = []
+            all_new_states = {}
             for h_id, host_rules in rules_by_host.items():
                 try:
                     host = Host.objects.get(id=h_id)
-                    result = collect_file_events(host, host_rules)
+                    # 获取该主机规则的之前状态
+                    host_previous_states = {
+                        r['id']: previous_states.get(r['id'], {})
+                        for r in host_rules
+                    }
+                    result = collect_file_events(host, host_rules, host_previous_states)
                     if result['success']:
                         all_events.extend(result['events'])
+                        all_new_states.update(result['new_states'])
                 except Host.DoesNotExist:
                     continue
+
+            # 更新状态
+            if all_new_states:
+                AuditService.update_states(all_new_states)
 
             # 保存事件到数据库
             saved_count = AuditService.save_file_events(all_events)
