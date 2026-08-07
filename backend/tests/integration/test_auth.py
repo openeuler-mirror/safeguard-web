@@ -274,3 +274,87 @@ class TestSendVerificationCodeView:
 
         assert response.status_code == 200
         assert response.data["errno"] != 0
+
+
+class TestVerifyCodeView:
+    """验证邮箱验证码接口测试"""
+
+    def test_verify_code_success(self, api_client):
+        """测试验证验证码成功"""
+        EmailVerificationFactory.create(
+            email="verify@example.com",
+            code="123456",
+            used=False,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        url = "/api/auth/verify-code/"
+        data = {
+            "email": "verify@example.com",
+            "code": "123456"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] == 0
+        verification = EmailVerification.objects.get(email="verify@example.com", code="123456")
+        assert verification.used is True
+
+    def test_verify_code_failed_wrong_code(self, api_client):
+        """测试验证码错误"""
+        EmailVerificationFactory.create(
+            email="verify2@example.com",
+            code="123456",
+            used=False
+        )
+
+        url = "/api/auth/verify-code/"
+        data = {
+            "email": "verify2@example.com",
+            "code": "654321"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+    def test_verify_code_failed_expired(self, api_client):
+        """测试验证码已过期"""
+        EmailVerificationFactory.create(
+            email="expired@example.com",
+            code="123456",
+            used=False,
+            expires_at=timezone.now() - timedelta(minutes=1)
+        )
+
+        url = "/api/auth/verify-code/"
+        data = {
+            "email": "expired@example.com",
+            "code": "123456"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
+
+    def test_verify_code_failed_already_used(self, api_client):
+        """测试验证码已使用"""
+        EmailVerificationFactory.create(
+            email="used@example.com",
+            code="123456",
+            used=True
+        )
+
+        url = "/api/auth/verify-code/"
+        data = {
+            "email": "used@example.com",
+            "code": "123456"
+        }
+
+        response = api_client.post(url, data, format="json")
+
+        assert response.status_code == 200
+        assert response.data["errno"] != 0
