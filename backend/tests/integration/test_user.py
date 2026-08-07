@@ -455,3 +455,79 @@ class TestUserAuthorities:
         )
         assert response.status_code == 200
         assert response.data['errno'] != 0
+
+
+class TestUserImportExport:
+    """用户导入导出接口测试"""
+
+    @pytest.mark.p1
+    def test_import_users_success(self, admin_client):
+        """测试批量导入用户"""
+        import openpyxl
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname', 'phone', 'email', 'enable', 'theme', 'password'])
+        ws.append(['importuser1', '导入用户1', '13800138001', 'import1@test.com', 1, 'light', 'pass123'])
+        ws.append(['importuser2', '导入用户2', '13800138002', 'import2@test.com', 1, 'dark', 'pass456'])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = admin_client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert 'created' in response.data['data']
+        assert Users.objects.filter(user='importuser1').exists()
+        assert Users.objects.filter(user='importuser2').exists()
+
+    @pytest.mark.p1
+    def test_import_users_update_existing(self, admin_client):
+        """测试导入已存在用户时更新"""
+        import openpyxl
+
+        Users.objects.create(user='existing', password='oldpass', nickname='旧昵称')
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(['user', 'nickname'])
+        ws.append(['existing', '新昵称'])
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        response = admin_client.post(
+            '/api/users/import/',
+            {'file': buffer},
+            format='multipart'
+        )
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert 'updated' in response.data['data']
+
+        user = Users.objects.get(user='existing')
+        assert user.nickname == '新昵称'
+
+    @pytest.mark.p0
+    def test_import_users_no_file(self, admin_client):
+        """测试不上传文件应报错"""
+        response = admin_client.post('/api/users/import/', {}, format='multipart')
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p1
+    def test_export_users(self, admin_client, multiple_users):
+        """测试导出用户"""
+        response = admin_client.get('/api/users/export/')
+
+        assert response.status_code == 200
+        assert response['Content-Type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        assert 'attachment' in response['Content-Disposition']
