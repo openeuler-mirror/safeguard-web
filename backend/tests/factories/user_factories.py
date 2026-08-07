@@ -70,3 +70,19 @@ class MenuFactory:
             **kwargs
         )
 
+
+class MenuButtonFactory:
+    """菜单按钮工厂"""
+
+    @staticmethod
+    def create(menu=None, name=None, desc=None, **kwargs):
+        """创建菜单按钮"""
+        if not menu:
+            menu = MenuFactory.create()
+        return MenuButton.objects.create(
+            menu=menu,
+            name=name or "add",
+            desc=desc or "新增按钮",
+            **kwargs
+        )
+
