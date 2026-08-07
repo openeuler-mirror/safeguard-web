@@ -86,3 +86,37 @@ class MenuButtonFactory:
             **kwargs
         )
 
+
+class UserAuthorityFactory:
+    """用户角色关联工厂"""
+
+    @staticmethod
+    def create(user=None, authority=None, **kwargs):
+        """创建用户角色关联"""
+        if not user:
+            user = UserFactory.create()
+        if not authority:
+            authority = AuthorityFactory.create()
+        return UserAuthority.objects.create(
+            user=user,
+            authority=authority,
+            **kwargs
+        )
+
+
+class EmailVerificationFactory:
+    """邮箱验证码工厂"""
+
+    @staticmethod
+    def create(email=None, code=None, user=None, **kwargs):
+        """创建邮箱验证码"""
+        from django.utils import timezone
+        from datetime import timedelta
+
+        return EmailVerification.objects.create(
+            email=email or "test@example.com",
+            code=code or "123456",
+            user=user,
+            expires_at=timezone.now() + timedelta(minutes=10),
+            **kwargs
+        )
