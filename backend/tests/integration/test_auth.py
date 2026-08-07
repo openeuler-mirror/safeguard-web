@@ -13,6 +13,14 @@ from backend.tests.factories.user_factories import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def disable_audit_log():
+    """自动禁用审计日志，避免测试时的审计日志问题"""
+    with patch('backend.middleware.audit.AuditLogMiddleware._do_log_audit') as mock_do_log:
+        mock_do_log.return_value = None
+        yield
+
+
 class TestLoginView:
     """用户登录接口测试"""
 

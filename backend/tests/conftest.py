@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from backend.tests.factories.user_factories import (
-    UserFactory, AuthorityFactory, MenuFactory, UserAuthorityFactory
+    UserFactory, AuthorityFactory, MenuFactory, UserAuthorityFactory, MenuButtonFactory
 )
 from backend.tests.factories.host_factories import (
     ClusterFactory, HostFactory, VMFactory, ImageFactory
@@ -142,3 +142,36 @@ def clear_redis():
         redis_client.delete(f'user:{user_id}')
 
     return _clear_user_redis
+
+
+@pytest.fixture
+def multiple_authorities(db):
+    """多个测试角色"""
+    return AuthorityFactory.create_batch(3, start_id=200)
+
+
+@pytest.fixture
+def authority_with_menu(db):
+    """带菜单权限的角色"""
+    return AuthorityFactory.create_with_menu(authority_id=300, menu_count=2)
+
+
+@pytest.fixture
+def authority_with_button(db):
+    """带按钮权限的角色"""
+    return AuthorityFactory.create_with_button(authority_id=400, button_count=2)
+
+
+@pytest.fixture
+def test_menu_button(db, test_menu):
+    """测试菜单按钮"""
+    return MenuButtonFactory.create(menu=test_menu)
+
+
+@pytest.fixture
+def multiple_menus(db):
+    """多个测试菜单"""
+    return [
+        MenuFactory.create(path=f"/menu-{i}", name=f"Menu{i}")
+        for i in range(3)
+    ]
