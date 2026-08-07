@@ -78,3 +78,49 @@ class RepoStatusFactory:
     def create_default(**kwargs):
         """创建默认仓库"""
         return RepoStatusFactory.create(is_default=True, **kwargs)
+
+
+class WhiteListFactory:
+    """MAC地址白名单工厂"""
+
+    @staticmethod
+    def create(mac_address=None, hostname=None, ip_address=None, is_active=True, **kwargs):
+        """创建白名单"""
+        return WhiteList.objects.create(
+            mac_address=mac_address or f"00:11:22:33:{uuid.uuid4().hex[:2]}:{uuid.uuid4().hex[:2]}",
+            hostname=hostname or f"host-{uuid.uuid4().hex[:4]}",
+            ip_address=ip_address,
+            is_active=is_active,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建白名单"""
+        whitelists = []
+        for i in range(count):
+            whitelists.append(WhiteListFactory.create(**kwargs))
+        return whitelists
+
+
+class PXEServerStatusFactory:
+    """PXE服务器状态工厂"""
+
+    @staticmethod
+    def create(name=None, status="online", ip_address=None, **kwargs):
+        """创建PXE服务器状态"""
+        from backend.models.osdeploy.pxe_server_status import PXEServerStatus
+        return PXEServerStatus.objects.create(
+            name=name or f"pxe-server-{uuid.uuid4().hex[:4]}",
+            status=status,
+            ip_address=ip_address or f"192.168.1.{10 + uuid.uuid4().int % 200}",
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建PXE服务器"""
+        servers = []
+        for i in range(count):
+            servers.append(PXEServerStatusFactory.create(**kwargs))
+        return servers
