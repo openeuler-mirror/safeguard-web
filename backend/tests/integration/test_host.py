@@ -372,3 +372,66 @@ class TestVMViewSet:
 
         assert response.status_code in [200, 204]
         assert not VM.objects.filter(id=test_vm.id).exists()
+
+
+class TestImageViewSet:
+    """镜像管理视图集测试"""
+
+    def test_create_image_success(self, admin_client, test_host):
+        """测试创建镜像成功"""
+        import uuid
+        url = "/api/images/"
+        data = {
+            "id": uuid.uuid4().hex[:12],
+            "name": "test-image-001",
+            "ostype": "linux",
+            "path": "/images/test.iso",
+            "host": test_host.id
+        }
+
+        response = admin_client.post(url, data, format="json")
+
+        assert response.status_code in [201, 200]
+        assert Image.objects.filter(name="test-image-001").exists()
+
+    def test_list_images(self, admin_client, test_host):
+        """测试获取镜像列表"""
+        ImageFactory.create(host=test_host, name="image-1")
+        ImageFactory.create(host=test_host, name="image-2")
+
+        url = "/api/images/"
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+
+    def test_get_image_detail(self, admin_client, test_image):
+        """测试获取镜像详情"""
+        url = f"/api/images/{test_image.id}/"
+
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+
+    def test_update_image_success(self, admin_client, test_image):
+        """测试更新镜像成功"""
+        url = f"/api/images/{test_image.id}/"
+        data = {
+            "name": "updated-image-name",
+            "ostype": "ubuntu"
+        }
+
+        response = admin_client.patch(url, data, format="json")
+
+        assert response.status_code == 200
+        test_image.refresh_from_db()
+        assert test_image.name == "updated-image-name"
+
+    def test_delete_image_success(self, admin_client, test_image):
+        """测试删除镜像成功"""
+        url = f"/api/images/{test_image.id}/"
+
+        response = admin_client.delete(url)
+
+        assert response.status_code in [200, 204]
+        assert not Image.objects.filter(id=test_image.id).exists()
+
