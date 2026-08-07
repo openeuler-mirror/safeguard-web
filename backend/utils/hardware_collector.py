@@ -2135,6 +2135,47 @@ def _should_include_path(path: str, includes: List[str], excludes: List[str]) ->
     # 默认包含
     return True
 
+
+def _get_file_state(client: SSHClient, path: str, safe_path: str) -> Optional[Dict[str, Any]]:
+    """
+    获取单个文件的状态信息
+
+    Args:
+        client: SSH 客户端
+        path: 文件路径
+        safe_path: 安全的路径字符串
+
+    Returns:
+        文件状态字典或 None
+    """
+    try:
+        stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a:%F' {safe_path} 2>/dev/null"
+        stdout, stderr, exit_code = client.execute_command(stat_cmd)
+        if exit_code != 0 or not stdout:
+            return None
+
+        parts = stdout.strip().split(':')
+        if len(parts) < 7:
+            return None
+
+        try:
+            return {
+                'path': path,
+                'mtime': int(parts[0]),
+                'ctime': int(parts[1]),
+                'size': int(parts[2]),
+                'uid': int(parts[3]),
+                'gid': int(parts[4]),
+                'mode': parts[5],
+                'file_type': parts[6],
+            }
+        except (ValueError, IndexError):
+            return None
+    except Exception as e:
+        logger.debug(f"Error getting file state for {path}: {e}")
+        return None
+
+
 def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]], previous_states: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """
     收集文件监控事件（通过检查文件状态变化）
