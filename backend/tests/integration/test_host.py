@@ -257,3 +257,55 @@ class TestHostViewSet:
 
         # 根据业务逻辑，可能级联删除或拒绝
         assert response.status_code in [200, 204, 400]
+
+    @patch("backend.services.host.HostService.collect_hardware")
+    def test_collect_hardware(self, mock_collect, admin_client, test_host):
+        """测试采集硬件信息"""
+        mock_collect.return_value = {"cpu": "Intel", "memory": "16GB"}
+
+        url = f"/api/hosts/{test_host.id}/collect_hardware/"
+        response = admin_client.post(url)
+
+        assert response.status_code == 200
+        mock_collect.assert_called_once_with(str(test_host.id))
+
+    @patch("backend.services.host.HostService.collect_lldp")
+    def test_collect_lldp(self, mock_collect, admin_client, test_host):
+        """测试采集 LLDP 信息"""
+        mock_collect.return_value = {"neighbors": []}
+
+        url = f"/api/hosts/{test_host.id}/collect_lldp/"
+        response = admin_client.post(url)
+
+        assert response.status_code == 200
+        mock_collect.assert_called_once_with(str(test_host.id))
+
+    def test_get_lldp_info(self, admin_client, test_host):
+        """测试获取 LLDP 信息"""
+        url = f"/api/hosts/{test_host.id}/lldp/"
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+
+    @patch("backend.services.host.HostService.collect_all")
+    def test_collect_all(self, mock_collect, admin_client, test_host):
+        """测试采集所有信息"""
+        mock_collect.return_value = {"hardware": {}, "lldp": {}}
+
+        url = f"/api/hosts/{test_host.id}/collect_all/"
+        response = admin_client.post(url)
+
+        assert response.status_code == 200
+        mock_collect.assert_called_once_with(str(test_host.id))
+
+    def test_update_host_password(self, admin_client, test_host):
+        """测试更新主机密码"""
+        url = f"/api/hosts/{test_host.id}/update_password/"
+        data = {
+            "password": "newpassword123",
+            "key": "testkey"
+        }
+
+        response = admin_client.post(url, data, format="json")
+
+        assert response.status_code == 200
