@@ -86,3 +86,32 @@ def test_host_with_vms(db, test_cluster):
 def multiple_hosts(db, test_cluster):
     """多个测试宿主机"""
     return HostFactory.create_batch(5, cluster=test_cluster)
+
+
+@pytest.fixture
+def test_vm(db, test_host):
+    """测试虚拟机"""
+    return VMFactory.create(host=test_host)
+
+
+@pytest.fixture
+def multiple_vms(db, test_host):
+    """多个测试虚拟机"""
+    return VMFactory.create_batch(3, host=test_host)
+
+
+@pytest.fixture
+def test_image(db, test_host):
+    """测试镜像"""
+    return ImageFactory.create(host=test_host)
+
+
+@pytest.fixture
+def clear_redis():
+    """清除 Redis 缓存"""
+    from backend.authentication import redis_client
+
+    def _clear_user_redis(user_id):
+        redis_client.delete(f'user:{user_id}')
+
+    return _clear_user_redis
