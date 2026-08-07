@@ -172,3 +172,125 @@ class TestRepoStatusViewSet:
             mock_instance.check_repo.return_value = {'available': True}
             response = admin_client.get(f'/api/repos/{test_repo.id}/check/')
             assert response.status_code == 200
+
+
+class TestWhiteListViewSet:
+    """白名单视图集测试"""
+
+    def test_get_whitelist_authenticated(self, authenticated_client, multiple_whitelists):
+        """测试已认证用户获取白名单列表"""
+        response = authenticated_client.get('/api/whitelist/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_whitelist_unauthenticated(self, api_client):
+        """测试未认证用户无法获取白名单"""
+        response = api_client.get('/api/whitelist/')
+        assert response.status_code == 401
+
+    def test_create_whitelist(self, admin_client):
+        """测试创建白名单"""
+        data = {
+            'mac_address': '00:11:22:33:44:55',
+            'hostname': 'test-host-white',
+            'ip_address': '192.168.1.100',
+            'description': 'Test whitelist entry',
+            'is_active': True
+        }
+        response = admin_client.post('/api/whitelist/', data, format='json')
+        assert response.status_code == 200
+
+    def test_get_whitelist_detail(self, authenticated_client, test_whitelist):
+        """测试获取白名单详情"""
+        response = authenticated_client.get(f'/api/whitelist/{test_whitelist.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_update_whitelist(self, admin_client, test_whitelist):
+        """测试更新白名单"""
+        data = {'hostname': 'updated-hostname'}
+        response = admin_client.patch(
+            f'/api/whitelist/{test_whitelist.id}/',
+            data,
+            format='json'
+        )
+        assert response.status_code == 200
+
+    def test_delete_whitelist(self, admin_client, test_whitelist):
+        """测试删除白名单"""
+        response = admin_client.delete(f'/api/whitelist/{test_whitelist.id}/')
+        assert response.status_code in [200, 204]
+
+    def test_filter_whitelist_active(self, authenticated_client, test_whitelist):
+        """测试过滤激活的白名单"""
+        response = authenticated_client.get('/api/whitelist/?is_active=true')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestPXEServerViewSet:
+    """PXE 服务器视图集测试"""
+
+    def test_get_pxe_servers_authenticated(self, authenticated_client, test_pxe_server):
+        """测试已认证用户获取 PXE 服务器列表"""
+        response = authenticated_client.get('/api/pxe-servers/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_pxe_server_detail(self, authenticated_client, test_pxe_server):
+        """测试获取 PXE 服务器详情"""
+        response = authenticated_client.get(f'/api/pxe-servers/{test_pxe_server.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestKickstartViewSet:
+    """Kickstart 视图集测试"""
+
+    def test_get_kickstarts_authenticated(self, authenticated_client, test_kickstart):
+        """测试已认证用户获取 Kickstart 列表"""
+        response = authenticated_client.get('/api/kickstarts/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_kickstart_detail(self, authenticated_client, test_kickstart):
+        """测试获取 Kickstart 详情"""
+        response = authenticated_client.get(f'/api/kickstarts/{test_kickstart.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestISOViewSet:
+    """ISO 视图集测试"""
+
+    def test_get_isos_authenticated(self, authenticated_client, test_iso):
+        """测试已认证用户获取 ISO 列表"""
+        response = authenticated_client.get('/api/isos/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_iso_detail(self, authenticated_client, test_iso):
+        """测试获取 ISO 详情"""
+        response = authenticated_client.get(f'/api/isos/{test_iso.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestOutIPSNSNViewSet:
+    """出口 IP 序列号视图集测试"""
+
+    def test_get_outipsn_authenticated(self, authenticated_client, test_outipsn):
+        """测试已认证用户获取出口 IP 序列号列表"""
+        response = authenticated_client.get('/api/outipsn/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestSensorViewSet:
+    """传感器视图集测试"""
+
+    def test_get_sensor_data_authenticated(self, authenticated_client, test_sensor_data):
+        """测试已认证用户获取传感器数据"""
+        response = authenticated_client.get('/api/sensors/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
