@@ -184,10 +184,12 @@ class EmailVerificationFactory:
         from django.utils import timezone
         from datetime import timedelta
 
+        if 'expires_at' not in kwargs:
+            kwargs['expires_at'] = timezone.now() + timedelta(minutes=10)
+
         return EmailVerification.objects.create(
             email=email or "test@example.com",
             code=code or "123456",
             user=user,
-            expires_at=timezone.now() + timedelta(minutes=10),
             **kwargs
         )

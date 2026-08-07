@@ -26,13 +26,17 @@ class TestAuthorityCRUD:
             assert len(data) >= 3
 
     @pytest.mark.p0
-    def test_get_authority_list_regular_user_forbidden(self, authenticated_client):
-        """测试普通用户不能获取角色列表（需要管理员权限）"""
+    def test_get_authority_list_authenticated_user(self, authenticated_client, multiple_authorities):
+        """测试已认证用户可以获取角色列表"""
         response = authenticated_client.get('/api/authority/authorities/')
-        # 应该被拒绝或返回错误
-        assert response.status_code in (200, 403, 401)
-        if response.status_code == 200:
-            assert response.data['errno'] != 0
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        data = response.data['data']
+        if isinstance(data, dict) and 'results' in data:
+            assert len(data['results']) >= 3
+        elif isinstance(data, list):
+            assert len(data) >= 3
 
     @pytest.mark.p0
     def test_create_authority_admin(self, admin_client):
@@ -269,12 +273,17 @@ class TestMenuCRUD:
             assert len(data) >= 3
 
     @pytest.mark.p0
-    def test_get_menu_list_regular_user_forbidden(self, authenticated_client):
-        """测试普通用户不能获取菜单列表（需要管理员权限）"""
+    def test_get_menu_list_authenticated_user(self, authenticated_client, multiple_menus):
+        """测试已认证用户可以获取菜单列表"""
         response = authenticated_client.get('/api/authority/menus/')
-        assert response.status_code in (200, 403, 401)
-        if response.status_code == 200:
-            assert response.data['errno'] != 0
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        data = response.data['data']
+        if isinstance(data, dict) and 'results' in data:
+            assert len(data['results']) >= 3
+        elif isinstance(data, list):
+            assert len(data) >= 3
 
     @pytest.mark.p0
     def test_create_menu_admin(self, admin_client):
@@ -397,33 +406,25 @@ class TestAuthorityPermission:
     """权限验证集成测试"""
 
     @pytest.mark.p0
-    def test_authority_permission_required_for_authority_management(self, authenticated_client, test_authority):
-        """测试角色管理需要相应权限"""
-        # 尝试获取角色列表（应该被拒绝）
-        list_response = authenticated_client.get('/api/authority/authorities/')
-        assert list_response.status_code in (200, 403, 401)
-        if list_response.status_code == 200:
-            assert list_response.data['errno'] != 0
+    def test_authentication_required_for_authority_management(self, api_client):
+        """测试角色管理需要用户认证"""
+        # 尝试获取角色列表（未认证应该返回401）
+        list_response = api_client.get('/api/authority/authorities/')
+        assert list_response.status_code == 401
 
-        # 尝试创建角色（应该被拒绝）
+        # 尝试创建角色（未认证应该返回401）
         create_data = {'authority_id': 999, 'authority_name': '无权限创建', 'default_router': 'dashboard'}
-        create_response = authenticated_client.post('/api/authority/authorities/', create_data, format='json')
-        assert create_response.status_code in (200, 403, 401)
-        if create_response.status_code == 200:
-            assert create_response.data['errno'] != 0
+        create_response = api_client.post('/api/authority/authorities/', create_data, format='json')
+        assert create_response.status_code == 401
 
     @pytest.mark.p0
-    def test_authority_permission_required_for_menu_management(self, authenticated_client, test_menu):
-        """测试菜单管理需要相应权限"""
-        # 尝试获取菜单列表（应该被拒绝）
-        list_response = authenticated_client.get('/api/authority/menus/')
-        assert list_response.status_code in (200, 403, 401)
-        if list_response.status_code == 200:
-            assert list_response.data['errno'] != 0
+    def test_authentication_required_for_menu_management(self, api_client):
+        """测试菜单管理需要用户认证"""
+        # 尝试获取菜单列表（未认证应该返回401）
+        list_response = api_client.get('/api/authority/menus/')
+        assert list_response.status_code == 401
 
-        # 尝试创建菜单（应该被拒绝）
+        # 尝试创建菜单（未认证应该返回401）
         create_data = {'path': '/no-permission', 'name': '无权限菜单', 'component': 'test'}
-        create_response = authenticated_client.post('/api/authority/menus/', create_data, format='json')
-        assert create_response.status_code in (200, 403, 401)
-        if create_response.status_code == 200:
-            assert create_response.data['errno'] != 0
+        create_response = api_client.post('/api/authority/menus/', create_data, format='json')
+        assert create_response.status_code == 401
