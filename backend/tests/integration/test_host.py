@@ -309,3 +309,66 @@ class TestHostViewSet:
         response = admin_client.post(url, data, format="json")
 
         assert response.status_code == 200
+
+
+class TestVMViewSet:
+    """虚拟机管理视图集测试"""
+
+    def test_create_vm_success(self, admin_client, test_host):
+        """测试创建虚拟机成功"""
+        import uuid
+        url = "/api/vms/"
+        data = {
+            "name": "test-vm-001",
+            "uuid": str(uuid.uuid4()),
+            "host": test_host.id,
+            "status": "stopped",
+            "vcpu": 2,
+            "memory": 4294967296,
+            "disk": 107374182400
+        }
+
+        response = admin_client.post(url, data, format="json")
+
+        assert response.status_code in [201, 200]
+        assert VM.objects.filter(name="test-vm-001").exists()
+
+    def test_list_vms(self, admin_client, test_host, multiple_vms):
+        """测试获取虚拟机列表"""
+        url = "/api/vms/"
+
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+
+    def test_get_vm_detail(self, admin_client, test_vm):
+        """测试获取虚拟机详情"""
+        url = f"/api/vms/{test_vm.id}/"
+
+        response = admin_client.get(url)
+
+        assert response.status_code == 200
+
+    def test_update_vm_success(self, admin_client, test_vm):
+        """测试更新虚拟机成功"""
+        url = f"/api/vms/{test_vm.id}/"
+        data = {
+            "name": "updated-vm-name",
+            "status": "running",
+            "vcpu": 4
+        }
+
+        response = admin_client.patch(url, data, format="json")
+
+        assert response.status_code == 200
+        test_vm.refresh_from_db()
+        assert test_vm.name == "updated-vm-name"
+
+    def test_delete_vm_success(self, admin_client, test_vm):
+        """测试删除虚拟机成功"""
+        url = f"/api/vms/{test_vm.id}/"
+
+        response = admin_client.delete(url)
+
+        assert response.status_code in [200, 204]
+        assert not VM.objects.filter(id=test_vm.id).exists()
