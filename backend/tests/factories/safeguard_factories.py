@@ -182,7 +182,7 @@ class FileMonitorEventFactory:
 
     @staticmethod
     def create(host=None, rule=None, event_type="modify", path="/etc/passwd",
-               process_name=None, process_id=None, user=None, timestamp=None,
+               process_name="", process_id=None, user="", timestamp=None,
                details=None, **kwargs):
         """创建文件监控事件"""
         if timestamp is None:
@@ -216,7 +216,7 @@ class AuditLogFactory:
     def create(user=None, action="create", resource_type="host", resource_id="1",
                 resource_name="test-host", action_details=None,
                 old_value=None, new_value=None, ip_address=None,
-                user_agent=None, status="success", error_message="", **kwargs):
+                user_agent="", status="success", error_message="", **kwargs):
         """创建审计日志"""
         return AuditLog.objects.create(
             user=user,
