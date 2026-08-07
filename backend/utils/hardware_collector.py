@@ -2259,6 +2259,44 @@ def _compare_file_states(old_state: Optional[Dict[str, Any]], new_state: Dict[st
     return events
 
 
+def _collect_files_recursive(client: SSHClient, path: str, includes: List[str], excludes: List[str]) -> List[str]:
+    """
+    递归收集目录下的所有文件
+
+    Args:
+        client: SSH 客户端
+        path: 目录路径
+        includes: 包含规则
+        excludes: 排除规则
+
+    Returns:
+        文件路径列表
+    """
+    import shlex
+    files = []
+
+    try:
+        safe_path = shlex.quote(path)
+        # 使用 find 命令递归获取所有文件
+        find_cmd = f"find {safe_path} -type f 2>/dev/null"
+        stdout, stderr, exit_code = client.execute_command(find_cmd)
+
+        if exit_code == 0 and stdout:
+            for file_path in stdout.strip().split('\n'):
+                file_path = file_path.strip()
+                if file_path and _should_include_path(file_path, includes, excludes):
+                    files.append(file_path)
+
+        # 同时也包括目录本身
+        if _should_include_path(path, includes, excludes):
+            files.append(path)
+
+    except Exception as e:
+        logger.debug(f"Error collecting files recursive from {path}: {e}")
+
+    return files
+
+
 def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]], previous_states: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """
     收集文件监控事件（通过检查文件状态变化）
