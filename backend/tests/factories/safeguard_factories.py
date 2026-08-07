@@ -108,3 +108,103 @@ class PolicyApplyTaskFactory:
         """创建成功任务"""
         return PolicyApplyTaskFactory.create(status="success", **kwargs)
 
+
+class HostMonitorDataFactory:
+    """主机监控数据工厂"""
+
+    @staticmethod
+    def create(host=None, cpu_usage=50.0, load_1m=1.0, load_5m=0.8, load_15m=0.5,
+               memory_total=8*1024*1024*1024, memory_used=4*1024*1024*1024,
+               memory_usage=50.0, network_in=1024, network_out=512,
+               disk_read=2048, disk_write=1024, **kwargs):
+        """创建监控数据"""
+        return HostMonitorData.objects.create(
+            host=host,
+            cpu_usage=cpu_usage,
+            load_1m=load_1m,
+            load_5m=load_5m,
+            load_15m=load_15m,
+            memory_total=memory_total,
+            memory_used=memory_used,
+            memory_usage=memory_usage,
+            network_in=network_in,
+            network_out=network_out,
+            disk_read=disk_read,
+            disk_write=disk_write,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建监控数据"""
+        data_list = []
+        for i in range(count):
+            data_list.append(HostMonitorDataFactory.create(**kwargs))
+        return data_list
+
+
+class FileMonitorRuleFactory:
+    """文件监控规则工厂"""
+
+    @staticmethod
+    def create(host=None, path="/etc/passwd", monitor_type="file",
+               watch_create=True, watch_modify=True, watch_delete=True,
+               watch_access=False, watch_perm=True, recursive=False,
+               includes=None, excludes=None, enabled=True, **kwargs):
+        """创建文件监控规则"""
+        return FileMonitorRule.objects.create(
+            host=host,
+            path=path,
+            monitor_type=monitor_type,
+            watch_create=watch_create,
+            watch_modify=watch_modify,
+            watch_delete=watch_delete,
+            watch_access=watch_access,
+            watch_perm=watch_perm,
+            recursive=recursive,
+            includes=includes or [],
+            excludes=excludes or [],
+            enabled=enabled,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建监控规则"""
+        rules = []
+        for i in range(count):
+            rules.append(FileMonitorRuleFactory.create(**kwargs))
+        return rules
+
+
+class FileMonitorEventFactory:
+    """文件监控事件工厂"""
+
+    @staticmethod
+    def create(host=None, rule=None, event_type="modify", path="/etc/passwd",
+               process_name=None, process_id=None, user=None, timestamp=None,
+               details=None, **kwargs):
+        """创建文件监控事件"""
+        if timestamp is None:
+            timestamp = timezone.now()
+        return FileMonitorEvent.objects.create(
+            host=host,
+            rule=rule,
+            event_type=event_type,
+            path=path,
+            process_name=process_name,
+            process_id=process_id,
+            user=user,
+            timestamp=timestamp,
+            details=details or {},
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建事件"""
+        events = []
+        for i in range(count):
+            events.append(FileMonitorEventFactory.create(**kwargs))
+        return events
+
