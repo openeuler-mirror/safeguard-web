@@ -123,3 +123,179 @@ class TestHostPolicyViewSet:
         response = admin_client.get(f'/api/host-policies/?host={test_host.id}')
         assert response.status_code == 200
         assert response.data['errno'] == 0
+
+
+class TestPolicyApplyTaskViewSet:
+    """策略下发任务视图集测试"""
+
+    def test_get_policy_tasks_admin(self, admin_client, test_policy_task):
+        """测试管理员获取策略任务列表"""
+        response = admin_client.get('/api/policy-tasks/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_policy_tasks_unauthenticated(self, api_client):
+        """测试未认证用户无法获取策略任务"""
+        response = api_client.get('/api/policy-tasks/')
+        assert response.status_code == 401
+
+    def test_get_policy_task_detail(self, admin_client, test_policy_task):
+        """测试获取策略任务详情"""
+        response = admin_client.get(f'/api/policy-tasks/{test_policy_task.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_apply_policy_task(self, admin_client, test_policy_task):
+        """测试执行策略下发"""
+        with patch('backend.views.safeguard.policy.PolicyService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.apply_policy.return_value = {'status': 'started'}
+            response = admin_client.post(f'/api/policy-tasks/{test_policy_task.id}/apply/')
+            assert response.status_code == 200
+
+    def test_get_policy_task_status(self, admin_client, test_policy_task):
+        """测试获取策略任务状态"""
+        with patch('backend.views.safeguard.policy.PolicyService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_task_status.return_value = {'status': 'pending'}
+            response = admin_client.get(f'/api/policy-tasks/{test_policy_task.id}/status/')
+            assert response.status_code == 200
+
+    def test_filter_policy_tasks_by_status(self, admin_client, success_policy_task):
+        """测试按状态过滤策略任务"""
+        response = admin_client.get('/api/policy-tasks/?status=success')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_filter_policy_tasks_by_host(self, admin_client, test_policy_task, test_host):
+        """测试按主机过滤策略任务"""
+        response = admin_client.get(f'/api/policy-tasks/?host={test_host.id}')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestMonitorDataViewSet:
+    """监控数据视图集测试"""
+
+    def test_get_monitor_data_admin(self, admin_client, multiple_monitor_data):
+        """测试管理员获取监控数据列表"""
+        response = admin_client.get('/api/monitor-data/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_monitor_data_unauthenticated(self, api_client):
+        """测试未认证用户无法获取监控数据"""
+        response = api_client.get('/api/monitor-data/')
+        assert response.status_code == 401
+
+    def test_collect_monitor_data(self, admin_client, test_host):
+        """测试采集监控数据（mocked）"""
+        with patch('backend.views.safeguard.monitor.MonitorService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.collect_all_metrics.return_value = {'cpu': 50}
+            data = {'host_id': test_host.id}
+            response = admin_client.post('/api/monitor-data/collect/', data, format='json')
+            assert response.status_code == 200
+
+    def test_batch_collect_monitor_data(self, admin_client, test_host):
+        """测试批量采集监控数据（mocked）"""
+        with patch('backend.views.safeguard.monitor.MonitorService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.collect_all_metrics.return_value = {'cpu': 50}
+            data = {'host_ids': [test_host.id]}
+            response = admin_client.post('/api/monitor-data/batch_collect/', data, format='json')
+            assert response.status_code == 200
+
+    def test_get_monitor_history(self, admin_client, test_host):
+        """测试获取监控历史数据（mocked）"""
+        with patch('backend.views.safeguard.monitor.MonitorService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_monitor_history.return_value = {'results': []}
+            response = admin_client.get(f'/api/monitor-data/history/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_get_latest_monitor_data(self, admin_client, test_host, test_monitor_data):
+        """测试获取最新监控数据"""
+        response = admin_client.get(f'/api/monitor-data/{test_host.id}/latest/')
+        assert response.status_code == 200
+
+    def test_filter_monitor_data_by_host(self, admin_client, test_monitor_data, test_host):
+        """测试按主机过滤监控数据"""
+        response = admin_client.get(f'/api/monitor-data/?host={test_host.id}')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestFileMonitorRuleViewSet:
+    """文件监控规则视图集测试"""
+
+    def test_get_file_monitor_rules_admin(self, admin_client, multiple_file_monitor_rules):
+        """测试管理员获取文件监控规则列表"""
+        response = admin_client.get('/api/file-monitor-rules/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_file_monitor_rules_unauthenticated(self, api_client):
+        """测试未认证用户无法获取文件监控规则"""
+        response = api_client.get('/api/file-monitor-rules/')
+        assert response.status_code == 401
+
+    def test_create_file_monitor_rule(self, admin_client, test_host):
+        """测试创建文件监控规则"""
+        data = {
+            'host': test_host.id,
+            'path': '/etc/test.conf',
+            'monitor_type': 'file',
+            'watch_create': True,
+            'watch_modify': True,
+            'watch_delete': True,
+            'enabled': True
+        }
+        response = admin_client.post('/api/file-monitor-rules/', data, format='json')
+        assert response.status_code == 200
+
+    def test_get_file_monitor_rule_detail(self, admin_client, test_file_monitor_rule):
+        """测试获取文件监控规则详情"""
+        response = admin_client.get(f'/api/file-monitor-rules/{test_file_monitor_rule.id}/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_update_file_monitor_rule(self, admin_client, test_file_monitor_rule):
+        """测试更新文件监控规则"""
+        data = {'path': '/etc/updated.conf'}
+        response = admin_client.patch(
+            f'/api/file-monitor-rules/{test_file_monitor_rule.id}/',
+            data,
+            format='json'
+        )
+        assert response.status_code == 200
+
+    def test_delete_file_monitor_rule(self, admin_client, test_file_monitor_rule):
+        """测试删除文件监控规则"""
+        with patch('backend.views.safeguard.file_monitor.AuditService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.delete_file_monitor_rule.return_value = None
+            response = admin_client.delete(f'/api/file-monitor-rules/{test_file_monitor_rule.id}/')
+            assert response.status_code in [200, 204]
+
+    def test_start_monitor(self, admin_client, test_file_monitor_rule):
+        """测试启用监控"""
+        response = admin_client.post(
+            f'/api/file-monitor-rules/{test_file_monitor_rule.id}/start-monitor/'
+        )
+        assert response.status_code == 200
+
+    def test_stop_monitor(self, admin_client, test_file_monitor_rule):
+        """测试停用监控"""
+        response = admin_client.post(
+            f'/api/file-monitor-rules/{test_file_monitor_rule.id}/stop-monitor/'
+        )
+        assert response.status_code == 200
+
+    def test_get_file_monitor_statistics(self, admin_client, test_host):
+        """测试获取文件监控统计（mocked）"""
+        with patch('backend.views.safeguard.file_monitor.AuditService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_file_monitor_statistics.return_value = {'total': 0}
+            response = admin_client.get(f'/api/file-monitor-rules/statistics/?host_id={test_host.id}')
+            assert response.status_code == 200
