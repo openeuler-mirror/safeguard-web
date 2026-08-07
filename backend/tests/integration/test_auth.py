@@ -445,3 +445,30 @@ class TestResetPasswordView:
 
         assert response.status_code == 200
         assert response.data["errno"] != 0
+
+
+class TestLocalVerifyView:
+    """本地验证页面测试"""
+
+    def test_local_verify_success(self, api_client):
+        """测试本地验证页面显示验证码"""
+        EmailVerificationFactory.create(
+            email="local@example.com",
+            code="123456",
+            used=False,
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        url = f"/api/auth/local-verify/local@example.com/123456/"
+        response = api_client.get(url)
+
+        assert response.status_code == 200
+        assert "123456" in response.content.decode()
+
+    def test_local_verify_failed(self, api_client):
+        """测试本地验证页面显示失败"""
+        url = "/api/auth/local-verify/invalid@example.com/999999/"
+        response = api_client.get(url)
+
+        assert response.status_code == 200
+        assert "验证码已失效" in response.content.decode()
