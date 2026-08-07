@@ -2105,39 +2105,242 @@ def kill_process(host: Host, pid: int, force: bool = False) -> Dict[str, Any]:
     return result
 
 
-def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _should_include_path(path: str, includes: List[str], excludes: List[str]) -> bool:
+    """
+    判断路径是否应该被包含
+
+    Args:
+        path: 文件路径
+        includes: 包含规则列表
+        excludes: 排除规则列表
+
+    Returns:
+        是否应该包含
+    """
+    import fnmatch
+
+    # 如果有排除规则，先检查是否排除
+    if excludes:
+        for pattern in excludes:
+            if fnmatch.fnmatch(path, pattern):
+                return False
+
+    # 如果有包含规则，只包含匹配的
+    if includes:
+        for pattern in includes:
+            if fnmatch.fnmatch(path, pattern):
+                return True
+        return False
+
+    # 默认包含
+    return True
+
+
+def _get_file_state(client: SSHClient, path: str, safe_path: str) -> Optional[Dict[str, Any]]:
+    """
+    获取单个文件的状态信息
+
+    Args:
+        client: SSH 客户端
+        path: 文件路径
+        safe_path: 安全的路径字符串
+
+    Returns:
+        文件状态字典或 None
+    """
+    try:
+        stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a:%F' {safe_path} 2>/dev/null"
+        stdout, stderr, exit_code = client.execute_command(stat_cmd)
+        if exit_code != 0 or not stdout:
+            return None
+
+        parts = stdout.strip().split(':')
+        if len(parts) < 7:
+            return None
+
+        try:
+            return {
+                'path': path,
+                'mtime': int(parts[0]),
+                'ctime': int(parts[1]),
+                'size': int(parts[2]),
+                'uid': int(parts[3]),
+                'gid': int(parts[4]),
+                'mode': parts[5],
+                'file_type': parts[6],
+            }
+        except (ValueError, IndexError):
+            return None
+    except Exception as e:
+        logger.debug(f"Error getting file state for {path}: {e}")
+        return None
+
+
+def _compare_file_states(old_state: Optional[Dict[str, Any]], new_state: Dict[str, Any], rule: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    比较文件状态变化，生成事件
+
+    Args:
+        old_state: 旧状态（None 表示新文件）
+        new_state: 新状态
+        rule: 监控规则
+
+    Returns:
+        事件列表
+    """
+    events = []
+    event_time = datetime.now().isoformat()
+
+    if old_state is None:
+        # 新文件
+        if rule.get('watch_create', True):
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'create',
+                'timestamp': event_time,
+                'details': {
+                    'size': new_state['size'],
+                    'uid': new_state['uid'],
+                    'gid': new_state['gid'],
+                    'mode': new_state['mode'],
+                    'file_type': new_state['file_type'],
+                },
+            })
+        return events
+
+    # 检查修改
+    if rule.get('watch_modify', True):
+        if old_state['mtime'] != new_state['mtime'] or old_state['size'] != new_state['size']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'modify',
+                'timestamp': event_time,
+                'details': {
+                    'old_size': old_state['size'],
+                    'new_size': new_state['size'],
+                    'old_mtime': datetime.fromtimestamp(old_state['mtime']).isoformat(),
+                    'new_mtime': datetime.fromtimestamp(new_state['mtime']).isoformat(),
+                },
+            })
+
+    # 检查权限变更
+    if rule.get('watch_perm', True):
+        if old_state['mode'] != new_state['mode'] or old_state['uid'] != new_state['uid'] or old_state['gid'] != new_state['gid']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'perm_change',
+                'timestamp': event_time,
+                'details': {
+                    'old_mode': old_state['mode'],
+                    'new_mode': new_state['mode'],
+                    'old_uid': old_state['uid'],
+                    'new_uid': new_state['uid'],
+                    'old_gid': old_state['gid'],
+                    'new_gid': new_state['gid'],
+                },
+            })
+
+    # 检查访问（只在状态变化时）
+    if rule.get('watch_access', False):
+        if old_state['ctime'] != new_state['ctime'] and old_state['mtime'] == new_state['mtime']:
+            events.append({
+                'rule_id': rule.get('id'),
+                'path': new_state['path'],
+                'event_type': 'access',
+                'timestamp': event_time,
+                'details': {
+                    'ctime': datetime.fromtimestamp(new_state['ctime']).isoformat(),
+                },
+            })
+
+    return events
+
+
+def _collect_files_recursive(client: SSHClient, path: str, includes: List[str], excludes: List[str]) -> List[str]:
+    """
+    递归收集目录下的所有文件
+
+    Args:
+        client: SSH 客户端
+        path: 目录路径
+        includes: 包含规则
+        excludes: 排除规则
+
+    Returns:
+        文件路径列表
+    """
+    import shlex
+    files = []
+
+    try:
+        safe_path = shlex.quote(path)
+        # 使用 find 命令递归获取所有文件
+        find_cmd = f"find {safe_path} -type f 2>/dev/null"
+        stdout, stderr, exit_code = client.execute_command(find_cmd)
+
+        if exit_code == 0 and stdout:
+            for file_path in stdout.strip().split('\n'):
+                file_path = file_path.strip()
+                if file_path and _should_include_path(file_path, includes, excludes):
+                    files.append(file_path)
+
+        # 同时也包括目录本身
+        if _should_include_path(path, includes, excludes):
+            files.append(path)
+
+    except Exception as e:
+        logger.debug(f"Error collecting files recursive from {path}: {e}")
+
+    return files
+
+
+def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]], previous_states: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """
     收集文件监控事件（通过检查文件状态变化）
 
     Args:
         client: SSH 客户端
         monitor_rules: 监控规则列表
+        previous_states: 之前的状态字典 {rule_id: {path: state_dict}}
 
     Returns:
-        文件事件列表
+        {
+            'events': [...],
+            'new_states': {rule_id: {path: state_dict}}
+        }
     """
     events = []
+    new_states: Dict[int, Dict[str, Dict[str, Any]]] = {}
     import shlex
+
+    if previous_states is None:
+        previous_states = {}
 
     try:
         for rule in monitor_rules:
+            rule_id = rule.get('id')
             path = rule.get('path', '')
-            if not path:
+            if not path or not rule_id:
                 continue
+
+            new_states[rule_id] = {}
 
             # Validate path
             if not path.startswith('/'):
                 events.append({
-                    'rule_id': rule.get('id'),
+                    'rule_id': rule_id,
                     'path': path,
                     'event_type': 'invalid_path',
                     'timestamp': datetime.now().isoformat(),
                     'details': 'Path must be absolute',
                 })
                 continue
-            if any(c in path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '*', '?', '~', "'", '"', '\\']):
+            if any(c in path for c in [';', '|', '&', '>', '<', '`', '$', '(', ')', '[', ']', '{', '}', '~', "'", '"', '\\']):
                 events.append({
-                    'rule_id': rule.get('id'),
+                    'rule_id': rule_id,
                     'path': path,
                     'event_type': 'invalid_path',
                     'timestamp': datetime.now().isoformat(),
@@ -2146,81 +2349,91 @@ def _collect_file_events(client: SSHClient, monitor_rules: List[Dict[str, Any]])
                 continue
 
             safe_path = shlex.quote(path)
+            includes = rule.get('includes', [])
+            excludes = rule.get('excludes', [])
+            recursive = rule.get('recursive', False)
 
-            # 检查路径是否存在 using file_exists method
+            # 检查路径是否存在
             exists = client.file_exists(path) or client.dir_exists(path)
+            rule_states = previous_states.get(rule_id, {})
 
             if not exists:
-                events.append({
-                    'rule_id': rule.get('id'),
-                    'path': path,
-                    'event_type': 'path_not_exists',
-                    'timestamp': datetime.now().isoformat(),
-                    'details': 'Path does not exist',
-                })
+                # 检查之前是否存在，可能是删除事件
+                if path in rule_states and rule.get('watch_delete', True):
+                    events.append({
+                        'rule_id': rule_id,
+                        'path': path,
+                        'event_type': 'delete',
+                        'timestamp': datetime.now().isoformat(),
+                        'details': {
+                            'old_size': rule_states[path]['size'],
+                        },
+                    })
+                else:
+                    events.append({
+                        'rule_id': rule_id,
+                        'path': path,
+                        'event_type': 'path_not_exists',
+                        'timestamp': datetime.now().isoformat(),
+                        'details': 'Path does not exist',
+                    })
                 continue
 
-            # 获取文件状态信息
-            stat_cmd = f"stat -c '%Y:%Z:%s:%u:%g:%a' {safe_path} 2>/dev/null"
-            stdout, stderr, exit_code = client.execute_command(stat_cmd)
-            if exit_code == 0 and stdout:
-                parts = stdout.strip().split(':')
-                if len(parts) >= 6:
-                    try:
-                        mtime = int(parts[0])
-                        ctime = int(parts[1])
-                        size = int(parts[2])
-                        uid = int(parts[3])
-                        gid = int(parts[4])
-                        mode = parts[5]
+            # 收集要监控的文件列表
+            if recursive and client.dir_exists(path):
+                files = _collect_files_recursive(client, path, includes, excludes)
+            else:
+                if _should_include_path(path, includes, excludes):
+                    files = [path]
+                else:
+                    files = []
 
-                        # 转换时间戳
-                        mtime_dt = datetime.fromtimestamp(mtime).isoformat()
-                        ctime_dt = datetime.fromtimestamp(ctime).isoformat()
+            # 获取每个文件的状态
+            for file_path in files:
+                try:
+                    safe_file_path = shlex.quote(file_path)
+                    new_state = _get_file_state(client, file_path, safe_file_path)
+                    if new_state:
+                        new_states[rule_id][file_path] = new_state
+                        old_state = rule_states.get(file_path)
+                        # 比较状态生成事件
+                        state_events = _compare_file_states(old_state, new_state, rule)
+                        events.extend(state_events)
+                except Exception as e:
+                    logger.debug(f"Error processing file {file_path}: {e}")
+                    continue
 
+            # 检查之前存在但现在不存在的文件（删除事件）
+            if rule.get('watch_delete', True):
+                for old_path in rule_states.keys():
+                    if old_path not in new_states[rule_id]:
                         events.append({
-                            'rule_id': rule.get('id'),
-                            'path': path,
-                            'event_type': 'file_status',
+                            'rule_id': rule_id,
+                            'path': old_path,
+                            'event_type': 'delete',
                             'timestamp': datetime.now().isoformat(),
                             'details': {
-                                'mtime': mtime_dt,
-                                'ctime': ctime_dt,
-                                'size': size,
-                                'uid': uid,
-                                'gid': gid,
-                                'mode': mode,
+                                'old_size': rule_states[old_path]['size'],
                             },
                         })
-                    except (ValueError, IndexError):
-                        pass
-
-            # 如果是目录且启用递归监控
-            if rule.get('recursive', False):
-                ls_cmd = f"ls -la --time-style=full-iso {safe_path} 2>/dev/null"
-                stdout, stderr, exit_code = client.execute_command(ls_cmd)
-                if exit_code == 0 and stdout:
-                    events.append({
-                        'rule_id': rule.get('id'),
-                        'path': path,
-                        'event_type': 'directory_listing',
-                        'timestamp': datetime.now().isoformat(),
-                        'details': {'listing': stdout},
-                    })
 
     except Exception as e:
         logger.error(f"Error collecting file events: {e}")
 
-    return events
+    return {
+        'events': events,
+        'new_states': new_states,
+    }
 
 
-def collect_file_events(host: Host, monitor_rules: List[Dict[str, Any]]) -> Dict[str, Any]:
+def collect_file_events(host: Host, monitor_rules: List[Dict[str, Any]], previous_states: Optional[Dict[int, Dict[str, Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """
     收集文件监控事件
 
     Args:
         host: Host 模型实例
         monitor_rules: 监控规则列表
+        previous_states: 之前的状态字典
 
     Returns:
         文件监控事件字典
@@ -2229,6 +2442,7 @@ def collect_file_events(host: Host, monitor_rules: List[Dict[str, Any]]) -> Dict
         'success': False,
         'events': [],
         'total_events': 0,
+        'new_states': {},
         'collected_at': '',
         'error': '',
     }
@@ -2240,9 +2454,10 @@ def collect_file_events(host: Host, monitor_rules: List[Dict[str, Any]]) -> Dict
             username=host.username,
             password=host.password,
         ) as client:
-            events = _collect_file_events(client, monitor_rules)
-            result['events'] = events
-            result['total_events'] = len(events)
+            result_data = _collect_file_events(client, monitor_rules, previous_states)
+            result['events'] = result_data['events']
+            result['new_states'] = result_data['new_states']
+            result['total_events'] = len(result_data['events'])
             result['collected_at'] = datetime.now().isoformat()
             result['success'] = True
 
