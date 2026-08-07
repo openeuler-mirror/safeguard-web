@@ -59,6 +59,33 @@ def test_user_with_authority(db, test_user, test_authority):
 
 
 @pytest.fixture
+def frozen_user(db):
+    """被冻结的用户"""
+    return UserFactory.create_frozen(password="testpass123")
+
+
+@pytest.fixture
+def multiple_users(db):
+    """多个测试用户"""
+    return UserFactory.create_batch(5)
+
+
+@pytest.fixture
+def test_menu(db):
+    """测试菜单"""
+    return MenuFactory.create()
+
+
+@pytest.fixture
+def test_menu_tree(db):
+    """测试菜单树"""
+    root = MenuFactory.create(path="/test", name="TestRoot")
+    child1 = MenuFactory.create(parent=root, path="/test/child1", name="TestChild1")
+    child2 = MenuFactory.create(parent=root, path="/test/child2", name="TestChild2")
+    return root
+
+
+@pytest.fixture
 def test_cluster(db):
     """测试集群"""
     return ClusterFactory.create()

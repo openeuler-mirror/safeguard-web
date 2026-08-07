@@ -24,6 +24,14 @@ class UserFactory:
         return user_obj
 
     @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建用户"""
+        users = []
+        for i in range(count):
+            users.append(UserFactory.create(**kwargs))
+        return users
+
+    @staticmethod
     def create_admin(user="admin", password="admin123", **kwargs):
         """创建管理员用户"""
         user = UserFactory.create(user=user, password=password, **kwargs)
@@ -31,6 +39,11 @@ class UserFactory:
         admin_auth = AuthorityFactory.create(authority_id=888, authority_name="超级管理员")
         UserAuthority.objects.create(user=user, authority=admin_auth)
         return user
+
+    @staticmethod
+    def create_frozen(user=None, password=None, **kwargs):
+        """创建被冻结的用户"""
+        return UserFactory.create(user=user, password=password, enable=2, **kwargs)
 
 
 class AuthorityFactory:
