@@ -68,3 +68,21 @@ def test_cluster(db):
 def multiple_clusters(db):
     """多个测试集群"""
     return ClusterFactory.create_batch(3)
+
+
+@pytest.fixture
+def test_host(db, test_cluster):
+    """测试宿主机"""
+    return HostFactory.create(cluster=test_cluster)
+
+
+@pytest.fixture
+def test_host_with_vms(db, test_cluster):
+    """带虚拟机的测试宿主机"""
+    return HostFactory.create_with_vms(cluster=test_cluster, vm_count=2)
+
+
+@pytest.fixture
+def multiple_hosts(db, test_cluster):
+    """多个测试宿主机"""
+    return HostFactory.create_batch(5, cluster=test_cluster)
