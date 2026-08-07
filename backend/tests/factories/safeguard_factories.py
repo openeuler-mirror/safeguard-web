@@ -208,3 +208,85 @@ class FileMonitorEventFactory:
             events.append(FileMonitorEventFactory.create(**kwargs))
         return events
 
+
+class AuditLogFactory:
+    """审计日志工厂"""
+
+    @staticmethod
+    def create(user=None, action="create", resource_type="host", resource_id="1",
+                resource_name="test-host", action_details=None,
+                old_value=None, new_value=None, ip_address=None,
+                user_agent=None, status="success", error_message="", **kwargs):
+        """创建审计日志"""
+        return AuditLog.objects.create(
+            user=user,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            resource_name=resource_name,
+            action_details=action_details or {},
+            old_value=old_value or {},
+            new_value=new_value or {},
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status=status,
+            error_message=error_message,
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建审计日志"""
+        logs = []
+        for i in range(count):
+            logs.append(AuditLogFactory.create(**kwargs))
+        return logs
+
+    @staticmethod
+    def create_login(**kwargs):
+        """创建登录审计日志"""
+        return AuditLogFactory.create(action="login", **kwargs)
+
+    @staticmethod
+    def create_failed(**kwargs):
+        """创建失败的审计日志"""
+        return AuditLogFactory.create(status="failed", **kwargs)
+
+
+class SystemLogFactory:
+    """系统日志工厂"""
+
+    @staticmethod
+    def create(host=None, source="system", level="info", message="System message",
+               timestamp=None, raw_log="", parsed_fields=None, **kwargs):
+        """创建系统日志"""
+        if timestamp is None:
+            timestamp = timezone.now()
+        return SystemLog.objects.create(
+            host=host,
+            source=source,
+            level=level,
+            message=message,
+            timestamp=timestamp,
+            raw_log=raw_log,
+            parsed_fields=parsed_fields or {},
+            **kwargs
+        )
+
+    @staticmethod
+    def create_batch(count, **kwargs):
+        """批量创建系统日志"""
+        logs = []
+        for i in range(count):
+            logs.append(SystemLogFactory.create(**kwargs))
+        return logs
+
+    @staticmethod
+    def create_error(**kwargs):
+        """创建错误日志"""
+        return SystemLogFactory.create(level="error", **kwargs)
+
+    @staticmethod
+    def create_warning(**kwargs):
+        """创建警告日志"""
+        return SystemLogFactory.create(level="warning", **kwargs)
