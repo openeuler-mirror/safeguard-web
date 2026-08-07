@@ -86,3 +86,20 @@ class MenuButtonFactory:
             **kwargs
         )
 
+
+class UserAuthorityFactory:
+    """用户角色关联工厂"""
+
+    @staticmethod
+    def create(user=None, authority=None, **kwargs):
+        """创建用户角色关联"""
+        if not user:
+            user = UserFactory.create()
+        if not authority:
+            authority = AuthorityFactory.create()
+        return UserAuthority.objects.create(
+            user=user,
+            authority=authority,
+            **kwargs
+        )
+
