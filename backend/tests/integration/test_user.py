@@ -79,3 +79,51 @@ class TestCurrentUserMe:
 
         assert response.status_code == 200
         assert response.data['errno'] != 0
+
+
+class TestCurrentUserPassword:
+    """当前用户修改密码接口测试"""
+
+    @pytest.mark.p0
+    def test_change_my_password_success(self, authenticated_client, test_user, clear_redis):
+        """测试用户修改自身密码成功"""
+        test_user.set_password('oldpass123')
+        test_user.save()
+        clear_redis(test_user.id)
+
+        # 需要重新获取认证token
+        from rest_framework_simplejwt.tokens import RefreshToken
+        authenticated_client.credentials()
+        refresh = RefreshToken.for_user(test_user)
+        authenticated_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+
+        data = {'old_password': 'oldpass123', 'new_password': 'newmypass456'}
+        response = authenticated_client.put('/api/users/me/password/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+        assert response.data['errmsg'] == '密码修改成功'
+
+        # 验证密码已更新
+        test_user.refresh_from_db()
+        assert check_password('newmypass456', test_user.password)
+
+    @pytest.mark.p0
+    def test_change_my_password_wrong_old_password(self, authenticated_client, test_user, clear_redis):
+        """测试旧密码错误应返回错误"""
+        test_user.set_password('correctpass')
+        test_user.save()
+        clear_redis(test_user.id)
+
+        data = {'old_password': 'wrongpass', 'new_password': 'newpass123'}
+        response = authenticated_client.put('/api/users/me/password/', data, format='json')
+
+        assert response.status_code == 200
+        assert response.data['errno'] != 0
+
+    @pytest.mark.p0
+    def test_change_my_password_without_auth(self, api_client):
+        """测试无认证修改密码应返回401"""
+        data = {'old_password': 'oldpass', 'new_password': 'newpass123'}
+        response = api_client.put('/api/users/me/password/', data, format='json')
+        assert response.status_code == 401
