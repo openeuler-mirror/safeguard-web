@@ -299,3 +299,160 @@ class TestFileMonitorRuleViewSet:
             mock_instance.get_file_monitor_statistics.return_value = {'total': 0}
             response = admin_client.get(f'/api/file-monitor-rules/statistics/?host_id={test_host.id}')
             assert response.status_code == 200
+
+
+class TestFileMonitorEventViewSet:
+    """文件监控事件视图集测试"""
+
+    def test_get_file_monitor_events_admin(self, admin_client, test_file_monitor_event):
+        """测试管理员获取文件监控事件列表"""
+        response = admin_client.get('/api/file-monitor-events/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_file_monitor_events_unauthenticated(self, api_client):
+        """测试未认证用户无法获取文件监控事件"""
+        response = api_client.get('/api/file-monitor-events/')
+        assert response.status_code == 401
+
+    def test_filter_events_by_host(self, admin_client, test_file_monitor_event, test_host):
+        """测试按主机过滤事件"""
+        response = admin_client.get(f'/api/file-monitor-events/?host={test_host.id}')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_filter_events_by_type(self, admin_client, test_file_monitor_event):
+        """测试按事件类型过滤"""
+        response = admin_client.get('/api/file-monitor-events/?event_type=modify')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestAuditLogViewSet:
+    """审计日志视图集测试"""
+
+    def test_get_audit_logs_admin(self, admin_client, multiple_audit_logs):
+        """测试管理员获取审计日志列表"""
+        response = admin_client.get('/api/audit-logs/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_audit_logs_unauthenticated(self, api_client):
+        """测试未认证用户无法获取审计日志"""
+        response = api_client.get('/api/audit-logs/')
+        assert response.status_code == 401
+
+    def test_filter_audit_logs_by_action(self, admin_client, login_audit_log):
+        """测试按操作类型过滤审计日志"""
+        response = admin_client.get('/api/audit-logs/?action=login')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_filter_audit_logs_by_status(self, admin_client, multiple_audit_logs):
+        """测试按状态过滤审计日志"""
+        response = admin_client.get('/api/audit-logs/?status=success')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestSystemLogViewSet:
+    """系统日志视图集测试"""
+
+    def test_get_system_logs_admin(self, admin_client, multiple_system_logs):
+        """测试管理员获取系统日志列表"""
+        response = admin_client.get('/api/system-logs/')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_get_system_logs_unauthenticated(self, api_client):
+        """测试未认证用户无法获取系统日志"""
+        response = api_client.get('/api/system-logs/')
+        assert response.status_code == 401
+
+    def test_filter_system_logs_by_level(self, admin_client, error_system_log):
+        """测试按级别过滤系统日志"""
+        response = admin_client.get('/api/system-logs/?level=error')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+    def test_filter_system_logs_by_host(self, admin_client, test_system_log, test_host):
+        """测试按主机过滤系统日志"""
+        response = admin_client.get(f'/api/system-logs/?host={test_host.id}')
+        assert response.status_code == 200
+        assert response.data['errno'] == 0
+
+
+class TestHostInfoViewSet:
+    """主机信息视图集测试"""
+
+    def test_get_system_info(self, admin_client, test_host):
+        """测试获取系统信息（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_system_info.return_value = {'os': 'linux'}
+            response = admin_client.get(f'/api/host-info/system-info/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_get_ports_info(self, admin_client, test_host):
+        """测试获取端口信息（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_ports_info.return_value = {'ports': []}
+            response = admin_client.get(f'/api/host-info/ports-info/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_get_processes_info(self, admin_client, test_host):
+        """测试获取进程信息（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_processes_info.return_value = {'processes': []}
+            response = admin_client.get(f'/api/host-info/processes-info/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_get_services_info(self, admin_client, test_host):
+        """测试获取服务信息（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_services_info.return_value = {'services': []}
+            response = admin_client.get(f'/api/host-info/services-info/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_get_accounts_info(self, admin_client, test_host):
+        """测试获取账户信息（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_accounts_info.return_value = {'accounts': []}
+            response = admin_client.get(f'/api/host-info/accounts-info/?host_id={test_host.id}')
+            assert response.status_code == 200
+
+    def test_service_control(self, admin_client, test_host):
+        """测试控制服务（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.control_service.return_value = {'status': 'success'}
+            data = {
+                'host_id': test_host.id,
+                'service_name': 'test.service',
+                'action': 'start'
+            }
+            response = admin_client.post('/api/host-info/service-control/', data, format='json')
+            assert response.status_code == 200
+
+    def test_get_service_logs(self, admin_client, test_host):
+        """测试获取服务日志（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.get_service_logs.return_value = {'logs': ''}
+            response = admin_client.get(
+                f'/api/host-info/service-logs/?host_id={test_host.id}&service_name=test.service'
+            )
+            assert response.status_code == 200
+
+    def test_kill_process(self, admin_client, test_host):
+        """测试终止进程（mocked）"""
+        with patch('backend.views.safeguard.host_info.HostInfoService') as mock_service:
+            mock_instance = mock_service.return_value
+            mock_instance.kill_process.return_value = {'status': 'success'}
+            data = {'host_id': test_host.id, 'pid': 1234}
+            response = admin_client.post('/api/host-info/kill-process/', data, format='json')
+            assert response.status_code == 200
